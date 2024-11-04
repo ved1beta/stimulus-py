@@ -74,6 +74,10 @@ class RandomSplitter(AbstractSplitter):
             train (list): The indices for the training set.
             validation (list): The indices for the validation set.
             test (list): he indices for the test set.
+
+        Raises: 
+            ValueError: If the split argument is not a list with length 3.
+            ValueError: If the sum of the split proportions is not 1.
         """
         if len(split) != 3:
             raise ValueError("The split argument should be a list with length 3 that contains the proportions for [train, validation, test] splits.")
