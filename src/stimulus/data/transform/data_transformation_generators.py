@@ -10,8 +10,16 @@ import multiprocessing as mp
 
 class AbstractDataTransformer(ABC):
     """
-    Abstract class for data transformers. 
-    All data transformers should have the seed in it. Because the multiprocessing of them could unset the seed in short.
+    Abstract class for data transformers.
+
+    All data transformers should have the seed in it. This is because the multiprocessing of them could unset the seed.
+
+    Attributes:
+        add_row (bool): whether the transformer adds rows to the data
+
+    Methods:
+        transform: transforms a data point
+        transform_all: transforms a list of data points
     """
 
     def __init__(self):
@@ -20,7 +28,16 @@ class AbstractDataTransformer(ABC):
     @abstractmethod
     def transform(self, data: Any, seed: float = None) -> Any:
         """
-        Transforms the data.
+        Transforms a single data point.
+
+        This is an abstract method that should be implemented by the child class.
+
+        Args:
+            data (Any): the data to be transformed
+            seed (float): the seed for reproducibility
+
+        Returns:
+            transformed_data (Any): the transformed data
         """
         #  np.random.seed(seed)
         raise NotImplementedError
@@ -28,7 +45,16 @@ class AbstractDataTransformer(ABC):
     @abstractmethod
     def transform_all(self, data: list, seed: float = None) -> list:
         """
-        Transforms the data.
+        Transforms a list of data points.
+
+        This is an abstract method that should be implemented by the child class.
+
+        Args:
+            data (list): the data to be transformed
+            seed (float): the seed for reproducibility
+
+        Returns:
+            transformed_data (list): the transformed data
         """
         #  np.random.seed(seed)
         raise NotImplementedError
@@ -37,7 +63,8 @@ class AbstractDataTransformer(ABC):
 class AbstractNoiseGenerator(AbstractDataTransformer):
     """
     Abstract class for noise generators. 
-    All noise function should have the seed in it. Because the multiprocessing of them could unset the seed in short.
+
+    All noise function should have the seed in it. This is because the multiprocessing of them could unset the seed.
     """
 
     def __init__(self):
@@ -46,8 +73,9 @@ class AbstractNoiseGenerator(AbstractDataTransformer):
 
 class AbstractAugmentationGenerator(AbstractDataTransformer):
     """
-    Abstract class for augmentation generators. 
-    All augmentation function should have the seed in it. Because the multiprocessing of them could unset the seed in short.
+    Abstract class for augmentation generators.
+
+    All augmentation function should have the seed in it. This is because the multiprocessing of them could unset the seed.
     """
 
     def __init__(self):
@@ -56,7 +84,16 @@ class AbstractAugmentationGenerator(AbstractDataTransformer):
 
 class UniformTextMasker(AbstractNoiseGenerator):
     """
+    Mask characters in text.
+
     This noise generators replace characters with a masking character with a given probability.
+
+    Attributes:
+        mask (str): the character to use for masking
+
+    Methods:
+        transform: adds character masking to a single data point
+        transform_all: adds character masking to a list of data points
     """
     def __init__(self, mask: str) -> None:
         super().__init__()
@@ -64,14 +101,30 @@ class UniformTextMasker(AbstractNoiseGenerator):
 
     def transform(self, data: str, probability: float = 0.1, seed: float = None) -> str:
         """
-        Adds noise to the data.
+        Adds character masking to the data.
+
+        Args:
+            data (str): the data to be transformed
+            probability (float): the probability of adding noise
+            seed (float): the seed for reproducibility
+
+        Returns:
+            transformed_data (str): the transformed data point
         """
         np.random.seed(seed)
         return ''.join([c if np.random.rand() > probability else self.mask for c in data])
 
     def transform_all(self, data: list, probability: float = 0.1, seed: float = None) -> list:
         """
-        Adds noise to the data using multiprocessing.
+        Adds character masking to multiple data points using multiprocessing.
+
+        Args:
+            data (list): the data to be transformed
+            probability (float): the probability of adding noise
+            seed (float): the seed for reproducibility
+
+        Returns:
+            transformed_data (list): the transformed data points
         """
         with mp.Pool(mp.cpu_count()) as pool:
             function_specific_input = [(item, probability, seed) for item in data]
@@ -80,47 +133,94 @@ class UniformTextMasker(AbstractNoiseGenerator):
 
 class GaussianNoise(AbstractNoiseGenerator):
     """
-    This noise generator adds gaussian noise to float values
+    Add Gaussian noise to data
+
+    This noise generator adds Gaussian noise to float values.
+
+    Methods:
+        transform: adds noise to a single data point
+        transform_all: adds noise to a list of data points
     """
 
-    def transform(self, data: float, mean: float = 0, std: float= 0, seed: float = None) -> float:
+    def transform(self, data: float, mean: float = 0, std: float = 1, seed: float = None) -> float:
         """
-        Adds noise to a single point of data.
+        Adds Gaussian noise to a single point of data.
+
+        Args:
+            data (float): the data to be transformed
+            mean (float): the mean of the Gaussian distribution
+            std (float): the standard deviation of the Gaussian distribution
+            seed (float): the seed for reproducibility
+
+        Returns:
+            transformed_data (float): the transformed data point
         """
         np.random.seed(seed)
         return data + np.random.normal(mean, std)
     
-    def transform_all(self, data: list, mean: float = 0, std: float = 0, seed: float = None) -> list:
+    def transform_all(self, data: list, mean: float = 0, std: float = 0, seed: float = None) -> np.array:
         """
-        Adds noise to the data using np arrays
-        # TODO return a np array to gain performance.
+        Adds Gaussian noise to a list of data points
+        
+        Args:
+            data (list): the data to be transformed
+            mean (float): the mean of the Gaussian distribution
+            std (float): the standard deviation of the Gaussian distribution
+            seed (float): the seed for reproducibility
+
+        Returns:
+            transformed_data (np.array): the transformed data points
         """
         np.random.seed(seed)
-        return list(np.array(data) + np.random.normal(mean, std, len(data)))
+        return np.array(np.array(data) + 
+                        np.random.normal(mean, std, len(data)))
     
 
 
 class ReverseComplement(AbstractAugmentationGenerator):
     """
-    This augmentation strategy reverse complements the input sequences.
+    Reverse complement biological sequences
+
+    This augmentation strategy reverse complements the input nucleotide sequences.
+
+    Methods:
+        transform: reverse complements a single data point
+        transform_all: reverse complements a list of data points
+
+    Raises:
+        ValueError: if the type of the sequence is not DNA or RNA
     """
     def __init__(self, type:str = "DNA") -> None:
         super().__init__()
-        if (type != "DNA"):
-            raise ValueError("Currently only DNA sequences are supported. Update the class ReverseComplement to support other types.")
+        if (type not in ("DNA", "RNA")):
+            raise ValueError("Currently only DNA and RNA sequences are supported. Update the class ReverseComplement to support other types.")
         if type == "DNA":
             self.complement_mapping = str.maketrans('ATCG', 'TAGC')
+        elif type == "RNA":
+            self.complement_mapping = str.maketrans('AUCG', 'UAGC')
 
 
     def transform(self, data: str) -> str:
         """
         Returns the reverse complement of a list of string data using the complement_mapping.
+
+        Args:
+            data (str): the sequence to be transformed
+
+        Returns:
+            transformed_data (str): the reverse complement of the sequence
         """
         return data.translate(self.complement_mapping)[::-1]
 
     def transform_all(self, data: list) -> list:
         """
-        Adds reverse complement to the data using multiprocessing.
+        Reverse complement multiple data points using multiprocessing.
+
+        Args:
+            data (list): the sequences to be transformed
+        
+        Returns:
+            transformed_data (list): the reverse complement of the sequences
         """
         with mp.Pool(mp.cpu_count()) as pool:
             function_specific_input = [(item) for item in data]
@@ -128,16 +228,34 @@ class ReverseComplement(AbstractAugmentationGenerator):
         
 class GaussianChunk(AbstractAugmentationGenerator):
     """
+    Subset data around a random midpoint
+
     This augmentation strategy chunks the input sequences, for which the middle positions are obtained through a gaussian distribution.
     
     In concrete, it changes the middle position (ie. peak summit) to another position. This position is chosen based on a gaussian distribution, so the region close to the middle point are more likely to be chosen than the rest.
     Then a chunk with size `chunk_size` around the new middle point is returned.
     This process will be repeated for each sequence with `transform_all`.
+
+    Methods:
+        transform: chunk a single list
+        transform_all: chunks multiple lists
     """
 
     def transform(self, data: str, chunk_size: int, seed: float = None, std: float = 1) -> str:
         """
         Chunks a sequence of size chunk_size from the middle position +/- a value obtained through a gaussian distribution.
+
+        Args:
+            data (str): the sequence to be transformed
+            chunk_size (int): the size of the chunk
+            seed (float): the seed for reproducibility
+            std (float): the standard deviation of the gaussian distribution
+
+        Returns:
+            transformed_data (str): the chunk of the sequence
+
+        Raises:
+            AssertionError: if the input data is shorter than the chunk size
         """
         np.random.seed(seed)
 
@@ -168,7 +286,16 @@ class GaussianChunk(AbstractAugmentationGenerator):
 
     def transform_all(self, data: list, chunk_size: int, seed: float = None, std: float = 1) -> list:
         """
-        Adds chunks to the data using multiprocessing.
+        Adds chunks to multiple lists using multiprocessing.
+
+        Args:
+            data (list): the sequences to be transformed
+            chunk_size (int): the size of the chunk
+            seed (float): the seed for reproducibility
+            std (float): the standard deviation of the gaussian distribution
+
+        Returns:
+            transformed_data (list): the transformed sequences
         """
         with mp.Pool(mp.cpu_count()) as pool:
             function_specific_input = [(item, chunk_size, seed, std) for item in data]
