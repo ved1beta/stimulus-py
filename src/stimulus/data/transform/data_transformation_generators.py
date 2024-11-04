@@ -186,6 +186,9 @@ class ReverseComplement(AbstractAugmentationGenerator):
     Methods:
         transform: reverse complements a single data point
         transform_all: reverse complements a list of data points
+
+    Raises:
+        ValueError: if the type of the sequence is not DNA or RNA
     """
     def __init__(self, type:str = "DNA") -> None:
         super().__init__()
@@ -250,6 +253,9 @@ class GaussianChunk(AbstractAugmentationGenerator):
 
         Returns:
             transformed_data (str): the chunk of the sequence
+
+        Raises:
+            AssertionError: if the input data is shorter than the chunk size
         """
         np.random.seed(seed)
 
