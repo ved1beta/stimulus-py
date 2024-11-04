@@ -7,7 +7,7 @@ packages = ["src/stimulus"]
 
 [project]
 name = "stimulus-py"
-version = "0.0.8"
+version = "0.0.10"
 authors = [
   { name="Mathys Grapotte", email="mathysgrapotte@gmail.com" },
   { name="Alessio Vignoli"},
