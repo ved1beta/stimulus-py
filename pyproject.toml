@@ -50,9 +50,6 @@ Documentation = "https://mathysgrapotte.github.io/stimulus-py"
 Changelog = "https://mathysgrapotte.github.io/stimulus-py/changelog"
 Repository = "https://github.com/mathysgrapotte/stimulus-py"
 Issues = "https://github.com/mathysgrapotte/stimulus-py/issues"
-Discussions = "https://github.com/mathysgrapotte/stimulus-py/discussions"
-Gitter = "https://gitter.im/stimulus-py/community"
-Funding = "https://github.com/sponsors/mathysgrapotte"
 
 [tool.pdm]
 version = {source = "scm"}
