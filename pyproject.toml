@@ -4,11 +4,15 @@ build-backend = "pdm.backend"
 
 [project]
 name = "stimulus-py"
-description = ""
-authors = [{name = "Mathys Grapotte", email = "mathysgrapotte@gmail.com"}]
+description = "A package for testing deep learning models"
+authors = [
+  { name="Mathys Grapotte", email="mathysgrapotte@gmail.com" },
+  { name="Alessio Vignoli"},
+  { name="Suzanne Jin"}
+]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = []
 dynamic = ["version"]
 classifiers = [
@@ -17,7 +21,6 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -28,7 +31,18 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    "matplotlib>=3.9.0",
+    "multiprocess==0.70.17",
+    "numpy>=1.26.0,<2.0.0",
+    "pandas>=2.2.0",
+    "polars-lts-cpu>=0.20.30",
+    "ray[default,train,tune]>=2.23.0",
+    "safetensors>=0.4.5",
+    "scikit-learn>=1.5.0",
+    "scipy==1.14.1",
+    "torch>=2.2.2",
+]
 
 [project.urls]
 Homepage = "https://mathysgrapotte.github.io/stimulus-py"
