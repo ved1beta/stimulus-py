@@ -4,8 +4,8 @@ import argparse
 import json
 import os
 
-from launch_utils import get_experiment
-from src.data.csv import CsvProcessing
+from stimulus.utils.launch_utils import get_experiment
+from stimulus.data.csv import CsvProcessing
 
 
 
@@ -56,8 +56,9 @@ def main(data_csv, config_json, out_path):
     # save the modified csv
     csv_obj.save(out_path)
 
-
-
-if __name__ == "__main__":
+def run():
     args = get_args()
     main(args.csv, args.json, args.output)
+
+if __name__ == "__main__":
+    run()

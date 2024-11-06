@@ -7,11 +7,11 @@ import yaml
 import safetensors
 
 from torch.utils.data import DataLoader
-from launch_utils import import_class_from_file, get_experiment, memory_split_for_ray_init
-from src.learner.raytune_learner import TuneWrapper as StimulusTuneWrapper
-from src.learner.raytune_parser import TuneParser as StimulusTuneParser
-from src.data.handlertorch import TorchDataset
-from src.learner.predict import PredictWrapper
+from stimulus.utils.launch_utils import import_class_from_file, get_experiment, memory_split_for_ray_init
+from stimulus.learner.raytune_learner import TuneWrapper as StimulusTuneWrapper
+from stimulus.learner.raytune_parser import TuneParser as StimulusTuneParser
+from stimulus.data.handlertorch import TorchDataset
+from stimulus.learner.predict import PredictWrapper
 
 
 def get_args():
@@ -129,9 +129,7 @@ def main(config_path: str,
             pred_f.write(str(predictions))
             seed_f.write(str(best_tune_config['ray_worker_seed'])) 
 
-
-
-if __name__ == "__main__":
+def run():
     args = get_args()
     main(args.config, 
          args.model, 
@@ -142,9 +140,14 @@ if __name__ == "__main__":
          args.best_metrics, 
          args.best_optimizer,
          args.initial_weights,
-         args.gpus, 
+         args.gpus,
          args.cpus,
          args.memory,
          args.ray_results_dirpath,
          args.tune_run_name,
          args.debug_mode)
+
+
+if __name__ == "__main__":
+    run()
+
