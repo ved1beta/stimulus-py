@@ -8,7 +8,8 @@ description = "A package for testing deep learning models"
 authors = [
   { name="Mathys Grapotte", email="mathysgrapotte@gmail.com" },
   { name="Alessio Vignoli"},
-  { name="Suzanne Jin"}
+  { name="Suzanne Jin"},
+  { name="Luisa Santus"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
@@ -41,6 +42,16 @@ dependencies = [
     "scipy==1.14.1",
     "torch>=2.2.2",
 ]
+
+[project.scripts]
+stimulus-shuffle-csv = "stimulus.cli.shuffle_csv:run"
+stimulus-transform-csv = "stimulus.cli.transform_csv:run"
+stimulus-split-csv = "stimulus.cli.split_csv:run"
+stimulus-analysis-default = "stimulus.cli.analysis_default:run"
+stimulus-predict = "stimulus.cli.predict:run"
+stimulus-check-model = "stimulus.cli.check_model:run"
+stimulus-tuning = "stimulus.cli.tuning:run"
+stimulus-interpret-json = "stimulus.cli.interpret_json:run"
 
 [project.urls]
 Homepage = "https://mathysgrapotte.github.io/stimulus-py"
