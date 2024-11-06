@@ -1,7 +1,13 @@
 import unittest
-import numpy as np
 from abc import ABC, abstractmethod
-from src.stimulus.data.transform.data_transformation_generators import UniformTextMasker, GaussianNoise, ReverseComplement, GaussianChunk
+
+from src.stimulus.data.transform.data_transformation_generators import (
+    GaussianChunk,
+    GaussianNoise,
+    ReverseComplement,
+    UniformTextMasker,
+)
+
 
 class TestDataTransformer(ABC):
     """Base class for testing data transformers."""
@@ -31,16 +37,18 @@ class TestDataTransformer(ABC):
             self.assertIsInstance(item, self.expected_type)
         self.assertEqual(transformed_data, self.expected_multiple_outputs)
 
+
 class TestUniformTextMasker(TestDataTransformer, unittest.TestCase):
     def setUp(self):
-        self.transformer = UniformTextMasker(mask='N')
+        self.transformer = UniformTextMasker(mask="N")
         self.single_input = "ACGTACGT"
         self.single_params = {"seed": 42, "probability": 0.1}
         self.expected_type = str
         self.expected_single_output = "ACGTACNT"
         self.multiple_inputs = ["ATCGATCGATCG", "ATCG"]
         self.multiple_params = {"seed": 42, "probability": 0.1}
-        self.expected_multiple_outputs = ['ATCGATNGATNG', 'ATCG']
+        self.expected_multiple_outputs = ["ATCGATNGATNG", "ATCG"]
+
 
 class TestGaussianNoise(TestDataTransformer, unittest.TestCase):
     def setUp(self):
@@ -65,6 +73,7 @@ class TestGaussianNoise(TestDataTransformer, unittest.TestCase):
             self.assertIsInstance(item, self.expected_type)
             self.assertAlmostEqual(item, expected, places=7)
 
+
 class TestReverseComplement(TestDataTransformer, unittest.TestCase):
     def setUp(self):
         self.transformer = ReverseComplement()
@@ -74,7 +83,8 @@ class TestReverseComplement(TestDataTransformer, unittest.TestCase):
         self.expected_single_output = "NNACGTAGGGGT"
         self.multiple_inputs = ["ACCCCTACGTNN", "ACTGA"]
         self.multiple_params = {}
-        self.expected_multiple_outputs = ['NNACGTAGGGGT', 'TCAGT']
+        self.expected_multiple_outputs = ["NNACGTAGGGGT", "TCAGT"]
+
 
 class TestGaussianChunk(TestDataTransformer, unittest.TestCase):
     def setUp(self):
@@ -85,7 +95,7 @@ class TestGaussianChunk(TestDataTransformer, unittest.TestCase):
         self.expected_single_output = "TGCATGCTAG"
         self.multiple_inputs = [
             "AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC",
-            "AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC"
+            "AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC",
         ]
         self.multiple_params = {"seed": 42, "chunk_size": 10, "std": 1}
         self.expected_multiple_outputs = ["TGCATGCTAG", "GCATGCTAGC"]
@@ -103,6 +113,7 @@ class TestGaussianChunk(TestDataTransformer, unittest.TestCase):
             self.assertIsInstance(item, self.expected_type)
             self.assertEqual(len(item), 10)
         self.assertEqual(transformed_data, self.expected_multiple_outputs)
+
 
 if __name__ == "__main__":
     unittest.main()

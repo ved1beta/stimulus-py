@@ -1,7 +1,4 @@
-"""stimulus-py package.
-
-
-"""
+"""stimulus-py package."""
 
 from __future__ import annotations
 
