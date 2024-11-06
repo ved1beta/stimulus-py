@@ -237,7 +237,9 @@ class AnalysisRobustness(Analysis):
         for data_path in data_list:  # for each data, get the performance metrics, and concat
             # initialize the dataframe keeping the original order, aka no shuffle
             dataloader = DataLoader(
-                TorchDataset(data_path, self.experiment, split=2), batch_size=self.batch_size, shuffle=False
+                TorchDataset(data_path, self.experiment, split=2),
+                batch_size=self.batch_size,
+                shuffle=False,
             )
             metric_values = PredictWrapper(model, dataloader).compute_metrics(self.metrics)
             df = pd.concat([df, pd.DataFrame(metric_values, index=[0])])

@@ -12,7 +12,11 @@ def arg_parser():
         required=True,
     )
     parser.add_argument(
-        "--output", type=str, help="Path to output csv file", default="titanic_stimulus.csv", required=False
+        "--output",
+        type=str,
+        help="Path to output csv file",
+        default="titanic_stimulus.csv",
+        required=False,
     )
     return parser.parse_args()
 
@@ -31,7 +35,7 @@ def main():
             "Parch",
             "Fare",
             "Embarked",
-        ]
+        ],
     )
 
     df = df.drop_nulls()
@@ -49,7 +53,7 @@ def main():
             "Fare": "fare:input:float",
             "Embarked": "embarked:input:str_class",
             "PassengerId": "passenger_id:meta:int",
-        }
+        },
     )
 
     # Save to csv

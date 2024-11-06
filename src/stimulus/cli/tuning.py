@@ -18,7 +18,12 @@ def get_args():
     """Get the arguments when using from the commandline"""
     parser = argparse.ArgumentParser(description="")
     parser.add_argument(
-        "-c", "--config", type=str, required=True, metavar="FILE", help="The file path for the config file"
+        "-c",
+        "--config",
+        type=str,
+        required=True,
+        metavar="FILE",
+        help="The file path for the config file",
     )
     parser.add_argument("-m", "--model", type=str, required=True, metavar="FILE", help="The model file")
     parser.add_argument("-d", "--data", type=str, required=True, metavar="FILE", help="The data file")

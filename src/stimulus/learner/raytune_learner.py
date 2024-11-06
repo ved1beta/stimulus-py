@@ -52,7 +52,7 @@ class TuneWrapper:
 
         # build the tune config
         self.config["tune"]["tune_params"]["scheduler"] = getattr(schedulers, self.config["tune"]["scheduler"]["name"])(
-            **self.config["tune"]["scheduler"]["params"]
+            **self.config["tune"]["scheduler"]["params"],
         )
         self.tune_config = tune.TuneConfig(**self.config["tune"]["tune_params"])
 
@@ -127,7 +127,10 @@ class TuneWrapper:
         return self.tuner.fit()
 
     def _chek_per_trial_resources(
-        self, resurce_key: str, cluster_max_resources: dict, resource_type: str
+        self,
+        resurce_key: str,
+        cluster_max_resources: dict,
+        resource_type: str,
     ) -> Tuple[int, int]:
         """Helper function that check that user requested per trial resources are not exceeding the available resources for the ray cluster.
         If the per trial resources are not asked they are set to a default resoanable ammount.
@@ -142,7 +145,7 @@ class TuneWrapper:
                 return 0.0
             # in case GPUs that are not detected raise error. This happens sometimes when max_gpus stay as None and ray.init does not find GPU by itself. not setting max_gpus (None) means to use all available ones. TODO make ray see GPU on None value.
             raise SystemError(
-                "#### ray did not detect any GPU, if you do not want to use GPU set max_gpus=0, or in nextflow --max_gpus 0."
+                "#### ray did not detect any GPU, if you do not want to use GPU set max_gpus=0, or in nextflow --max_gpus 0.",
             )
 
         per_trial_resource = None
@@ -180,7 +183,8 @@ class TuneWrapper:
         elif resurce_key not in self.config["tune"].keys() and cluster_max_resources[resource_type] != 0.0:
             # TODO maybe set the default to 0.5 instead of 1 ? fractional use in case of GPU? Should this be a mandatory parameter?
             per_trial_resource = max(
-                1, (cluster_max_resources[resource_type] // self.config["tune"]["tune_params"]["num_samples"])
+                1,
+                (cluster_max_resources[resource_type] // self.config["tune"]["tune_params"]["num_samples"]),
             )
 
         return per_trial_resource
@@ -207,7 +211,7 @@ class TuneModel(Trainable):
                 self.loss_dict[key] = getattr(nn, loss_fn)()
             except AttributeError:
                 raise ValueError(
-                    f"Invalid loss function: {loss_fn}, check PyTorch for documentation on available loss functions"
+                    f"Invalid loss function: {loss_fn}, check PyTorch for documentation on available loss functions",
                 )
 
         # get the optimizer parameters
@@ -222,13 +226,17 @@ class TuneModel(Trainable):
         # use dataloader on training/validation data
         self.batch_size = config["data_params"]["batch_size"]
         self.training = DataLoader(
-            training, batch_size=self.batch_size, shuffle=True
+            training,
+            batch_size=self.batch_size,
+            shuffle=True,
         )  # TODO need to check the reproducibility of this shuffling
         self.validation = DataLoader(validation, batch_size=self.batch_size, shuffle=True)
 
         # debug section, first create a dedicated directory for each worker inside Ray_results/<tune_model_run_specific_dir> location
         debug_dir = os.path.join(
-            config["tune_run_path"], "debug", ("worker_with_seed_" + str(self.config["ray_worker_seed"]))
+            config["tune_run_path"],
+            "debug",
+            ("worker_with_seed_" + str(self.config["ray_worker_seed"])),
         )
         if config["_debug"]:
             # creating a special directory for it one that is worker/trial/experiment specific
@@ -245,7 +253,7 @@ class TuneModel(Trainable):
                 numpy_values = list(np.random.randint(0, 100, size=5))
                 torch_values = torch.randint(0, 100, (5,)).tolist()
                 seed_f.write(
-                    f"python drawn numbers : {python_values}\nnumpy drawn numbers : {numpy_values}\ntorch drawn numbers : {torch_values}\n"
+                    f"python drawn numbers : {python_values}\nnumpy drawn numbers : {numpy_values}\ntorch drawn numbers : {torch_values}\n",
                 )
 
     def step(self) -> dict:

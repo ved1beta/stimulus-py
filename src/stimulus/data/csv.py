@@ -35,7 +35,7 @@ class CsvHandler:
             category = colname.split(":")[1].lower()
             if category not in ["input", "label", "split", "meta"]:
                 raise ValueError(
-                    f"Unknown category {category}, category (the second element of the csv column, seperated by ':') should be input, label, split or meta. The specified csv column is {colname}."
+                    f"Unknown category {category}, category (the second element of the csv column, seperated by ':') should be input, label, split or meta. The specified csv column is {colname}.",
                 )
             categories.append(category)
         return categories
@@ -56,7 +56,11 @@ class CsvHandler:
         return header
 
     def get_keys_from_header(
-        self, header, column_name: str = None, category: str = None, data_type: str = None
+        self,
+        header,
+        column_name: str = None,
+        category: str = None,
+        data_type: str = None,
     ) -> list:
         keys = []
         for key in header:
@@ -69,12 +73,15 @@ class CsvHandler:
                 keys.append(key)
         if len(keys) == 0:
             raise ValueError(
-                f"No keys found with the specified column_name={column_name}, category={category}, data_type={data_type}"
+                f"No keys found with the specified column_name={column_name}, category={category}, data_type={data_type}",
             )
         return keys
 
     def get_keys_based_on_name_category_dtype(
-        self, column_name: str = None, category: str = None, data_type: str = None
+        self,
+        column_name: str = None,
+        category: str = None,
+        data_type: str = None,
     ) -> list:
         """Returns the keys that are of a specific type, name or category. Or a combination of those."""
         if (column_name is None) and (category is None) and (data_type is None):
@@ -112,7 +119,7 @@ class CsvProcessing(CsvHandler):
         """
         if ("split" in self.categories) and (not force):
             raise ValueError(
-                "The category split is already present in the csv file. If you want to still use this function, set force=True"
+                "The category split is already present in the csv file. If you want to still use this function, set force=True",
             )
 
         # set the split name method
@@ -205,7 +212,7 @@ class CsvLoader(CsvHandler):
         colname = self.get_keys_based_on_name_category_dtype("split")
         if len(colname) > 1:
             raise ValueError(
-                f"The split category should have only one column, the specified csv file has {len(colname)} columns"
+                f"The split category should have only one column, the specified csv file has {len(colname)} columns",
             )
         colname = colname[0]
         return pl.scan_csv(self.csv_path).filter(pl.col(colname) == split).collect()

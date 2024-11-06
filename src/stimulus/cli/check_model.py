@@ -26,7 +26,12 @@ def get_args():
         help="Experiment config file. From this the experiment class name is extracted.",
     )
     parser.add_argument(
-        "-c", "--config", type=str, required=True, metavar="FILE", help="Path to yaml config training file"
+        "-c",
+        "--config",
+        type=str,
+        required=True,
+        metavar="FILE",
+        help="Path to yaml config training file",
     )
     parser.add_argument(
         "-w",

@@ -15,7 +15,9 @@ class TorchDataset(Dataset):
 
     def __init__(self, csvpath: str, experiment: Any, split: Tuple[None, int] = None) -> None:
         self.input, self.label, self.meta, self.length = CsvLoader(
-            experiment, csvpath, split=split
+            experiment,
+            csvpath,
+            split=split,
         ).get_all_items_and_length()  # getting the data and length at once is better for memory management.
         self.input, self.label = (
             self.convert_dict_to_dict_of_tensors(self.input),

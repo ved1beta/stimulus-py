@@ -112,7 +112,8 @@ class TextOneHotEncoder(AbstractEncoder):
             raise ValueError(error_msg)
         self.alphabet = alphabet
         self.encoder = preprocessing.OneHotEncoder(
-            categories=[list(alphabet)], handle_unknown="ignore"
+            categories=[list(alphabet)],
+            handle_unknown="ignore",
         )  # handle_unknown='ignore' unsures that a vector of zeros is returned for unknown characters, such as 'Ns' in DNA sequences
 
     def _sequence_to_array(self, sequence: str) -> np.array:
@@ -184,7 +185,7 @@ class TextOneHotEncoder(AbstractEncoder):
         if not isinstance(data, list):
             encoded_data = self.encode(data)
             return np.array(
-                [encoded_data]
+                [encoded_data],
             )  # reshape the array in a batch of 1 configuration as a np.ndarray (so shape is (1, sequence_length, alphabet_length))
 
         encoded_data = self.encode_multiprocess(data)

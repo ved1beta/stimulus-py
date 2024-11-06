@@ -15,7 +15,13 @@ def get_args():
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("-m", "--model", type=str, required=True, metavar="FILE", help="The model .py file")
     parser.add_argument(
-        "-w", "--weight", type=str, required=True, nargs="+", metavar="FILE", help="Model weights .pt file"
+        "-w",
+        "--weight",
+        type=str,
+        required=True,
+        nargs="+",
+        metavar="FILE",
+        help="Model weights .pt file",
     )
     parser.add_argument(
         "-me",
@@ -36,7 +42,13 @@ def get_args():
         help="The experiment config used to modify the data.",
     )
     parser.add_argument(
-        "-mc", "--model_config", type=str, required=True, nargs="+", metavar="FILE", help="The tune config file."
+        "-mc",
+        "--model_config",
+        type=str,
+        required=True,
+        nargs="+",
+        metavar="FILE",
+        help="The tune config file.",
     )
     parser.add_argument(
         "-d",
@@ -158,7 +170,9 @@ def run_analysis_performance_model(
         os.makedirs(outdir2)
     for metric in metrics:
         analysis.plot_delta_performance(
-            metric, df, output=os.path.join(outdir2, "delta_performance_" + metric + ".png")
+            metric,
+            df,
+            output=os.path.join(outdir2, "delta_performance_" + metric + ".png"),
         )
 
     # TODO add more analysis needed

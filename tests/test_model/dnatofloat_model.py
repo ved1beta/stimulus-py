@@ -42,7 +42,12 @@ class ModelSimple(torch.nn.Module):
         return loss_fn(output, hola.to(torch.float32))
 
     def batch(
-        self, x: dict, y: dict, loss_fn1: Callable, loss_fn2: Callable, optimizer: Optional[Callable] = None
+        self,
+        x: dict,
+        y: dict,
+        loss_fn1: Callable,
+        loss_fn2: Callable,
+        optimizer: Optional[Callable] = None,
     ) -> Tuple[torch.Tensor, dict]:
         """Perform one batch step.
         `x` is a dictionary with the input tensors.

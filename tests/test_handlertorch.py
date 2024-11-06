@@ -56,7 +56,8 @@ class TestDnaToFloatTorchDatasetSameLength(TestTorchDataset, unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.torchdataset = TorchDataset(
-            csvpath=os.path.abspath("tests/test_data/dna_experiment/test.csv"), experiment=DnaToFloatExperiment()
+            csvpath=os.path.abspath("tests/test_data/dna_experiment/test.csv"),
+            experiment=DnaToFloatExperiment(),
         )
         self.expected_len = 2
         self.expected_input_shape = {"hello": [2, 16, 4]}
@@ -100,7 +101,8 @@ class TestTitanicTorchDataset(TestTorchDataset, unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.torchdataset = TorchDataset(
-            csvpath=os.path.abspath("tests/test_data/titanic/titanic_stimulus.csv"), experiment=TitanicExperiment()
+            csvpath=os.path.abspath("tests/test_data/titanic/titanic_stimulus.csv"),
+            experiment=TitanicExperiment(),
         )
         self.expected_len = 712
         # Add expected shapes for Titanic dataset if known

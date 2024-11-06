@@ -41,7 +41,7 @@ class Performance:
         labels, predictions = self.handle_multiclass(labels, predictions)
         if labels.shape != predictions.shape:
             raise ValueError(
-                f"The labels have shape {labels.shape} whereas predictions have shape {predictions.shape}."
+                f"The labels have shape {labels.shape} whereas predictions have shape {predictions.shape}.",
             )
         function = getattr(self, metric)
         self.val = function(labels, predictions)

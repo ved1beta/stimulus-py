@@ -183,7 +183,7 @@ class ReverseComplement(AbstractAugmentationGenerator):
         super().__init__()
         if type not in ("DNA", "RNA"):
             raise ValueError(
-                "Currently only DNA and RNA sequences are supported. Update the class ReverseComplement to support other types."
+                "Currently only DNA and RNA sequences are supported. Update the class ReverseComplement to support other types.",
             )
         if type == "DNA":
             self.complement_mapping = str.maketrans("ATCG", "TAGC")

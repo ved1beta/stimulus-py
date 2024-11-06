@@ -11,7 +11,12 @@ def get_args():
     """Get the arguments when using from the commandline"""
     parser = argparse.ArgumentParser(description="")
     parser.add_argument(
-        "-c", "--csv", type=str, required=True, metavar="FILE", help="The file path for the csv containing all data"
+        "-c",
+        "--csv",
+        type=str,
+        required=True,
+        metavar="FILE",
+        help="The file path for the csv containing all data",
     )
     parser.add_argument(
         "-j",
@@ -22,7 +27,12 @@ def get_args():
         help="The json config file that hold all parameter info",
     )
     parser.add_argument(
-        "-o", "--output", type=str, required=True, metavar="FILE", help="The output file path to write the noised csv"
+        "-o",
+        "--output",
+        type=str,
+        required=True,
+        metavar="FILE",
+        help="The output file path to write the noised csv",
     )
 
     args = parser.parse_args()

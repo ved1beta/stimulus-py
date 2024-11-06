@@ -14,7 +14,7 @@ class ModelTitanic(nn.Module):
             [
                 nn.Linear(nb_neurons_intermediate_layer, nb_neurons_intermediate_layer)
                 for _ in range(nb_intermediate_layers)
-            ]
+            ],
         )
         self.output_layer = nn.Linear(nb_neurons_intermediate_layer, nb_classes)
         self.relu = nn.ReLU()
@@ -52,7 +52,11 @@ class ModelTitanic(nn.Module):
         return loss_fn(output, survived)
 
     def batch(
-        self, x: dict, y: dict, loss_fn: Callable, optimizer: Optional[Callable] = None
+        self,
+        x: dict,
+        y: dict,
+        loss_fn: Callable,
+        optimizer: Optional[Callable] = None,
     ) -> Tuple[torch.Tensor, dict]:
         """Perform one batch step.
         `x` is a dictionary with the input tensors.

@@ -67,7 +67,7 @@ class ProtDnaToFloatExperiment(DnaToFloatExperiment):
         self.prot = {
             "encoder": encoders.TextOneHotEncoder(alphabet="acdefghiklmnpqrstvwy"),
             "data_transformation_generators": {
-                "UniformTextMasker": data_transformation_generators.UniformTextMasker(mask="X")
+                "UniformTextMasker": data_transformation_generators.UniformTextMasker(mask="X"),
             },
         }
 

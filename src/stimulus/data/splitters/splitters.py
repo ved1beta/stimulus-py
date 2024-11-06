@@ -55,7 +55,10 @@ class RandomSplitter(AbstractSplitter):
         super().__init__()
 
     def get_split_indexes(
-        self, data: pl.DataFrame, split: list = [0.7, 0.2, 0.1], seed: float = None
+        self,
+        data: pl.DataFrame,
+        split: list = [0.7, 0.2, 0.1],
+        seed: float = None,
     ) -> tuple[list, list, list]:
         """Splits the data indices into train, validation, and test sets.
 
@@ -77,7 +80,7 @@ class RandomSplitter(AbstractSplitter):
         """
         if len(split) != 3:
             raise ValueError(
-                "The split argument should be a list with length 3 that contains the proportions for [train, validation, test] splits."
+                "The split argument should be a list with length 3 that contains the proportions for [train, validation, test] splits.",
             )
         # Use round to avoid errors due to floating point imprecisions
         if round(sum(split), 3) < 1.0:

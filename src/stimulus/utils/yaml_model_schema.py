@@ -36,7 +36,7 @@ class YamlRayConfigLoader:
             mode = getattr(tune, param["mode"])
         except AttributeError:
             raise AttributeError(
-                f"Mode {param['mode']} not recognized, check the ray.tune documentation at https://docs.ray.io/en/master/tune/api_docs/suggestion.html"
+                f"Mode {param['mode']} not recognized, check the ray.tune documentation at https://docs.ray.io/en/master/tune/api_docs/suggestion.html",
             )
 
         # apply the mode function

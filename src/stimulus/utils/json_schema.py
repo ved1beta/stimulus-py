@@ -19,13 +19,13 @@ class JsonSchema(ABC):
         # Send error if experiment name is missing
         if not self.experiment:
             raise ValueError(
-                "No experiment name given, the Json should always have a experiment:'ExperimentName' field"
+                "No experiment name given, the Json should always have a experiment:'ExperimentName' field",
             )
 
         # Send error if self.interpret_parmas_mode is not among the possible ones
         if self.interpret_params_mode not in ["column_wise", "all_combinations"]:
             raise ValueError(
-                "interpret_params_mode value can only be one of the following keywords -> ['column_wise', 'all_combinations']"
+                "interpret_params_mode value can only be one of the following keywords -> ['column_wise', 'all_combinations']",
             )
 
         # check that inside transform dictionary there are no repeated column_nmae values and return them otherwise send error
@@ -87,7 +87,7 @@ class JsonSchema(ABC):
         if len(set(num_params_list)) == 1:
             return num_params_list[0]
         raise ValueError(
-            "Expected the same number of values for all the params under transform value, but received a discordant ammount instead."
+            "Expected the same number of values for all the params under transform value, but received a discordant ammount instead.",
         )
 
     def _reshape_transform_dict(self) -> dict:
@@ -113,7 +113,7 @@ class JsonSchema(ABC):
                     params_to_be_added = col_name_dictionary["params"][k]
                 # handle the case of multiple transformed with same name in the same list associated to the column_name, solution -> create a scheme to modify the name
                 if transform_dict.get(col_name_dictionary["column_name"]) and transformed_name in transform_dict.get(
-                    col_name_dictionary["column_name"]
+                    col_name_dictionary["column_name"],
                 ):
                     # Modify the transformed name already present appending a unique key to it
                     transformed_name = transformed_name + "-#" + str(k)
@@ -265,7 +265,7 @@ class JsonSchema(ABC):
         """Works on the self.transform_arg dictionary to compute all possible combinations of parameters and nboisers in a all against all fashion."""
         # TODO implement this function
         raise ValueError(
-            "the function transform_all_combination for the flag interpret_parmas_mode : all_combinations is not implemented yet "
+            "the function transform_all_combination for the flag interpret_parmas_mode : all_combinations is not implemented yet ",
         )
 
     def split_combination(self) -> list:
@@ -306,13 +306,14 @@ class JsonSchema(ABC):
 
                 if len(all_lengths_same) != 1:
                     raise ValueError(
-                        f"All split params for the same splitter have to have the same number of elements, this splitter does not: {split_dict['name']}."
+                        f"All split params for the same splitter have to have the same number of elements, this splitter does not: {split_dict['name']}.",
                     )
                 # iterate at level of number of params_values
                 for params_index in range(list(all_lengths_same)[0]):
                     # making the split into a dict the _handle_parameter_selection can use
                     single_param_dict = self._handle_parameter_selection(
-                        {split_dict["name"]: split_dict["params"][0]}, params_index
+                        {split_dict["name"]: split_dict["params"][0]},
+                        params_index,
                     )
                     list_split_comibinations.append(single_param_dict)
         return list_split_comibinations
