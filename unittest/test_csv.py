@@ -61,7 +61,7 @@ class TestDnaToFloatCsvProcessing(TestCsvProcessing, unittest.TestCase):
         self.csv_shuffle_long_path = os.path.abspath("tests/test_data/dna_experiment/test_shuffling_long.csv")
         self.csv_shuffle_long = CsvProcessing(self.experiment, self.csv_shuffle_long_path)
         self.csv_shuffle_long_shuffled_path = os.path.abspath(
-            "tests/test_data/dna_experiment/test_shuffling_long_shuffled.csv",
+            "tests/test_data/dna_experiment/test_shuffling_long_shuffled.csv"
         )
         self.csv_shuffle_long_shuffled = CsvProcessing(self.experiment, self.csv_shuffle_long_shuffled_path)
         with open("tests/test_data/dna_experiment/test_config.json") as f:
@@ -74,8 +74,7 @@ class TestDnaToFloatCsvProcessing(TestCsvProcessing, unittest.TestCase):
         self._test_column_values("pet:meta:str", ["cat", "dog", "cat", "dog"])
         self._test_column_values("hola:label:float", [12.676405, 12.540016, 12.676405, 12.540016])
         self._test_column_values(
-            "hello:input:dna",
-            ["ACTGACTGATCGATNN", "ACTGACTGATCGATNN", "NNATCGATCAGTCAGT", "NNATCGATCAGTCAGT"],
+            "hello:input:dna", ["ACTGACTGATCGATNN", "ACTGACTGATCGATNN", "NNATCGATCAGTCAGT", "NNATCGATCAGTCAGT"]
         )
         self._test_column_values("split:split:int", [1, 0, 1, 0])
 
@@ -83,8 +82,7 @@ class TestDnaToFloatCsvProcessing(TestCsvProcessing, unittest.TestCase):
         """Test shuffling of labels."""
         self.csv_shuffle_long.shuffle_labels(seed=42)
         npt.assert_array_equal(
-            self.csv_shuffle_long.data["hola:label:float"],
-            self.csv_shuffle_long_shuffled.data["hola:label:float"],
+            self.csv_shuffle_long.data["hola:label:float"], self.csv_shuffle_long_shuffled.data["hola:label:float"]
         )
 
 
@@ -105,13 +103,11 @@ class TestProtDnaToFloatCsvProcessing(TestCsvProcessing):
         self._test_column_values("pet:meta:str", ["cat", "dog", "cat", "dog"])
         self._test_column_values("hola:label:float", [12.676405, 12.540016, 12.676405, 12.540016])
         self._test_column_values(
-            "hello:input:dna",
-            ["ACTGACTGATCGATNN", "ACTGACTGATCGATNN", "NNATCGATCAGTCAGT", "NNATCGATCAGTCAGT"],
+            "hello:input:dna", ["ACTGACTGATCGATNN", "ACTGACTGATCGATNN", "NNATCGATCAGTCAGT", "NNATCGATCAGTCAGT"]
         )
         self._test_column_values("split:split:int", [1, 0, 1, 0])
         self._test_column_values(
-            "bonjour:input:prot",
-            ["GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX"],
+            "bonjour:input:prot", ["GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX"]
         )
 
 
