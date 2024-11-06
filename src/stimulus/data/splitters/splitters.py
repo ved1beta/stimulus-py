@@ -104,3 +104,8 @@ class RandomSplitter(AbstractSplitter):
         test = indices[train_size + validation_size :].tolist()
 
         return train, validation, test
+    
+    def distance(self) -> float:
+        """
+        """
+        NotImplemented
