@@ -86,116 +86,116 @@ class TestDnaToFloatCsvProcessing(TestCsvProcessing, unittest.TestCase):
         )
 
 
-# class TestProtDnaToFloatCsvProcessing(TestCsvProcessing):
-#     """Test CsvProcessing for ProtDnaToFloatExperiment."""
+class TestProtDnaToFloatCsvProcessing(TestCsvProcessing):
+    """Test CsvProcessing for ProtDnaToFloatExperiment."""
 
-#     def setUp(self):
-#         self.experiment = ProtDnaToFloatExperiment()
-#         self.csv_path = os.path.abspath("tests/test_data/prot_dna_experiment/test.csv")
-#         self.csv_processing = CsvProcessing(self.experiment, self.csv_path)
-#         with open("tests/test_data/prot_dna_experiment/test_config.json") as f:
-#             self.configs = json.load(f)
-#         self.data_length = 2
-#         self.expected_splits = [1, 0]
+    def setUp(self):
+        self.experiment = ProtDnaToFloatExperiment()
+        self.csv_path = os.path.abspath("tests/test_data/prot_dna_experiment/test.csv")
+        self.csv_processing = CsvProcessing(self.experiment, self.csv_path)
+        with open("tests/test_data/prot_dna_experiment/test_config.json") as f:
+            self.configs = json.load(f)
+        self.data_length = 2
+        self.expected_splits = [1, 0]
 
-#     def _test_transformed_data(self):
-#         self.data_length *= 2
-#         self._test_column_values("pet:meta:str", ["cat", "dog", "cat", "dog"])
-#         self._test_column_values("hola:label:float", [12.676405, 12.540016, 12.676405, 12.540016])
-#         self._test_column_values(
-#             "hello:input:dna", ["ACTGACTGATCGATNN", "ACTGACTGATCGATNN", "NNATCGATCAGTCAGT", "NNATCGATCAGTCAGT"]
-#         )
-#         self._test_column_values("split:split:int", [1, 0, 1, 0])
-#         self._test_column_values(
-#             "bonjour:input:prot", ["GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX"]
-#         )
-
-
-# class TestCsvLoader(ABC):
-#     """Base class for testing CsvLoader."""
-
-#     def setUp(self):
-#         self.csv_loader = None
-#         self.data_shape = None
-#         self.data_shape_split = None
-#         self.shape_splits = None
-
-#     def test_len(self):
-#         """Test the length of the dataset."""
-#         self.assertEqual(len(self.csv_loader), self.data_shape[0])
-
-#     def test_parse_csv_to_input_label_meta(self):
-#         """Test parsing of CSV to input, label, and meta."""
-#         self.assertIsInstance(self.csv_loader.input, dict)
-#         self.assertIsInstance(self.csv_loader.label, dict)
-#         self.assertIsInstance(self.csv_loader.meta, dict)
-
-#     def test_get_encoded_item_unique(self):
-#         """Test getting a single encoded item."""
-#         encoded_item = self.csv_loader[0]
-#         self._assert_encoded_item(encoded_item, expected_length=1)
-
-#     def test_get_encoded_item_multiple(self):
-#         """Test getting multiple encoded items."""
-#         encoded_item = self.csv_loader[slice(0, 2)]
-#         self._assert_encoded_item(encoded_item, expected_length=2)
-
-#     def test_load_with_split(self):
-#         """Test loading with split."""
-#         self.csv_loader_split = CsvLoader(self.experiment, self.csv_path_split)
-#         self.assertEqual(len(self.csv_loader_split), self.data_shape_split[0])
-
-#         for i in [0, 1, 2]:
-#             self.csv_loader_split = CsvLoader(self.experiment, self.csv_path_split, split=i)
-#             self.assertEqual(len(self.csv_loader_split.input["hello:dna"]), self.shape_splits[i])
-
-#         with self.assertRaises(ValueError):
-#             CsvLoader(self.experiment, self.csv_path_split, split=3)
-
-#     def test_get_all_items(self):
-#         """Test getting all items."""
-#         input_data, label_data, meta_data = self.csv_loader.get_all_items()
-#         self.assertIsInstance(input_data, dict)
-#         self.assertIsInstance(label_data, dict)
-#         self.assertIsInstance(meta_data, dict)
-
-#     def _assert_encoded_item(self, encoded_item, expected_length):
-#         self.assertEqual(len(encoded_item), 3)
-#         for i in range(3):
-#             self.assertIsInstance(encoded_item[i], dict)
-#             for key in encoded_item[i].keys():
-#                 self.assertIsInstance(encoded_item[i][key], np.ndarray)
-#                 if (
-#                     expected_length > 1
-#                 ):  # If the expected length is 0, this will fail as we are trying to find the length of an object size 0.
-#                     self.assertEqual(len(encoded_item[i][key]), expected_length)
+    def _test_transformed_data(self):
+        self.data_length *= 2
+        self._test_column_values("pet:meta:str", ["cat", "dog", "cat", "dog"])
+        self._test_column_values("hola:label:float", [12.676405, 12.540016, 12.676405, 12.540016])
+        self._test_column_values(
+            "hello:input:dna", ["ACTGACTGATCGATNN", "ACTGACTGATCGATNN", "NNATCGATCAGTCAGT", "NNATCGATCAGTCAGT"]
+        )
+        self._test_column_values("split:split:int", [1, 0, 1, 0])
+        self._test_column_values(
+            "bonjour:input:prot", ["GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX"]
+        )
 
 
-# class TestDnaToFloatCsvLoader(TestCsvLoader, unittest.TestCase):
-#     """Test CsvLoader for DnaToFloatExperiment."""
+class TestCsvLoader(ABC):
+    """Base class for testing CsvLoader."""
 
-#     def setUp(self):
-#         self.csv_path = os.path.abspath("tests/test_data/dna_experiment/test.csv")
-#         self.csv_path_split = os.path.abspath("tests/test_data/dna_experiment/test_with_split.csv")
-#         self.experiment = DnaToFloatExperiment()
-#         self.csv_loader = CsvLoader(self.experiment, self.csv_path)
-#         self.data_shape = [2, 3]
-#         self.data_shape_split = [48, 4]
-#         self.shape_splits = {0: 16, 1: 16, 2: 16}
+    def setUp(self):
+        self.csv_loader = None
+        self.data_shape = None
+        self.data_shape_split = None
+        self.shape_splits = None
+
+    def test_len(self):
+        """Test the length of the dataset."""
+        self.assertEqual(len(self.csv_loader), self.data_shape[0])
+
+    def test_parse_csv_to_input_label_meta(self):
+        """Test parsing of CSV to input, label, and meta."""
+        self.assertIsInstance(self.csv_loader.input, dict)
+        self.assertIsInstance(self.csv_loader.label, dict)
+        self.assertIsInstance(self.csv_loader.meta, dict)
+
+    def test_get_encoded_item_unique(self):
+        """Test getting a single encoded item."""
+        encoded_item = self.csv_loader[0]
+        self._assert_encoded_item(encoded_item, expected_length=1)
+
+    def test_get_encoded_item_multiple(self):
+        """Test getting multiple encoded items."""
+        encoded_item = self.csv_loader[slice(0, 2)]
+        self._assert_encoded_item(encoded_item, expected_length=2)
+
+    def test_load_with_split(self):
+        """Test loading with split."""
+        self.csv_loader_split = CsvLoader(self.experiment, self.csv_path_split)
+        self.assertEqual(len(self.csv_loader_split), self.data_shape_split[0])
+
+        for i in [0, 1, 2]:
+            self.csv_loader_split = CsvLoader(self.experiment, self.csv_path_split, split=i)
+            self.assertEqual(len(self.csv_loader_split.input["hello:dna"]), self.shape_splits[i])
+
+        with self.assertRaises(ValueError):
+            CsvLoader(self.experiment, self.csv_path_split, split=3)
+
+    def test_get_all_items(self):
+        """Test getting all items."""
+        input_data, label_data, meta_data = self.csv_loader.get_all_items()
+        self.assertIsInstance(input_data, dict)
+        self.assertIsInstance(label_data, dict)
+        self.assertIsInstance(meta_data, dict)
+
+    def _assert_encoded_item(self, encoded_item, expected_length):
+        self.assertEqual(len(encoded_item), 3)
+        for i in range(3):
+            self.assertIsInstance(encoded_item[i], dict)
+            for key in encoded_item[i].keys():
+                self.assertIsInstance(encoded_item[i][key], np.ndarray)
+                if (
+                    expected_length > 1
+                ):  # If the expected length is 0, this will fail as we are trying to find the length of an object size 0.
+                    self.assertEqual(len(encoded_item[i][key]), expected_length)
 
 
-# class TestProtDnaToFloatCsvLoader(TestCsvLoader, unittest.TestCase):
-#     """Test CsvLoader for ProtDnaToFloatExperiment."""
+class TestDnaToFloatCsvLoader(TestCsvLoader, unittest.TestCase):
+    """Test CsvLoader for DnaToFloatExperiment."""
 
-#     def setUp(self):
-#         self.csv_path = os.path.abspath("tests/test_data/prot_dna_experiment/test.csv")
-#         self.csv_path_split = os.path.abspath("tests/test_data/prot_dna_experiment/test_with_split.csv")
-#         self.experiment = ProtDnaToFloatExperiment()
-#         self.csv_loader = CsvLoader(self.experiment, self.csv_path)
-#         self.data_shape = [2, 4]
-#         self.data_shape_split = [3, 5]
-#         self.shape_splits = {0: 1, 1: 1, 2: 1}
+    def setUp(self):
+        self.csv_path = os.path.abspath("tests/test_data/dna_experiment/test.csv")
+        self.csv_path_split = os.path.abspath("tests/test_data/dna_experiment/test_with_split.csv")
+        self.experiment = DnaToFloatExperiment()
+        self.csv_loader = CsvLoader(self.experiment, self.csv_path)
+        self.data_shape = [2, 3]
+        self.data_shape_split = [48, 4]
+        self.shape_splits = {0: 16, 1: 16, 2: 16}
 
 
-# if __name__ == "__main__":
-#     unittest.main()
+class TestProtDnaToFloatCsvLoader(TestCsvLoader, unittest.TestCase):
+    """Test CsvLoader for ProtDnaToFloatExperiment."""
+
+    def setUp(self):
+        self.csv_path = os.path.abspath("tests/test_data/prot_dna_experiment/test.csv")
+        self.csv_path_split = os.path.abspath("tests/test_data/prot_dna_experiment/test_with_split.csv")
+        self.experiment = ProtDnaToFloatExperiment()
+        self.csv_loader = CsvLoader(self.experiment, self.csv_path)
+        self.data_shape = [2, 4]
+        self.data_shape_split = [3, 5]
+        self.shape_splits = {0: 1, 1: 1, 2: 1}
+
+
+if __name__ == "__main__":
+    unittest.main()
