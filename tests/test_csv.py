@@ -1,13 +1,15 @@
 import json
 import os
 import unittest
+from abc import ABC
+
 import numpy as np
 import numpy.testing as npt
 import polars as pl
 
-from src.stimulus.data.csv import CsvProcessing, CsvLoader
-from abc import ABC, abstractmethod
+from src.stimulus.data.csv import CsvLoader, CsvProcessing
 from src.stimulus.data.experiments import DnaToFloatExperiment, ProtDnaToFloatExperiment
+
 
 class TestCsvProcessing(ABC):
     """Base class for testing CsvProcessing."""
@@ -26,17 +28,17 @@ class TestCsvProcessing(ABC):
 
     def test_add_split(self):
         """Test adding split to the data."""
-        self.csv_processing.add_split(self.configs['split'])
+        self.csv_processing.add_split(self.configs["split"])
         self._test_random_splitter(self.expected_splits)
 
     def test_transform(self):
         """Test data transformation."""
-        self.csv_processing.transform(self.configs['transform'])
+        self.csv_processing.transform(self.configs["transform"])
         self._test_transformed_data()
 
     def _test_random_splitter(self, expected_splits):
         for i in range(self.data_length):
-            self.assertEqual(self.csv_processing.data['split:split:int'][i], expected_splits[i])
+            self.assertEqual(self.csv_processing.data["split:split:int"][i], expected_splits[i])
 
     def _test_transformed_data(self):
         raise NotImplementedError("Subclasses should implement this method.")
@@ -45,6 +47,7 @@ class TestCsvProcessing(ABC):
         observed_values = list(self.csv_processing.data[column_name])
         observed_values = [round(v, 6) if isinstance(v, float) else v for v in observed_values]
         self.assertEqual(observed_values, expected_values)
+
 
 class TestDnaToFloatCsvProcessing(TestCsvProcessing, unittest.TestCase):
     """Test CsvProcessing for DnaToFloatExperiment."""
@@ -57,24 +60,33 @@ class TestDnaToFloatCsvProcessing(TestCsvProcessing, unittest.TestCase):
         self.csv_processing = CsvProcessing(self.experiment, self.csv_path)
         self.csv_shuffle_long_path = os.path.abspath("tests/test_data/dna_experiment/test_shuffling_long.csv")
         self.csv_shuffle_long = CsvProcessing(self.experiment, self.csv_shuffle_long_path)
-        self.csv_shuffle_long_shuffled_path = os.path.abspath("tests/test_data/dna_experiment/test_shuffling_long_shuffled.csv")
+        self.csv_shuffle_long_shuffled_path = os.path.abspath(
+            "tests/test_data/dna_experiment/test_shuffling_long_shuffled.csv",
+        )
         self.csv_shuffle_long_shuffled = CsvProcessing(self.experiment, self.csv_shuffle_long_shuffled_path)
-        with open('tests/test_data/dna_experiment/test_config.json', 'r') as f:
+        with open("tests/test_data/dna_experiment/test_config.json") as f:
             self.configs = json.load(f)
         self.data_length = 2
         self.expected_splits = [1, 0]
 
     def _test_transformed_data(self):
         self.data_length *= 2
-        self._test_column_values('pet:meta:str', ['cat', 'dog', 'cat', 'dog'])
-        self._test_column_values('hola:label:float', [12.676405, 12.540016, 12.676405, 12.540016])
-        self._test_column_values('hello:input:dna', ['ACTGACTGATCGATNN', 'ACTGACTGATCGATNN', 'NNATCGATCAGTCAGT', 'NNATCGATCAGTCAGT'])
-        self._test_column_values('split:split:int', [1, 0, 1, 0])
+        self._test_column_values("pet:meta:str", ["cat", "dog", "cat", "dog"])
+        self._test_column_values("hola:label:float", [12.676405, 12.540016, 12.676405, 12.540016])
+        self._test_column_values(
+            "hello:input:dna",
+            ["ACTGACTGATCGATNN", "ACTGACTGATCGATNN", "NNATCGATCAGTCAGT", "NNATCGATCAGTCAGT"],
+        )
+        self._test_column_values("split:split:int", [1, 0, 1, 0])
 
     def test_shuffle_labels(self):
         """Test shuffling of labels."""
         self.csv_shuffle_long.shuffle_labels(seed=42)
-        npt.assert_array_equal(self.csv_shuffle_long.data['hola:label:float'], self.csv_shuffle_long_shuffled.data['hola:label:float'])
+        npt.assert_array_equal(
+            self.csv_shuffle_long.data["hola:label:float"],
+            self.csv_shuffle_long_shuffled.data["hola:label:float"],
+        )
+
 
 class TestProtDnaToFloatCsvProcessing(TestCsvProcessing):
     """Test CsvProcessing for ProtDnaToFloatExperiment."""
@@ -83,18 +95,25 @@ class TestProtDnaToFloatCsvProcessing(TestCsvProcessing):
         self.experiment = ProtDnaToFloatExperiment()
         self.csv_path = os.path.abspath("tests/test_data/prot_dna_experiment/test.csv")
         self.csv_processing = CsvProcessing(self.experiment, self.csv_path)
-        with open('tests/test_data/prot_dna_experiment/test_config.json', 'r') as f:
+        with open("tests/test_data/prot_dna_experiment/test_config.json") as f:
             self.configs = json.load(f)
         self.data_length = 2
         self.expected_splits = [1, 0]
 
     def _test_transformed_data(self):
         self.data_length *= 2
-        self._test_column_values('pet:meta:str', ['cat', 'dog', 'cat', 'dog'])
-        self._test_column_values('hola:label:float', [12.676405, 12.540016, 12.676405, 12.540016])
-        self._test_column_values('hello:input:dna', ['ACTGACTGATCGATNN', 'ACTGACTGATCGATNN', 'NNATCGATCAGTCAGT', 'NNATCGATCAGTCAGT'])
-        self._test_column_values('split:split:int', [1, 0, 1, 0])
-        self._test_column_values('bonjour:input:prot', ['GPRTTIKAKQLETLX', 'GPRTTIKAKQLETLX', 'GPRTTIKAKQLETLX', 'GPRTTIKAKQLETLX'])
+        self._test_column_values("pet:meta:str", ["cat", "dog", "cat", "dog"])
+        self._test_column_values("hola:label:float", [12.676405, 12.540016, 12.676405, 12.540016])
+        self._test_column_values(
+            "hello:input:dna",
+            ["ACTGACTGATCGATNN", "ACTGACTGATCGATNN", "NNATCGATCAGTCAGT", "NNATCGATCAGTCAGT"],
+        )
+        self._test_column_values("split:split:int", [1, 0, 1, 0])
+        self._test_column_values(
+            "bonjour:input:prot",
+            ["GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX", "GPRTTIKAKQLETLX"],
+        )
+
 
 class TestCsvLoader(ABC):
     """Base class for testing CsvLoader."""
@@ -132,7 +151,7 @@ class TestCsvLoader(ABC):
 
         for i in [0, 1, 2]:
             self.csv_loader_split = CsvLoader(self.experiment, self.csv_path_split, split=i)
-            self.assertEqual(len(self.csv_loader_split.input['hello:dna']), self.shape_splits[i])
+            self.assertEqual(len(self.csv_loader_split.input["hello:dna"]), self.shape_splits[i])
 
         with self.assertRaises(ValueError):
             CsvLoader(self.experiment, self.csv_path_split, split=3)
@@ -150,8 +169,11 @@ class TestCsvLoader(ABC):
             self.assertIsInstance(encoded_item[i], dict)
             for key in encoded_item[i].keys():
                 self.assertIsInstance(encoded_item[i][key], np.ndarray)
-                if expected_length > 1: # If the expected length is 0, this will fail as we are trying to find the length of an object size 0.
+                if (
+                    expected_length > 1
+                ):  # If the expected length is 0, this will fail as we are trying to find the length of an object size 0.
                     self.assertEqual(len(encoded_item[i][key]), expected_length)
+
 
 class TestDnaToFloatCsvLoader(TestCsvLoader, unittest.TestCase):
     """Test CsvLoader for DnaToFloatExperiment."""
@@ -165,6 +187,7 @@ class TestDnaToFloatCsvLoader(TestCsvLoader, unittest.TestCase):
         self.data_shape_split = [48, 4]
         self.shape_splits = {0: 16, 1: 16, 2: 16}
 
+
 class TestProtDnaToFloatCsvLoader(TestCsvLoader, unittest.TestCase):
     """Test CsvLoader for ProtDnaToFloatExperiment."""
 
@@ -176,6 +199,7 @@ class TestProtDnaToFloatCsvLoader(TestCsvLoader, unittest.TestCase):
         self.data_shape = [2, 4]
         self.data_shape_split = [3, 5]
         self.shape_splits = {0: 1, 1: 1, 2: 1}
+
 
 if __name__ == "__main__":
     unittest.main()

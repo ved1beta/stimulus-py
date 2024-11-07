@@ -1,8 +1,11 @@
 import unittest
+from abc import ABC, abstractmethod
+
 import numpy as np
 import numpy.testing as npt
-from abc import ABC, abstractmethod
-from src.stimulus.data.encoding.encoders import TextOneHotEncoder, IntRankEncoder, StrClassificationIntEncoder
+
+from src.stimulus.data.encoding.encoders import IntRankEncoder, StrClassificationIntEncoder, TextOneHotEncoder
+
 
 class TestEncoder(ABC):
     """Base class for testing encoders."""
@@ -42,6 +45,7 @@ class TestEncoder(ABC):
     def _assert_encoded_all(self, encoded, expected):
         pass
 
+
 class TestTextOneHotEncoder(TestEncoder, unittest.TestCase):
     """Test TextOneHotEncoder."""
 
@@ -50,12 +54,12 @@ class TestTextOneHotEncoder(TestEncoder, unittest.TestCase):
         self.encoder = TextOneHotEncoder("acgt")
         self.input_data = "ACGT"
         self.expected_encoded = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-        self.expected_decoded = np.array(['a', 'c', 'g', 't']).reshape(-1, 1)
+        self.expected_decoded = np.array(["a", "c", "g", "t"]).reshape(-1, 1)
         self.input_data_list = ["ACGT", "ACG", "AC"]
         self.expected_encoded_list = [
             np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
             np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]),
-            np.array([[1, 0, 0, 0], [0, 1, 0, 0]])
+            np.array([[1, 0, 0, 0], [0, 1, 0, 0]]),
         ]
 
     def _assert_encoded(self, encoded, expected):
@@ -79,6 +83,7 @@ class TestTextOneHotEncoder(TestEncoder, unittest.TestCase):
         encoded_data = self.encoder.encode("Bubba")
         expected_output = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0]])
         self._assert_encoded(encoded_data, expected_output)
+
 
 class TestIntRankEncoder(TestEncoder, unittest.TestCase):
     """Test IntRankEncoder."""
@@ -108,6 +113,7 @@ class TestIntRankEncoder(TestEncoder, unittest.TestCase):
         for enc, exp in zip(encoded, expected):
             npt.assert_array_almost_equal(enc, exp)
 
+
 class TestStrClassificationIntEncoder(TestEncoder, unittest.TestCase):
     """Test StrClassificationIntEncoder."""
 
@@ -134,7 +140,8 @@ class TestStrClassificationIntEncoder(TestEncoder, unittest.TestCase):
         self.assertIsInstance(encoded, np.ndarray)
         self.assertEqual(encoded.shape, (len(self.input_data_list), len(max(self.input_data_list, key=len))))
         for enc, exp in zip(encoded, expected):
-            npt.assert_array_equal(enc[:len(exp)], exp)
+            npt.assert_array_equal(enc[: len(exp)], exp)
+
 
 if __name__ == "__main__":
     unittest.main()

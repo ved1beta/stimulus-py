@@ -1,6 +1,8 @@
 import unittest
 from abc import ABC, abstractmethod
+
 from src.stimulus.utils.performance import Performance
+
 
 class TestPerformanceBase(ABC):
     """Base class for testing Performance metrics."""
@@ -19,6 +21,7 @@ class TestPerformanceBase(ABC):
                 calculated_value = round(performance.val, 2)
                 self.assertEqual(calculated_value, expected_val)
 
+
 class TestBinaryClassificationPerformance(TestPerformanceBase, unittest.TestCase):
     """Test Performance metrics for binary classification."""
 
@@ -32,8 +35,9 @@ class TestBinaryClassificationPerformance(TestPerformanceBase, unittest.TestCase
             "f1score": 0.8,
             "precision": 0.67,
             "recall": 1.0,
-            "spearmanr": 0.45
+            "spearmanr": 0.45,
         }
+
 
 if __name__ == "__main__":
     unittest.main()
