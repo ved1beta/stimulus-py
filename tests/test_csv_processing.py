@@ -2,7 +2,6 @@ import json
 import os
 from typing import Any
 
-import numpy as np
 import numpy.testing as npt
 import pytest
 
@@ -98,7 +97,14 @@ def prot_dna_config():
         ("prot_dna_test_data")
     ])
 def test_data_length(request, fixture_name):
-    """Verify data is loaded with correct length"""
+    """Test that data is loaded with the correct length.
+    
+    Args:
+        request: Pytest fixture request object.
+        fixture_name (str): Name of the fixture to test.
+            Can be one of: dna_test_data, dna_test_data_long,
+            dna_test_data_long_shuffled, or prot_dna_test_data.
+    """
     data = request.getfixturevalue(fixture_name)
     assert len(data.csv_processing.data) == data.data_length
 
@@ -107,15 +113,19 @@ def test_data_length(request, fixture_name):
         ("prot_dna_test_data", "prot_dna_config")
     ])
 def test_add_split(request, fixture_data_name, fixture_config_name):
-    """Chck if the add_split function properly adds the split column"""
-    # get data and config fixtures
+    """Test that the add_split function properly adds the split column.
+    
+    Args:
+        request: Pytest fixture request object.
+        fixture_data_name (str): Name of the data fixture to test.
+            Can be either dna_test_data or prot_dna_test_data.
+        fixture_config_name (str): Name of the config fixture to use.
+            Can be either dna_config or prot_dna_config.
+    """
     data = request.getfixturevalue(fixture_data_name)
     config = request.getfixturevalue(fixture_config_name)
 
-    # add split
     data.csv_processing.add_split(config["split"])
-
-    # assert split column is properly added
     assert data.csv_processing.data["split:split:int"].to_list() == data.expected_split
 
 @pytest.mark.parametrize("fixture_data_name,fixture_config_name", [
@@ -123,25 +133,36 @@ def test_add_split(request, fixture_data_name, fixture_config_name):
         ("prot_dna_test_data", "prot_dna_config")
     ])
 def test_transform_data(request, fixture_data_name, fixture_config_name):
-    """It checks that transformation functionalities properly transform the data"""
-    # get data and config fixtures
+    """Test that transformation functionalities properly transform the data.
+    
+    Args:
+        request: Pytest fixture request object.
+        fixture_data_name (str): Name of the data fixture to test.
+            Can be either dna_test_data or prot_dna_test_data.
+        fixture_config_name (str): Name of the config fixture to use.
+            Can be either dna_config or prot_dna_config.
+    """
     data = request.getfixturevalue(fixture_data_name)
     config = request.getfixturevalue(fixture_config_name)
     
-    # add split and transformation
     data.csv_processing.add_split(config["split"])
     data.csv_processing.transform(config["transform"])
 
-    # assert transformed values
     for key, expected_values in data.expected_transformed_values.items():
         observed_values = list(data.csv_processing.data[key])
         observed_values = [round(v, 6) if isinstance(v, float) else v for v in observed_values]
         assert observed_values == expected_values
 
 def test_shuffle_labels(dna_test_data_long, dna_test_data_long_shuffled):
-    """Test shuffling of labels works. 
+    """Test that shuffling of labels works correctly.
     
-    For the moment, we are only testing it on the long dna test data.
+    This test verifies that when labels are shuffled with a fixed seed,
+    they match the expected shuffled values from a pre-computed dataset.
+    Currently only tests the long DNA test data.
+    
+    Args:
+        dna_test_data_long: Fixture containing the original unshuffled DNA test data.
+        dna_test_data_long_shuffled: Fixture containing the expected shuffled DNA test data.
     """
     dna_test_data_long.csv_processing.shuffle_labels(seed=42)
     npt.assert_array_equal(
