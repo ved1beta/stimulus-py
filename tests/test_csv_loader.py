@@ -43,6 +43,7 @@ def dna_test_data():
     data.data_length = 2
     return data
 
+
 @pytest.fixture
 def dna_test_data_with_split():
     """This stores the basic dna test csv with split"""
@@ -51,12 +52,14 @@ def dna_test_data_with_split():
     data.shape_splits = {0: 16, 1: 16, 2: 16}
     return data
 
+
 @pytest.fixture
 def prot_dna_test_data():
     """This stores the basic prot-dna test csv"""
     data = DataCsvLoader("tests/test_data/prot_dna_experiment/test.csv", ProtDnaToFloatExperiment)
     data.data_length = 2
     return data
+
 
 @pytest.fixture
 def prot_dna_test_data_with_split():
@@ -66,12 +69,16 @@ def prot_dna_test_data_with_split():
     data.shape_splits = {0: 1, 1: 1, 2: 1}
     return data
 
-@pytest.mark.parametrize("fixture_name", [
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
         ("dna_test_data"),
         ("dna_test_data_with_split"),
         ("prot_dna_test_data"),
-        ("prot_dna_test_data_with_split")
-    ])
+        ("prot_dna_test_data_with_split"),
+    ],
+)
 def test_data_length(request, fixture_name: str):
     """Verify data is loaded with correct length.
 
@@ -82,11 +89,15 @@ def test_data_length(request, fixture_name: str):
     data = request.getfixturevalue(fixture_name)
     assert len(data.csv_loader) == data.data_length
 
-@pytest.mark.parametrize("fixture_name", [
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
         ("dna_test_data"),
-        ("prot_dna_test_data")
-    ])
-def test_parse_csv_to_input_label_meta(request, fixture_name:str):
+        ("prot_dna_test_data"),
+    ],
+)
+def test_parse_csv_to_input_label_meta(request, fixture_name: str):
     """Test parsing of CSV to input, label, and meta.
 
     Args:
@@ -103,10 +114,14 @@ def test_parse_csv_to_input_label_meta(request, fixture_name:str):
     assert isinstance(data.csv_loader.label, dict)
     assert isinstance(data.csv_loader.meta, dict)
 
-@pytest.mark.parametrize("fixture_name", [
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
         ("dna_test_data"),
-        ("prot_dna_test_data")
-    ])
+        ("prot_dna_test_data"),
+    ],
+)
 def test_get_all_items(request, fixture_name: str):
     """Test retrieval of all items from the CSV loader.
 
@@ -123,12 +138,16 @@ def test_get_all_items(request, fixture_name: str):
     assert isinstance(label_data, dict)
     assert isinstance(meta_data, dict)
 
-@pytest.mark.parametrize("fixture_name,slice,expected_length", [
+
+@pytest.mark.parametrize(
+    "fixture_name,slice,expected_length",
+    [
         ("dna_test_data", 0, 1),
-        ("dna_test_data", slice(0,2), 2),
+        ("dna_test_data", slice(0, 2), 2),
         ("prot_dna_test_data", 0, 1),
-        ("prot_dna_test_data", slice(0,2), 2)
-    ])
+        ("prot_dna_test_data", slice(0, 2), 2),
+    ],
+)
 def test_get_encoded_item(request, fixture_name: str, slice: Any, expected_length: int):
     """Test retrieval of encoded items through slicing.
 
@@ -151,13 +170,17 @@ def test_get_encoded_item(request, fixture_name: str, slice: Any, expected_lengt
         assert isinstance(encoded_items[i], dict)
         for item in encoded_items[i].values():
             assert isinstance(item, np.ndarray)
-            if (expected_length > 1):
+            if expected_length > 1:
                 assert len(item) == expected_length
 
-@pytest.mark.parametrize("fixture_name", [
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
         ("dna_test_data_with_split"),
-        ("prot_dna_test_data_with_split")
-    ])
+        ("prot_dna_test_data_with_split"),
+    ],
+)
 def test_splitting(request, fixture_name):
     """Test data splitting functionality.
 
