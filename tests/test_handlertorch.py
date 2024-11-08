@@ -27,6 +27,7 @@ class TorchTestData:
         expected_label_shape: Expected shape of label tensors.
         expected_item_shape: Expected shape of individual items.
     """
+
     def __init__(self, filename: str, experiment: Any):
         self.experiment = experiment()
         self.csv_path = os.path.abspath(filename)
@@ -201,5 +202,6 @@ class TestGetItem:
                 slice_len = idx.stop - idx.start
                 expected_item_shape = [slice_len] + expected_item_shape
             assert dict_items[key].shape == torch.Size(expected_item_shape)
+
 
 # TODO add test for titanic dataset
