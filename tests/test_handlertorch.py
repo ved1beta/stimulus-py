@@ -97,8 +97,11 @@ class TestDictOfTensors:
     "fixture_name,idx",
     [
         ("dna_test_data", 0),
+        ("dna_test_data", slice(0, 2)),
         ("dna_test_data_with_float", 0),
+        ("dna_test_data_with_float", slice(0, 2)),
         ("prot_dna_test_data", 0),
+        ("prot_dna_test_data", slice(0, 2)),
     ],
 )
 class TestGetItem:
