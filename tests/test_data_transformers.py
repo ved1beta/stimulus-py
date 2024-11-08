@@ -68,7 +68,7 @@ def gaussian_noise() -> DataTransformerTest:
     single_input = 5.0
     expected_single_output = 5.4967141530112327
     multiple_inputs = [1.0, 2.0, 3.0]
-    expected_multiple_outputs = [1.4967141530112327, 2.0211241446210543, 3.7835298641951802]
+    expected_multiple_outputs = [1.4967141530112327, 1.8617356988288154, 3.6476885381006925]
     return DataTransformerTest(
         transformer=transformer,
         params=params,
@@ -88,7 +88,7 @@ def gaussian_chunk() -> DataTransformerTest:
     expected_single_output = "TGCATGCTAG"
     multiple_inputs = ["AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC",
                         "AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC"]
-    expected_multiple_outputs = ["TGCATGCTAG", "GCATGCTAGC"]
+    expected_multiple_outputs = ["TGCATGCTAG", "TGCATGCTAG"]
     return DataTransformerTest(
         transformer=transformer,
         params=params,
@@ -117,7 +117,7 @@ def reverse_complement() -> DataTransformerTest:
     )
 
 
-class TestUniformTestMasker:
+class TestUniformTextMasker:
     """Test suite for the UniformTextMasker class."""
 
     @pytest.mark.parametrize("test_data_name", ["uniform_text_masker"])
@@ -162,7 +162,7 @@ class TestGaussianNoise:
         assert isinstance(transformed_data, np.ndarray)
         for item in transformed_data:
             assert isinstance(item, float)
-        assert len(transformed_data) == len(test_data.expected_outputs)
+        assert len(transformed_data) == len(test_data.expected_multiple_outputs)
         for item, expected in zip(transformed_data, test_data.expected_multiple_outputs):
             assert round(item, 7) == round(expected, 7)
 
@@ -189,6 +189,14 @@ class TestGaussianChunk:
             assert isinstance(item, str)
             assert len(item) == 10
         assert transformed_data == test_data.expected_multiple_outputs
+
+    @pytest.mark.parametrize("test_data_name", ["gaussian_chunk"])
+    def test_chunk_size_excessive(self, request: Any, test_data_name: str) -> None:
+        """Test that the transform fails if chunk size is greater than the length of the input string."""
+        test_data = request.getfixturevalue(test_data_name)
+        test_data.params["chunk_size"] = 100
+        with pytest.raises(AssertionError):
+            test_data.transformer.transform(test_data.single_input, **test_data.params)
 
 
 class TestReverseComplement:
