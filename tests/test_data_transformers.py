@@ -26,13 +26,15 @@ class DataTransformerTest:
         expected_multiple_outputs: The expected outputs for the multiple inputs.
     """
 
-    def __init__(self, # noqa: D107
-                 transformer: AbstractDataTransformer,
-                 params: dict,
-                 single_input: Any,
-                 expected_single_output: Any,
-                 multiple_inputs: Any,
-                 expected_multiple_outputs: Any):
+    def __init__( # noqa: D107
+        self,
+        transformer: AbstractDataTransformer,
+        params: dict,
+        single_input: Any,
+        expected_single_output: Any,
+        multiple_inputs: Any,
+        expected_multiple_outputs: Any,
+    ):
         self.transformer = transformer
         self.params = params
         self.single_input = single_input
@@ -86,8 +88,10 @@ def gaussian_chunk() -> DataTransformerTest:
     params = {"seed": 42, "chunk_size": 10, "std": 1}
     single_input = "AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC"
     expected_single_output = "TGCATGCTAG"
-    multiple_inputs = ["AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC",
-                        "AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC"]
+    multiple_inputs = [
+        "AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC",
+        "AGCATGCTAGCTAGATCAAAATCGATGCATGCTAGCGGCGCGCATGCATGAGGAGACTGAC",
+    ]
     expected_multiple_outputs = ["TGCATGCTAG", "TGCATGCTAG"]
     return DataTransformerTest(
         transformer=transformer,
