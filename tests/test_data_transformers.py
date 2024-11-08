@@ -26,7 +26,7 @@ class DataTransformerTest:
         expected_multiple_outputs: The expected outputs for the multiple inputs.
     """
 
-    def __init__( # noqa: D107
+    def __init__(  # noqa: D107
         self,
         transformer: AbstractDataTransformer,
         params: dict,

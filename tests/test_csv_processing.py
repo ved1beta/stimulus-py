@@ -63,7 +63,8 @@ def dna_test_data_long():
 def dna_test_data_long_shuffled():
     """This stores the shuffled long dna test csv"""
     data = DataCsvProcessing(
-        "tests/test_data/dna_experiment/test_shuffling_long_shuffled.csv", ProtDnaToFloatExperiment
+        "tests/test_data/dna_experiment/test_shuffling_long_shuffled.csv",
+        ProtDnaToFloatExperiment,
     )
     data.data_length = 1000
     return data

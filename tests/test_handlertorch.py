@@ -1,9 +1,10 @@
 import os
-import pytest
-import torch
 from typing import Any, Dict
 
-from src.stimulus.data.experiments import DnaToFloatExperiment, ProtDnaToFloatExperiment, TitanicExperiment
+import pytest
+import torch
+
+from src.stimulus.data.experiments import DnaToFloatExperiment, ProtDnaToFloatExperiment
 from src.stimulus.data.handlertorch import TorchDataset
 
 
@@ -71,7 +72,6 @@ def test_data_length(request, fixture_name: str):
     ],
 )
 class TestDictOfTensors:
-
     def test_input_is_dict(self, request, fixture_name: str):
         data = request.getfixturevalue(fixture_name)
         assert isinstance(data.torch_dataset.input, Dict)
@@ -85,7 +85,7 @@ class TestDictOfTensors:
         for key, tensor in data.torch_dataset.input.items():
             assert isinstance(tensor, torch.Tensor)
             assert tensor.shape == torch.Size(data.expected_input_shape[key])
-    
+
     def test_label_tensor_shape(self, request, fixture_name: str):
         data = request.getfixturevalue(fixture_name)
         for key, tensor in data.torch_dataset.label.items():
@@ -105,7 +105,6 @@ class TestDictOfTensors:
     ],
 )
 class TestGetItem:
-
     def test_is_dict(self, request, fixture_name: str, idx: Any):
         data = request.getfixturevalue(fixture_name)
         x, y, meta = data.torch_dataset[idx]
@@ -122,5 +121,6 @@ class TestGetItem:
                 slice_len = idx.stop - idx.start
                 expected_item_shape = [slice_len] + expected_item_shape
             assert dict_items[key].shape == torch.Size(expected_item_shape)
+
 
 # TODO add test for titanic dataset
