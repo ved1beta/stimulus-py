@@ -305,4 +305,4 @@ class TestTorchDataset:
             assert torch.equal(dict_items[key], expected_tensor)
         
 
-# Remove redundant test classes and consolidate tests
+# TODO add tests for titanic dataset
