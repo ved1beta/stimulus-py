@@ -14,6 +14,10 @@ class DataCsvProcessing:
 
     One can use this class to create the data fixtures.
 
+    Args:
+        filename (str): The path to the CSV file.
+        experiment (type): The class type of the experiment to be instantiated.
+
     Attributes:
         experiment (Experiment): An instance of the experiment class.
         csv_path (str): The absolute path to the CSV file.
@@ -21,10 +25,6 @@ class DataCsvProcessing:
         data_length (int or None): The length of the data. Initialized to None.
         expected_split (List[int] or None): The expected split values after adding split. Initialized to None.
         expected_transformed_values (Any or None): The expected values after split and transformation. Initialized to None.
-
-    Args:
-        filename (str): The path to the CSV file.
-        experiment (type): The class type of the experiment to be instantiated.
     """
 
     def __init__(self, filename: str, experiment: Any):

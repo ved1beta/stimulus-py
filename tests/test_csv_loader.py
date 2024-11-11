@@ -14,6 +14,10 @@ class DataCsvLoader:
     This class initializes CsvLoader objects with given csv data and stores expected
     values for testing purposes.
 
+    Args:
+        filename (str): Path to the CSV file.
+        experiment (Any): Experiment class to be instantiated.
+
     Attributes:
         experiment: An experiment instance to process the data.
         csv_path (str): Absolute path to the CSV file.
@@ -23,12 +27,6 @@ class DataCsvLoader:
     """
 
     def __init__(self, filename: str, experiment: Any):
-        """Initialize DataCsvLoader with a CSV file and experiment type.
-
-        Args:
-            filename (str): Path to the CSV file.
-            experiment (Any): Experiment class to be instantiated.
-        """
         self.experiment = experiment()
         self.csv_path = os.path.abspath(filename)
         self.csv_loader = CsvLoader(self.experiment, self.csv_path)
