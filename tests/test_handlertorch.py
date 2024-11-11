@@ -1,3 +1,38 @@
+"""Tests for the PyTorch data handling functionality.
+
+This module contains comprehensive test suites for verifying the proper functioning
+of PyTorch dataset handling, particularly focusing on DNA and Protein-DNA experiments.
+It includes tests for data loading, tensor shape verification, and content validation.
+
+The test suite is organized into several components:
+- TorchTestData: A class that handles test data loading and preprocessing
+- Fixtures for different types of experimental data
+- Test suites for verifying dataset properties and tensor handling
+
+Key test areas include:
+- Dataset length verification
+- Dictionary and tensor structure validation
+- Tensor shape verification
+- Tensor content validation
+- Dataset indexing and slicing functionality
+
+Test Fixtures:
+    dna_test_data: Basic DNA experiment test data
+    dna_test_data_with_float: DNA experiment test data with float values
+    prot_dna_test_data: Protein-DNA experiment test data
+
+Test Classes:
+    TestDictOfTensors: Verifies proper parsing of datasets into tensor dictionaries
+    TestGetItem: Validates the dataset indexing functionality
+
+Dependencies:
+    - pytest
+    - torch
+    - polars
+    - os
+    - typing
+"""
+
 import os
 from typing import Any, Dict
 
