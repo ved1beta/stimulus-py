@@ -16,7 +16,7 @@ class TorchTestData:
     This class handles the loading and preprocessing of test data for PyTorch-based experiments.
     It also provides the expected data content and shapes, by loading the data in alternative ways:
     it reads data from a CSV file, encodes and pads the input/label data according to the
-    experiment specifications. 
+    experiment specifications.
 
     Args:
         filename (str): Path to the CSV file containing the test data.
@@ -35,6 +35,7 @@ class TorchTestData:
         hardcoded_expected_input_shape (dict): Expected shapes of input tensors.
         hardcoded_expected_label_shape (dict): Expected shapes of label tensors.
     """
+
     def __init__(self, filename: str, experiment: Any):
         # load test data
         self.experiment = experiment()
@@ -45,8 +46,8 @@ class TorchTestData:
         self.expected_input = self.get_encoded_padded_category("input")
         self.expected_label = self.get_encoded_padded_category("label")
         self.expected_len = self.get_data_length()
-        self.expected_input_shape = {k: v.shape for k,v in self.expected_input.items()}
-        self.expected_label_shape = {k: v.shape for k,v in self.expected_label.items()}
+        self.expected_input_shape = {k: v.shape for k, v in self.expected_input.items()}
+        self.expected_label_shape = {k: v.shape for k, v in self.expected_label.items()}
 
         # provide options for hardcoded expected values
         # they must be the same as the expected values above, otherwise the tests will fail
@@ -54,7 +55,7 @@ class TorchTestData:
         self.hardcoded_expected_len = None
         self.hardcoded_expected_input_shape = None
         self.hardcoded_expected_label_shape = None
-    
+
     def get_encoded_padded_category(self, category: str):
         """Retrieves encoded data for a specific category from a CSV file.
 
@@ -84,7 +85,6 @@ class TorchTestData:
             current_category = colname.split(":")[1]
             current_datatype = colname.split(":")[2]
             if current_category == category:
-
                 # get and encode data into list of tensors
                 tmp = self.experiment.get_function_encode_all(current_datatype)(data[colname].to_list())
 
@@ -98,10 +98,10 @@ class TorchTestData:
                 # convert list into tensor
                 elif category == "label":
                     tmp = torch.tensor(tmp)
-                
+
                 columns[current_name] = tmp
         return columns
-    
+
     def get_data_length(self):
         """Returns the length of the CSV data.
 
@@ -121,6 +121,7 @@ class TorchTestData:
 @pytest.fixture
 def dna_test_data():
     """Fixture providing test data for DNA experiment.
+
     Returns:
         TorchTestData: Configured test data for DNA experiments.
     """
@@ -134,6 +135,7 @@ def dna_test_data():
 @pytest.fixture
 def dna_test_data_with_float():
     """Fixture providing test data for DNA experiment with float values.
+
     Returns:
         TorchTestData: Configured test data for DNA experiments with float values.
     """
@@ -147,6 +149,7 @@ def dna_test_data_with_float():
 @pytest.fixture
 def prot_dna_test_data():
     """Fixture providing test data for Protein-DNA experiment.
+
     Returns:
         TorchTestData: Configured test data for Protein-DNA experiments.
     """
@@ -167,6 +170,7 @@ def prot_dna_test_data():
 )
 def test_data_length(request, fixture_name: str):
     """Test if dataset length matches expected length.
+
     Args:
         request: Pytest fixture request.
         fixture_name: Name of the fixture to test.
@@ -193,9 +197,10 @@ class TestDictOfTensors:
     3. Tensor shapes match expected dimensions
     4. Tensor contents match expected values
     """
-    
+
     def test_input_is_dict(self, request, fixture_name: str):
         """Test if input is a dictionary.
+
         Args:
             request: Pytest fixture request.
             fixture_name: Name of the fixture to test.
@@ -205,6 +210,7 @@ class TestDictOfTensors:
 
     def test_label_is_dict(self, request, fixture_name: str):
         """Test if label is a dictionary.
+
         Args:
             request: Pytest fixture request.
             fixture_name: Name of the fixture to test.
