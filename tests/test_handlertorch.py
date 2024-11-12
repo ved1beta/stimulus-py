@@ -156,7 +156,6 @@ class TorchTestData:
         return len(data)
 
 
-# Replace individual fixtures with a parametrized fixture
 @pytest.fixture(params=[
     ("tests/test_data/dna_experiment/test.csv", DnaToFloatExperiment, {
         "length": 2,
@@ -175,14 +174,27 @@ class TorchTestData:
     })
 ])
 def test_data(request) -> TorchTestData:
-    """Parametrized fixture providing test data for all experiment types."""
+    """Parametrized fixture providing test data for all experiment types.
+
+    This parametrized fixture contain tuples of (filename, experiment_class, expected_values)
+    for each test data file. It loads the test data and initializes the TorchTestData object.
+    By parametrizing the fixture, we can run the same tests on different datasets, without
+    the need for individual fixtures or duplicate the code.
+
+    Args:
+        request: Pytest fixture request object containing parametrized test data.
+
+    Returns:
+        TorchTestData: A test data object containing the initialized torch dataset
+            and the expected values for the dataset.
+    """
     filename, experiment_class, expected_values = request.param
     data = TorchTestData(filename, experiment_class)
     data.expected_values = expected_values
     return data
 
 
-def validate_expected_values(test_data) -> None:
+def test_expected_values(test_data) -> None:
     """Validate the expected values are properly defined.
     
     Since we defined the expected values by computing them from the test data with
