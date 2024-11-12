@@ -64,6 +64,9 @@ ignore = [
     "S101",  # Use of assert detected
 ]
 
+# TODO temporary just until all unittests are passed to unittest
+"tests/unittest_*.py" = ["ALL"]
+
 [lint.flake8-quotes]
 docstring-quotes = "double"
 
