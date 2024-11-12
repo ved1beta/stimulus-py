@@ -1,36 +1,38 @@
 """Tests for the PyTorch data handling functionality.
 
 This module contains comprehensive test suites for verifying the proper functioning
-of PyTorch dataset handling, particularly focusing on DNA and Protein-DNA experiments.
-It includes tests for data loading, tensor shape verification, and content validation.
+of the class handlertorch.TorchDataset. The tests cover the dataset structure, content,
+and indexing operations.
 
 The test suite is organized into several components:
-- TorchTestData: A class that handles test data loading and preprocessing
-- Fixtures for different types of experimental data
-- Test suites for verifying dataset properties and tensor handling
 
-Key test areas include:
-- Dataset length verification
-- Dictionary and tensor structure validation
-- Tensor shape verification
-- Tensor content validation
-- Dataset indexing and slicing functionality
+TorchTestData:
+    This class defines the test data and expected values for the tests.
+    The expected values are computed by reading the test data from a CSV file,
+    encoding and padding the data according to the experiment specifications.
+    So, they rely on the correctness of the upstream functions.
+    When available, hardcoded expected values are provided for extra verification,
+    to ensure the computation of expected values are correct.
+    Once verified, the expected values are used for the rest of the tests.
 
-Test Fixtures:
-    dna_test_data: Basic DNA experiment test data
-    dna_test_data_with_float: DNA experiment test data with float values
-    prot_dna_test_data: Protein-DNA experiment test data
+Fixtures:
+    test_data: Parametrized fixture providing different dataset configurations
+        - DNA sequence data
+        - DNA with float values
+        - Protein-DNA combined data
 
-Test Classes:
-    TestDictOfTensors: Verifies proper parsing of datasets into tensor dictionaries
-    TestGetItem: Validates the dataset indexing functionality
+Test Organization:
+    TestExpectations
+        - Validates test data integrity
+        - Verifies expected values match hardcoded values, when provided
+    
+    TestTorchDataset
+        - TestTorchDatasetStructure: Basic dataset properties
+        - TestTorchDatasetContent: Data content validation 
+        - TestTorchDatasetGetItem: Indexing operations
 
-Dependencies:
-    - pytest
-    - torch
-    - polars
-    - os
-    - typing
+Usage:
+    pytest test_handlertorch.py
 """
 
 import os
@@ -56,7 +58,7 @@ class TorchTestData:
 
     Args:
         filename (str): Path to the CSV file containing the test data.
-        experiment (Any): The experiment class that defines data processing methods.
+        experiment: The experiment class.
 
     Attributes:
         experiment: An instance of the experiment class that defines data processing methods.
@@ -67,21 +69,20 @@ class TorchTestData:
         expected_len (int): Number of rows in the CSV data.
         expected_input_shape (dict): Dictionary containing shapes of input tensors.
         expected_label_shape (dict): Dictionary containing shapes of label tensors.
-        hardcoded_expected_len (int): Expected number of rows in the CSV data.
-        hardcoded_expected_input_shape (dict): Expected shapes of input tensors.
-        hardcoded_expected_label_shape (dict): Expected shapes of label tensors.
+        hardcoded_expected_values (dict): Dictionary containing hardcoded expected values.
     """
 
-    def __init__(self, filename: str, experiment: Type[Any]):
+    def __init__(self, filename: str, experiment: Type[Any]) -> None:
         # load test data
         self.experiment = experiment()
         self.csv_path = os.path.abspath(filename)
         self.torch_dataset = TorchDataset(self.csv_path, self.experiment)
 
         # get expected data
-        self.expected_input = self.get_encoded_padded_category("input")
-        self.expected_label = self.get_encoded_padded_category("label")
-        self.expected_len = self.get_data_length()
+        data = pl.read_csv(self.csv_path)
+        self.expected_len = len(data)
+        self.expected_input = self.get_encoded_padded_category(data, "input")
+        self.expected_label = self.get_encoded_padded_category(data, "label")
         self.expected_input_shape = {k: v.shape for k, v in self.expected_input.items()}
         self.expected_label_shape = {k: v.shape for k, v in self.expected_label.items()}
 
@@ -94,15 +95,16 @@ class TorchTestData:
             "label_shape": None
         }
 
-    def get_encoded_padded_category(self, category: str):
+    def get_encoded_padded_category(self, data: pl.DataFrame, category: str) -> Dict[str, Union[Tensor, pl.Series]]:
         """Retrieves encoded data for a specific category from a CSV file.
 
-        This method reads a CSV file and processes columns that match the specified category.
-        Each column in the CSV is expected to follow the format 'name:category:datatype'.
+        This method processes columns that match the specified category.
+        Each column in the data is expected to follow the format 'name:category:datatype'.
         The data from matching columns is encoded using the appropriate encoding function
         based on the datatype. The encoded data is then padded to the same length.
 
         Args:
+            data (pl.DataFrame): The CSV data to process.
             category (str): The category to filter columns by.
 
         Returns:
@@ -113,9 +115,6 @@ class TorchTestData:
             If CSV contains a column "stimulus:visual:str", and category="visual",
             the returned dict will have "stimulus" as a key with its encoded values.
         """
-        # read data
-        data = pl.read_csv(self.csv_path)
-
         # filter columns by category
         columns = {}
         for colname in data.columns:
@@ -139,21 +138,6 @@ class TorchTestData:
 
                 columns[current_name] = tmp
         return columns
-
-    def get_data_length(self):
-        """Returns the length of the CSV data.
-
-        This method reads a CSV file from the specified path and returns the number of rows in the data.
-
-        Returns:
-            int: The number of rows in the CSV file.
-
-        Raises:
-            FileNotFoundError: If the CSV file does not exist at the specified path.
-            pl.exceptions.NoDataError: If the CSV file is empty.
-        """
-        data = pl.read_csv(self.csv_path)
-        return len(data)
 
 
 @pytest.fixture(params=[
@@ -182,7 +166,7 @@ def test_data(request) -> TorchTestData:
     the need for individual fixtures or duplicate the code.
 
     Args:
-        request: Pytest fixture request object containing parametrized test data.
+        request: Pytest request object containing the test data parameters.
 
     Returns:
         TorchTestData: A test data object containing the initialized torch dataset
@@ -194,26 +178,72 @@ def test_data(request) -> TorchTestData:
     return data
 
 
-def test_expected_values(test_data) -> None:
-    """Validate the expected values are properly defined.
-    
-    Since we defined the expected values by computing them from the test data with
-    alternative ways, we need to ensure they are correct. This function validates
-    the expected values match the hardcoded values in the test data, if provided. 
-    Once verified, the rest of the tests will use the expected values for 
-    validation.
-    
-    Args:
-        test_data (TorchTestData): Test data fixture.
+class TestExpectations:
+    """Test class for validating expectations in test data.
+
+    This class contains test methods to verify that expected values in test data
+    are properly defined and match any provided hardcoded values. It helps ensure
+    test data integrity before running the real tests.
+
+    Test methods:
+        test_expected_values_are_defined: Verifies essential expected values are defined
+        test_expected_values_match_hardcoded: Validates expected values against hardcoded values
     """
-    if test_data.hardcoded_expected_values["length"]:
-        assert test_data.expected_len == test_data.hardcoded_expected_values["length"]
-    if test_data.hardcoded_expected_values["input_shape"]:
-        for key, shape in test_data.hardcoded_expected_values["input_shape"].items():
-            assert test_data.expected_input_shape[key] == torch.Size(shape)
-    if test_data.hardcoded_expected_values["label_shape"]:
-        for key, shape in test_data.hardcoded_expected_values["label_shape"].items():
-            assert test_data.expected_label_shape[key] == torch.Size(shape)
+
+    def test_expected_values_are_defined(self, test_data) -> None:
+        """Test that expected values are defined.
+
+        Verifies that the essential expected values in the test_data fixture are properly defined
+        and not None.
+
+        Args:
+            test_data: A fixture containing test data with expected value attributes.
+
+        Raises:
+            AssertionError: If any of the expected values (expected_len, expected_input_shape,
+                or expected_label_shape) is None.
+        """
+        assert test_data.expected_len is not None, "Expected length is not defined"
+        assert test_data.expected_input_shape is not None, "Expected input shape is not defined"
+        assert test_data.expected_label_shape is not None, "Expected label shape is not defined"
+    
+    def test_expected_values_match_hardcoded(self, test_data) -> None:
+        """Validate the expected values match the hardcoded values, when provided.
+        
+        Since we defined the expected values by computing them from the test data with
+        alternative ways, we need to ensure they are correct. This function validates
+        the expected values match the hardcoded values in the test data, if provided. 
+        Once verified, the rest of the tests will use the expected values for 
+        validation.
+        
+        Args:
+            test_data (TorchTestData): Test data fixture.
+
+        Raises:
+            AssertionError: If the expected values do not match the hardcoded values.
+        """
+        if test_data.hardcoded_expected_values["length"]:
+            assert test_data.expected_len == test_data.hardcoded_expected_values["length"], (
+                f"Length mismatch: "
+                f"got {test_data.expected_len}, "
+                f"expected {test_data.hardcoded_expected_values['length']}"
+            )
+
+        if test_data.hardcoded_expected_values["input_shape"]:
+            for key, shape in test_data.hardcoded_expected_values["input_shape"].items():
+                assert test_data.expected_input_shape[key] == torch.Size(shape), (
+                    f"Input shape mismatch for {key}: "
+                    f"got {test_data.expected_input_shape[key]}, "
+                    f"expected {torch.Size(shape)}"
+                )
+
+        if test_data.hardcoded_expected_values["label_shape"]:
+            for key, shape in test_data.hardcoded_expected_values["label_shape"].items():
+                assert test_data.expected_label_shape[key] == torch.Size(shape), (
+                    f"Label shape mismatch for {key}: "
+                    f"got {test_data.expected_label_shape[key]}, "
+                    f"expected {torch.Size(shape)}"
+                )
 
 
 class TestTorchDataset:
@@ -223,98 +253,366 @@ class TestTorchDataset:
     of the TorchDataset class implementation. It tests dataset length, data structure,
     and indexing operations.
 
-    Test Cases:
-        test_dataset_length: Verifies that the dataset length matches expected value.
-        test_data_structure: Tests dataset structure and content for input and label data.
-        test_getitem: Tests indexing functionality for both single items and slices.
+    Test classes:
+        TestTorchDatasetStructure: Tests basic dataset properties
+        TestTorchDatasetContent: Tests data content validation
+        TestTorchDatasetGetItem: Tests indexing operations
     """
 
-    def test_dataset_length(self, test_data: TorchTestData) -> None:
-        """Test dataset length matches expected value.
+    class TestTorchDatasetStructure:
+        """Tests for the PyTorch Dataset Structure.
 
-        The test verifies that the length of the torch dataset object matches
-        the expected length stored in the test data fixture.
+        This class contains unit tests to verify the proper structure and functionality
+        of the TorchDataset class. It checks for the presence of required attributes,
+        correct dataset length, and proper data types of the dataset components.
 
-        Args:
-            test_data (TorchTestData): Fixture containing torch dataset and expected length
-
-        Raises:
-            AssertionError: If dataset length does not match expected length
+        Test methods:
+            test_dataset_has_required_attributes: Validates the presence of 'input' and 'label' attributes
+            test_dataset_length: Verifies the dataset length
+            test_is_dictionary_of_tensors: Checks if input and label are dictionaries of tensors
         """
-        assert len(test_data.torch_dataset) == test_data.expected_len
 
-    @pytest.mark.parametrize("category", ["input", "label"])
-    def test_data_structure(self, test_data: TorchTestData, category: str):
-        """Test dataset structure and content.
+        def test_dataset_has_required_attributes(self, test_data) -> None:
+            """Test if the TorchDataset has the required input and label attributes.
 
-        This test verifies the structure and content of the dataset by checking that:
-        1. The data dictionary exists and is of type Dict
-        2. All values in the dictionary are PyTorch Tensors
-        3. Each tensor has the expected shape based on category (input or label)
-        4. Each tensor matches its expected value
+            This test verifies that the torch_dataset object contained within test_data
+            has both 'input' and 'label' attributes, which are essential for proper
+            dataset functionality.
 
-        Args:
-            test_data (TorchTestData): Test dataset object containing input/label data and expected values
-            category (str): Category to test, either "input" or "label"
-        
-        Raises:
-            AssertionError: If any of the structure or content checks fail
+            Args:
+                test_data: A fixture providing test data containing a torch_dataset object.
+
+            Raises:
+                AssertionError: If either 'input' or 'label' attributes are missing from
+                               the torch_dataset.
+            """
+            assert hasattr(test_data.torch_dataset, "input"), (
+                "TorchDataset does not have 'input' attribute"
+            )
+            assert hasattr(test_data.torch_dataset, "label"), (
+                "TorchDataset does not have 'label' attribute"
+            )
+
+        def test_dataset_length(self, test_data) -> None:
+            """Test dataset length.
+
+            Verifies that the length of the torch dataset matches the expected length.
+
+            Args:
+                test_data: Fixture containing torch dataset and expected length for validation.
+
+            Raises:
+                AssertionError: If the torch dataset length does not match expected_len.
+            """
+            assert len(test_data.torch_dataset) == test_data.expected_len, (
+                f"Dataset length mismatch: "
+                f"got {len(test_data.torch_dataset)}, expected {test_data.expected_len}"
+            )
+
+        @pytest.mark.parametrize("category", ["input", "label"])
+        def test_is_dictionary_of_tensors(self, test_data, category):
+            """Test if a dataset category is a dictionary of PyTorch tensors.
+
+            This test verifies that:
+            1. The specified category attribute of the torch_dataset is a dictionary
+            2. All values in the dictionary are PyTorch Tensor objects
+
+            Args:
+                test_data : Test data fixture containing the torch_dataset to test
+                category (str): Name of the category/attribute to test (e.g., 'input', 'label')
+
+            Raises:
+                AssertionError: 
+                    - If the category is not a dictionary
+                    - If any value in the dictionary is not a PyTorch Tensor
+            """
+            data_dict = getattr(test_data.torch_dataset, category)
+            assert isinstance(data_dict, dict), (
+                f"{category} is not a dictionary: got {type(data_dict)}"
+            )
+            for key, value in data_dict.items():
+                assert isinstance(value, Tensor), (
+                    f"{category}[{key}] is not a Tensor, got {type(value)}"
+                )
+
+    class TestTorchDatasetContent:
+        """A test class for verifying the content of PyTorch datasets.
+
+        This class contains tests to verify that PyTorch datasets are properly
+        constructed and contain the expected data. It checks three main aspects:
+        the presence of correct keys, the shapes of tensors, and the actual
+        content of tensors.
+
+        Test methods:
+            test_tensor_keys: Verifies that the input and label dictionaries contain
+                the expected keys.
+            test_tensor_shapes: Ensures that each tensor in the dataset has the
+                expected shape.
+            test_tensor_content: Validates that the actual content of each tensor
+                matches the expected values.
         """
-        # is dictionary of tensors
-        data_dict = getattr(test_data.torch_dataset, category)
-        assert isinstance(data_dict, Dict)
-        for tensor in data_dict.values():
-            assert isinstance(tensor, Tensor)
+
+        @pytest.mark.parametrize("category", ["input", "label"])
+        def test_tensor_keys(self, test_data, category: str) -> None:
+            """
+            Test if the tensor keys in the dataset match expected keys.
+
+            Args:
+                test_data: TestData object containing the dataset and expected values
+                category (str): String indicating which category to check ('input' or 'label')
+
+            Raises:
+                AssertionError: If the keys in data_dict don't match the expected keys
+            """
+            data_dict = getattr(test_data.torch_dataset, category)
+            expected_keys = test_data.expected_input.keys() if category == "input" else test_data.expected_label.keys()
+            assert set(data_dict.keys()) == set(expected_keys), (
+                f"Keys mismatch for {category}: "
+                f"got {set(data_dict.keys())}, expected {set(expected_keys)}"
+            )
+
+        @pytest.mark.parametrize("category", ["input", "label"])
+        def test_tensor_shapes(self, test_data, category: str) -> None:
+            """Test tensor shapes in the input or label data.
+
+            This test function verifies that all tensors in either input or label data
+            have the expected shapes as defined in test_data.
+
+            Args:
+                test_data: A test data object containing torch_dataset and expected shape information
+                category (str): Either "input" or "label" to specify which data category to test
+
+            Raises:
+                AssertionError: If any tensor's shape doesn't match the expected shape
+            """
+            data_dict = getattr(test_data.torch_dataset, category)
+            for key, tensor in data_dict.items():
+                expected_shape = (
+                    test_data.expected_input_shape[key] if category == "input"
+                    else test_data.expected_label_shape[key]
+                )
+                assert tensor.shape == expected_shape, (
+                    f"Shape mismatch for {category}[{key}]: "
+                    f"got {tensor.shape}, expected {expected_shape}"
+                )
+
+        @pytest.mark.parametrize("category", ["input", "label"])
+        def test_tensor_content(self, test_data, category: str) -> None:
+            """Tests if tensor content matches expected values.
+
+            This test verifies that the tensor content in both input and label dictionaries
+            matches their expected values from the test data.
+
+            Args:
+                test_data: A test data fixture containing torch_dataset and expected values
+                category (str): String indicating which category to test ('input' or 'label')
+
+            Raises:
+                AssertionError: If tensor content does not match expected values
+            """
+            data_dict = getattr(test_data.torch_dataset, category)
+            for key, tensor in data_dict.items():
+                expected_tensor = (
+                    test_data.expected_input[key] if category == "input"
+                    else test_data.expected_label[key]
+                )
+                assert torch.equal(tensor, expected_tensor), (
+                    f"Content mismatch for {category}[{key}]: "
+                    f"got {tensor}, expected {expected_tensor}"
+                )
+
+    class TestTorchDatasetGetItem:
+        """Test suite for dataset's __getitem__ functionality.
+
+        This class tests the behavior of the __getitem__ method in the torch dataset,
+        ensuring proper data retrieval, structure, and error handling.
+
+        Tests include:
+            - Verification of returned data structure (dictionaries containing tensors)
+            - Validation of dictionary keys against expected keys
+            - Confirmation of tensor shapes for both single items and slices
+            - Verification of tensor contents against expected values
+            - Handling of invalid indices
+
+        The test suite uses parametrization to test both single index (int) and slice
+        access patterns, as well as to test both input and label components of the
+        dataset items.
+
+        Test Methods:
+            test_get_item_returns_expected_data_structure: Verifies basic structure of returned data
+            test_get_item_keys_are_correct: Ensures dictionary keys match expected keys
+            test_get_item_shapes: Validates tensor shapes in returned data
+            test_get_item_content: Verifies actual content of tensors
+            test_getitem_invalid_index: Tests error handling for invalid indices
+        """
+
+        @pytest.mark.parametrize("idx", [0, slice(0, 2)])
+        def test_get_item_returns_expected_data_structure(self, test_data, idx: Union[int, slice]) -> None:
+            """Test if __getitem__ returns correct data structure.
+
+            This test ensures that the __getitem__ method of the torch_dataset returns data
+            in the expected format, specifically checking that:
+            1. The method returns three dictionaries (x, y, meta)
+            2. All values in x and y dictionaries are PyTorch Tensors
+
+            Args:
+                test_data: The test dataset fixture
+                idx (Union[int, slice]): Index or slice to access the dataset
+
+            Raises:
+                AssertionError: If any of the returned structures don't match expected types
+            """
+            x, y, meta = test_data.torch_dataset[idx]
             
-        for key, tensor in data_dict.items():
+            # Test items are dictionaries
+            assert isinstance(x, dict), f"Expected input to be dict, got {type(x)}"
+            assert isinstance(y, dict), f"Expected label to be dict, got {type(y)}"
+            assert isinstance(meta, dict), f"Expected meta to be dict, got {type(meta)}"
+            
+            # Test item contents are tensors
+            for key, value in x.items():
+                assert isinstance(value, Tensor), f"Input tensor {key} is not a Tensor"
+            for key, value in y.items():
+                assert isinstance(value, Tensor), f"Label tensor {key} is not a Tensor"
 
-            # verify tensor shapes
-            expected_shape = (
-                test_data.expected_input_shape[key] if category == "input" 
-                else test_data.expected_label_shape[key]
+        @pytest.mark.parametrize("idx", [0, slice(0, 2)])
+        @pytest.mark.parametrize("category_info", [
+            ("input", "x", "expected_input"),
+            ("label", "y", "expected_label")
+        ])
+        def test_get_item_keys_are_correct(self, test_data, idx: Union[int, slice], category_info: tuple) -> None:
+            """Test if the keys in retrieved dataset items match expected keys.
+
+            This test verifies that the keys in the retrieved dataset items (either input 'x' or label 'y') 
+            match the expected keys stored in the dataset attributes.
+
+            Args:
+                test_data: The test dataset object containing the torch_dataset
+                idx (int): Index of the item to retrieve from the dataset
+                category_info (tuple): Contains (category, data_attr, expected_attr) where:
+                    - category (str): Either "input" or "label" indicating which part to check
+                    - data_attr (str): Attribute name for the data being checked
+                    - expected_attr (str): Attribute name containing the expected keys
+
+            Raises:
+                AssertionError: If the keys in the retrieved item don't match the expected keys
+            """
+            category, data_attr, expected_attr = category_info
+            
+            # get dataset item
+            x, y, _ = test_data.torch_dataset[idx]
+            keys = set(x.keys()) if category == "input" else set(y.keys())
+            expected_keys = set(getattr(test_data, expected_attr).keys())
+
+            # verify keys
+            assert keys == expected_keys, (
+                f"Keys mismatch for {category}: "
+                f"got {keys}, "
+                f"expected {expected_keys}"
             )
-            assert tensor.shape == expected_shape
 
-            # verify tensor content
-            expected_tensor = (
-                test_data.expected_input[key] if category == "input"
-                else test_data.expected_label[key]
-            )
-            assert torch.equal(tensor, expected_tensor)
+        @pytest.mark.parametrize("idx", [0, slice(0, 2)])
+        @pytest.mark.parametrize("category_info", [
+            ("input", "x", "expected_input_shape"),
+            ("label", "y", "expected_label_shape")
+        ])
+        def test_get_item_shapes(self, test_data, idx: Union[int, slice], category_info: tuple) -> None:
+            """Test if dataset items have the correct shapes for both input and target tensors..
 
-    @pytest.mark.parametrize("idx", [0, slice(0, 2)])
-    def test_getitem(self, test_data: TorchTestData, idx: Union[int, slice]):
-        """Test __getitem__ functionality.
+            This test verifies that tensor shapes match expected shapes for either input or label 
+            data. For slice indices, it accounts for the batch dimension in the expected shape.
+            The test compares each tensor's shape against the expected shape stored in the 
+            data handler's attributes.
+
+            Args:
+                test_data: The test dataset object containing the torch_dataset
+                idx (int): Index of the item to retrieve from the dataset
+                category_info (tuple): Contains (category, data_attr, expected_attr) where:
+                    - category (str): Either "input" or "label" indicating which part to check
+                    - data_attr (str): Attribute name for the data being checked
+                    - expected_attr (str): Attribute name containing the expected keys
+
+            Raises:
+                AssertionError: If any tensor's shape doesn't match the expected
+            """
+            category, data_attr, expected_attr = category_info
+
+            # get dataset item
+            x, y, _ = test_data.torch_dataset[idx]
+            data = x if category == "input" else y
+            expected_shapes = getattr(test_data, expected_attr)
+            
+            # test each tensor has the proper shape
+            for key,tensor in data.items():
+
+                # get expected shape
+                expected_shape = expected_shapes[key]
+                base_shape = list(expected_shape)[1:] if len(expected_shape) > 1 else [] # remove batch dimension
+                if isinstance(idx, slice):
+                    expected_shape = [idx.stop - idx.start] + base_shape
+                else:
+                    expected_shape = base_shape
+                expected_shape = torch.Size(expected_shape)
+                    
+                # verify shape
+                assert tensor.shape == expected_shape, (
+                    f"Wrong shape for {category}[{key}]: "
+                    f"got {tensor.shape}, expected {expected_shape}"
+                )
+
+        @pytest.mark.parametrize("idx", [0, slice(0, 2)])
+        @pytest.mark.parametrize("category_info", [
+            ("input", "x", "expected_input"),
+            ("label", "y", "expected_label")
+        ])
+        def test_get_item_content(self, test_data, idx: Union[int, slice], category_info: tuple) -> None:
+            """Test if the content of items retrieved from torch_dataset is correct.
+
+            The test verifies that for each key in the data dictionary, the tensor matches
+            the corresponding expected tensor from the original data at the given index.
+
+            Args:
+                test_data: The test dataset object containing the torch_dataset
+                idx (int): Index of the item to retrieve from the dataset
+                category_info (tuple): Contains (category, data_attr, expected_attr) where:
+                    - category (str): Either "input" or "label" indicating which part to check
+                    - data_attr (str): Attribute name for the data being checked
+                    - expected_attr (str): Attribute name containing the expected keys
+
+            Raises:
+                AssertionError: If any tensor content does not match the expected values
+            """
+            category, data_attr, expected_attr = category_info
+
+            # get dataset item
+            x, y, _ = test_data.torch_dataset[idx]
+            data = x if category == "input" else y
+            expected_data = getattr(test_data, expected_attr)
+
+            # test each tensor has the proper content
+            for key,tensor in data.items():
+                expected_tensor = expected_data[key][idx]
+
+                assert torch.equal(tensor, expected_tensor), (
+                    f"Content mismatch for {category}[{key}]: "
+                    f"got {tensor}, expected {expected_tensor}"
+                )
+
+        @pytest.mark.parametrize("invalid_idx", [5000])
+        def test_getitem_invalid_index(self, test_data, invalid_idx: Union[int,slice]) -> None:
+            """Test whether invalid indexing raises appropriate exceptions.
+
+            Tests if accessing test_data.torch_dataset with an invalid index raises 
+            an IndexError exception.
+
+            Args:
+                test_data: Fixture providing test dataset
+                invalid_idx (Union[int,slice]): Invalid index value to test with
+
+            Raises:
+                AssertionError: If IndexError is not raised when accessing invalid index
+            """
+            with pytest.raises(IndexError):
+                _ = test_data.torch_dataset[invalid_idx]
         
-        This test verifies that the dataset's __getitem__ method works correctly by checking:
-        1. The returned items (x, y, meta) are all dictionaries
-        2. The shapes of returned tensors match expected shapes
-        3. The content of returned tensors matches expected values
-        
-        Args:
-            test_data (TorchTestData): Test dataset object containing the data to verify
-            idx (Union[int, slice]): Index or slice to access the dataset
-
-        Raises:
-            AssertionError: If returned items are not dictionaries or shapes don't match expected values
-                or content does not match expected values.
-        """
-        # is dictionary
-        x, y, meta = test_data.torch_dataset[idx]
-        assert all(isinstance(d, dict) for d in [x, y, meta])
-        
-        dict_items = {**x, **y, **meta}
-        for key in test_data.expected_input.keys():
-
-            # verify shapes
-            expected_shape = test_data.expected_input_shape[key]
-            base_shape = list(expected_shape)[1:]  # remove batch dimension
-            expected_size = [idx.stop - idx.start] + base_shape if isinstance(idx, slice) else base_shape
-            assert dict_items[key].shape == torch.Size(expected_size)
-
-            # verify content
-            expected_tensor = test_data.expected_input[key][idx]
-            assert torch.equal(dict_items[key], expected_tensor)
-        
-
 # TODO add tests for titanic dataset
