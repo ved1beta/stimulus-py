@@ -13,16 +13,30 @@ In the age of large-scale deep learning, it is critical that early-stage dl mode
 
 Here, we attempt at solving the testing problem by proposing an extensive library to test deep neural networks beyond test-set performance. 
 
-Stimulus provides those functionalities: 
-* Modifying training data to test model's robustness to data perturbations (and uncover which pre-processing steps increase performance)
-* Perform hyperparameter tuning on model architecture with user-defined search spaces using Ray[tune] to make sure model performance is comparable across data transformations 
-* Build an all-against-all model report to guide data pre-processing decisions
+Stimulus provides those functionalities
+
+1. **Data Perturbation Testing**:  
+   Modify training data to test model's robustness to perturbations and uncover which pre-processing steps increase performance
+
+2. **Hyperparameter Optimization**:  
+   Perform tuning on model architecture with user-defined search spaces using Ray[tune] to ensure comparable performance across data transformations
+
+3. **Comprehensive Analysis**:  
+   Generate all-against-all model report to guide data pre-processing decisions
 
 Stimulus aims at providing those functionalities in a near future:
-* perform routine checks on the model architecture and training process (things like type-checking, model actually runs, weights changed at training, etc.)
-* perform routine checks on the model post-training (things like checking for overfitting, out of distribution performance, etc.) 
-* perform "informed" hyperparameter tuning (see [google's deep learning tuning playbook](https://github.com/google-research/tuning_playbook) [^1])
-* build a scaling-law report to understand how prototypes scale
+
+4. **Model Architecture Testing**:  
+   Run routine checks on model architecture and training process including type-checking, model execution, and weight updates
+
+5. **Post-Training Validation**:  
+   Perform comprehensive model validation including overfitting detection and out-of-distribution performance testing
+
+6. **Informed Hyperparameter Tuning**:  
+   Implement systematic tuning strategies following [Google's Deep Learning Tuning Playbook](https://github.com/google-research/tuning_playbook) [^1]
+
+7. **Scaling Analysis**:  
+   Generate scaling law reports to understand prototype model behavior at different scales
 
 
 ### Repository Organization  
