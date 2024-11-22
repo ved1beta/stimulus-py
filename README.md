@@ -41,9 +41,9 @@ Stimulus provides those functionalities
 3. **Comprehensive Analysis**:  
    Generate all-against-all model report to guide data pre-processing decisions
 
-For large scale experiments, we recommend our [nf-core](https://nf-co.re){:target="_blank"} [deepmodeloptim](https://github.com/nf-core/deepmodeloptim){:target="_blank"} pipeline which is still under development and will be released alongside stimulus v1.0.0.
+For large scale experiments, we recommend our [nf-core](https://nf-co.re) [deepmodeloptim](https://github.com/nf-core/deepmodeloptim) pipeline which is still under development and will be released alongside stimulus v1.0.0.
 
-📹 Stimulus was featured at the nextflow summit 2024 in Barcelona, which is a nice intoduction to current package capabilities, you can watch the talk [here](https://www.youtube.com/watch?v=dC5p_tXQpEs){:target="_blank"}
+📹 Stimulus was featured at the nextflow summit 2024 in Barcelona, which is a nice intoduction to current package capabilities, you can watch the talk [here](https://www.youtube.com/watch?v=dC5p_tXQpEs)
 
 
 
@@ -56,7 +56,7 @@ Stimulus aims at providing those functionalities in a near future, stay tuned fo
    Perform comprehensive model validation including overfitting detection and out-of-distribution performance testing
 
 6. **Informed Hyperparameter Tuning**:  
-   Encourage tuning strategies that follow [Google's Deep Learning Tuning Playbook](https://github.com/google-research/tuning_playbook){:target="_blank"} [^1]
+   Encourage tuning strategies that follow [Google's Deep Learning Tuning Playbook](https://github.com/google-research/tuning_playbook) [^1]
 
 7. **Scaling Analysis**:  
    Generate scaling law reports to understand prototype model behavior at different scales
@@ -106,13 +106,13 @@ src/stimulus/ 🧪
 
 ### Data encoding
 
-Data in stimulus can take many forms (files, text, images, networks...) in order to support this diversity, stimulus relies on the [encoding module](https://mathysgrapotte.github.io/stimulus-py/reference/stimulus/data/encoding/encoders/#stimulus.data.encoding.encoders.AbstractEncoder){:target="_blank"}. List of available encoders can be found [here](https://mathysgrapotte.github.io/stimulus-py/reference/stimulus/data/encoding/encoders/#stimulus.data.encoding.encoders){:target="_blank"}.
+Data in stimulus can take many forms (files, text, images, networks...) in order to support this diversity, stimulus relies on the [encoding module](https://mathysgrapotte.github.io/stimulus-py/reference/stimulus/data/encoding/encoders/#stimulus.data.encoding.encoders.AbstractEncoder). List of available encoders can be found [here](https://mathysgrapotte.github.io/stimulus-py/reference/stimulus/data/encoding/encoders/#stimulus.data.encoding.encoders).
 
 If the provided encoders do not support the type of data you are working with, you can write your own encoder by inheriting from the `AbstractEncoder` class and implementing the `encode`, `decode` and `encode_all` methods. 
 
 - `encode` is currently optional, can return a `NotImplementedError` if the encoder does not support encoding a single data point
 - `decode` is currently optional, can return a `NotImplementedError` if the encoder does not support decoding
-- `encode_all` is called by other stimulus functions, and is expected to return a [`np.array`](https://numpy.org/doc/stable/reference/generated/numpy.array.html){:target="_blank"} . 
+- `encode_all` is called by other stimulus functions, and is expected to return a [`np.array`](https://numpy.org/doc/stable/reference/generated/numpy.array.html) . 
 
 ### Expected data format
 
@@ -133,7 +133,7 @@ Columns are expected to follow this name convention : `name:type:data_type`
 - data_type is the column data type.
 
 > NOTE:
-> This rigid data format is expected to change once we move to release v1.0.0, data types and information will be defined in a yaml config and only column names will be required in the data, see [this github issue](https://github.com/mathysgrapotte/stimulus-py/issues/24){:target="_blank"}
+> This rigid data format is expected to change once we move to release v1.0.0, data types and information will be defined in a yaml config and only column names will be required in the data, see [this github issue](https://github.com/mathysgrapotte/stimulus-py/issues/24)
 
 ### Connecting encoders and datasets
 
@@ -174,7 +174,7 @@ stimulus-py ships with a few basic experiment classes, if you need to write your
 
 ### Loading the data
 
-Finally, once we have defined our encoders, the experiment class and the samplesheet, stimulus will transparently load the data using the [csv.py module](https://mathysgrapotte.github.io/stimulus-py/reference/stimulus/data/csv/#stimulus.data.csv){:target="_blank"}
+Finally, once we have defined our encoders, the experiment class and the samplesheet, stimulus will transparently load the data using the [csv.py module](https://mathysgrapotte.github.io/stimulus-py/reference/stimulus/data/csv/#stimulus.data.csv)
 
 csv.py contains two important classes, `CsvLoader` and `CsvProcessing`
 
