@@ -6,21 +6,19 @@
 
 <!-- [![pypi version](https://img.shields.io/pypi/v/stimulus-py.svg)](https://pypi.org/project/stimulus-py/) -->
 
-## ⚠️ Development Warning
+!!! warning
 
-> **Warning**  
-> This package is in active development and breaking changes may occur. The API is not yet stable and features might be added, modified, or removed without notice. Use in production environments is not recommended at this stage.
+    > This package is in active development and breaking changes may occur. The API is not yet stable and features might be added, modified, or removed without notice. Use in production environments is not recommended at this stage.
 
-We encourage you to:
+    We encourage you to:
 
-- 📝 Report bugs and issues on our [GitHub Issues](https://github.com/mathysgrapotte/stimulus-py/issues) page
+    - 📝 Report bugs and issues on our [GitHub Issues](https://github.com/mathysgrapotte/stimulus-py/issues) page
 
-- 💡 Suggest features and improvements through [GitHub Discussions](https://github.com/mathysgrapotte/stimulus-py/discussions)
+    - 💡 Suggest features and improvements through [GitHub Discussions](https://github.com/mathysgrapotte/stimulus-py/discussions)
 
-- 🤝 Contribute by submitting pull requests
+    - 🤝 Contribute by submitting pull requests
 
-We are actively working towards release 1.0.0 (see [milestone](https://github.com/mathysgrapotte/stimulus-py/milestone/1)), check the slack channel by clicking on the badge above where we are actively discussing. Build with us every wednesday at 14:00 CET until 18:00 CET on the nf-core gathertown (see slack for calendar updates i.e. some weeks open dev hours are not possible)
-
+    We are actively working towards release 1.0.0 (see [milestone](https://github.com/mathysgrapotte/stimulus-py/milestone/1)), check the slack channel by clicking on the badge above where we are actively discussing. Build with us every wednesday at 14:00 CET until 18:00 CET on the nf-core gathertown (see slack for calendar updates i.e. some weeks open dev hours are not possible)
 
 
 
@@ -43,7 +41,13 @@ Stimulus provides those functionalities
 3. **Comprehensive Analysis**:  
    Generate all-against-all model report to guide data pre-processing decisions
 
-Stimulus aims at providing those functionalities in a near future
+For large scale experiments, we recommend our [nf-core](https://nf-co.re) [deepmodeloptim](https://github.com/nf-core/deepmodeloptim) pipeline which is still under development and will be released alongside stimulus v1.0.0.
+
+📹 Stimulus was featured at the nextflow summit 2024 in Barcelona, which is a nice intoduction to current package capabilities, you can watch the talk [here](https://www.youtube.com/watch?v=dC5p_tXQpEs)
+
+
+
+Stimulus aims at providing those functionalities in a near future, stay tuned for updates!
 
 4. **Model Architecture Testing**:  
    Run routine checks on model architecture and training process including type-checking, model execution, and weight updates
@@ -57,9 +61,12 @@ Stimulus aims at providing those functionalities in a near future
 7. **Scaling Analysis**:  
    Generate scaling law reports to understand prototype model behavior at different scales
 
-For large scale experiments, we recommend our [nf-core](https://nf-co.re) [deepmodeloptim](https://github.com/nf-core/deepmodeloptim) pipeline which is still under development and will be released alongside stimulus v1.0.0.
 
-### Repository Organization  
+## User guide
+
+### Repository organization  
+
+Stimulus is organized as follows, we will reference to this structure in the following sections
 
 ```
 src/stimulus/ 🧪
@@ -95,6 +102,33 @@ src/stimulus/ 🧪
     ├── performance.py
     └── yaml_model_schema.py
 ```
+
+### Expected data format
+
+Data is expected to be presented in a csv samplesheet file with the following format: 
+
+| input1:input:input_type | input2:input:input_type | meta1:meta:meta_type | label1\:label:label_type | label2\:label:label_type |
+| ----------------------- | ----------------------- | -------------------- | ----------------------- | ----------------------- |
+| sample1 input1          | sample1 input2          | sample1 meta1        | sample1 label1          | sample1 label2          |
+| sample2 input1          | sample2 input2          | sample2 meta1        | sample2 label1          | sample2 label2          |
+| sample3 input1          | sample3 input2          | sample3 meta1        | sample3 label1          | sample3 label2          |
+
+
+
+!!! note "future improvements"
+    This rigid data format is expected to change once we move to release v1.0.0, data types and information will be defined in a yaml config and only column names will be required in the data, see [this github issue](https://github.com/mathysgrapotte/stimulus-py/issues/24)
+
+
+### Data loading
+
+Data in stimulus can take many forms (files, text, images, networks...) in order to support this diversity, stimulus relies on the [encoding module](https://mathysgrapotte.github.io/stimulus-py/reference/stimulus/data/encoding/encoders/#stimulus.data.encoding.encoders.AbstractEncoder){:target="_blank"}. List of available encoders can be found [here](https://mathysgrapotte.github.io/stimulus-py/reference/stimulus/data/encoding/encoders/#stimulus.data.encoding.encoders).
+
+If the provided encoders do not support the type of data you are working with, you can write your own encoder by inheriting from the `AbstractEncoder` class and implementing the `encode`, `decode` and `encode_all` methods. 
+
+- `encode` is currently optional, can return a `NotImplementedError` if the encoder does not support encoding a single data point
+- `decode` is currently optional, can return a `NotImplementedError` if the encoder does not support decoding
+- `encode_all` is called by other stimulus functions, and is expected to return a [`np.array`](https://numpy.org/doc/stable/reference/generated/numpy.array.html){:target="_blank"} . 
+
 
 ## Installation
 
