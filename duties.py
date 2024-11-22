@@ -126,6 +126,7 @@ def docs_deploy(ctx: Context) -> None:
             ctx.run(lambda: False, title="Not deploying docs without Material for MkDocs Insiders!")
         ctx.run(tools.mkdocs.gh_deploy(), title="Deploying documentation")
     """
+    # commented part above because we do not have access to the Material for MkDocs Insiders (this is a paid feature)
     ctx.run(tools.mkdocs.gh_deploy(), title="Deploying documentation")
 
 
