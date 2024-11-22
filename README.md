@@ -6,9 +6,28 @@
 
 <!-- [![pypi version](https://img.shields.io/pypi/v/stimulus-py.svg)](https://pypi.org/project/stimulus-py/) -->
 
+## ⚠️ Development Warning
+
+> **Warning**  
+> This package is in active development and breaking changes may occur. The API is not yet stable and features might be added, modified, or removed without notice. Use in production environments is not recommended at this stage.
+
+We encourage you to:
+
+- 📝 Report bugs and issues on our [GitHub Issues](https://github.com/mathysgrapotte/stimulus-py/issues) page
+
+- 💡 Suggest features and improvements through [GitHub Discussions](https://github.com/mathysgrapotte/stimulus-py/discussions)
+
+- 🤝 Contribute by submitting pull requests
+
+We are actively working towards release 1.0.0 (see [milestone](https://github.com/mathysgrapotte/stimulus-py/milestone/1)), check the slack channel by clicking on the badge above where we are actively discussing. Build with us every wednesday at 14:00 CET until 18:00 CET on the nf-core gathertown (see slack for calendar updates i.e. some weeks open dev hours are not possible)
+
+
+
+
 ## Introduction
 
 Most (if not all) quality software is thouroughly tested. Deep neural networks seem to have escaped this paradigm. 
+
 In the age of large-scale deep learning, it is critical that early-stage dl models (prototypes) are tested to ensure costly bugs do not happen at scale.
 
 Here, we attempt at solving the testing problem by proposing an extensive library to test deep neural networks beyond test-set performance. 
@@ -24,7 +43,7 @@ Stimulus provides those functionalities
 3. **Comprehensive Analysis**:  
    Generate all-against-all model report to guide data pre-processing decisions
 
-Stimulus aims at providing those functionalities in a near future:
+Stimulus aims at providing those functionalities in a near future
 
 4. **Model Architecture Testing**:  
    Run routine checks on model architecture and training process including type-checking, model execution, and weight updates
@@ -33,11 +52,12 @@ Stimulus aims at providing those functionalities in a near future:
    Perform comprehensive model validation including overfitting detection and out-of-distribution performance testing
 
 6. **Informed Hyperparameter Tuning**:  
-   Implement systematic tuning strategies following [Google's Deep Learning Tuning Playbook](https://github.com/google-research/tuning_playbook) [^1]
+   Encourage tuning strategies that follow [Google's Deep Learning Tuning Playbook](https://github.com/google-research/tuning_playbook) [^1]
 
 7. **Scaling Analysis**:  
    Generate scaling law reports to understand prototype model behavior at different scales
 
+For large scale experiments, we recommend our [nf-core](https://nf-co.re) [deepmodeloptim](https://github.com/nf-core/deepmodeloptim) pipeline which is still under development and will be released alongside stimulus v1.0.0.
 
 ### Repository Organization  
 
