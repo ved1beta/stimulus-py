@@ -120,10 +120,13 @@ def docs(ctx: Context, *cli_args: str, host: str = "127.0.0.1", port: int = 8000
 def docs_deploy(ctx: Context) -> None:
     """Deploy the documentation to GitHub pages."""
     os.environ["DEPLOY"] = "true"
+    """
     with material_insiders() as insiders:
         if not insiders:
             ctx.run(lambda: False, title="Not deploying docs without Material for MkDocs Insiders!")
         ctx.run(tools.mkdocs.gh_deploy(), title="Deploying documentation")
+    """
+    ctx.run(tools.mkdocs.gh_deploy(), title="Deploying documentation")
 
 
 @duty
