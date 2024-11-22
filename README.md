@@ -2,7 +2,6 @@
 
 [![ci](https://github.com/mathysgrapotte/stimulus-py/workflows/ci/badge.svg)](https://github.com/mathysgrapotte/stimulus-py/actions?query=workflow%3Aci)
 [![documentation](https://img.shields.io/badge/docs-mkdocs-708FCC.svg?style=flat)](https://mathysgrapotte.github.io/stimulus-py/)
-[![gitter](https://badges.gitter.im/join%20chat.svg)](https://app.gitter.im/#/room/#stimulus-py:gitter.im)
 [![Build with us on slack!](http://img.shields.io/badge/slack-nf--core%20%23deepmodeloptim-4A154B?labelColor=000000&logo=slack)](https://nfcore.slack.com/channels/deepmodeloptim)
 
 <!-- [![pypi version](https://img.shields.io/pypi/v/stimulus-py.svg)](https://pypi.org/project/stimulus-py/) -->
@@ -10,10 +9,58 @@
 ## Introduction
 
 Most (if not all) quality software is thouroughly tested. Deep neural networks seem to have escaped this paradigm. 
+In the age of large-scale deep learning, it is critical that early-stage dl models (prototypes) are tested to ensure costly bugs do not happen at scale.
 
 Here, we attempt at solving the testing problem by proposing an extensive library to test deep neural networks beyond test-set performance. 
 
+Stimulus provides those functionalities: 
+* Modifying training data to test model's robustness to data perturbations (and uncover which pre-processing steps increase performance)
+* Perform hyperparameter tuning on model architecture with user-defined search spaces using Ray[tune] to make sure model performance is comparable across data transformations 
+* Build an all-against-all model report to guide data pre-processing decisions
 
+Stimulus aims at providing those functionalities in a near future:
+* perform routine checks on the model architecture and training process (things like type-checking, model actually runs, weights changed at training, etc.)
+* perform routine checks on the model post-training (things like checking for overfitting, out of distribution performance, etc.) 
+* perform "informed" hyperparameter tuning (see [google's deep learning tuning playbook](https://github.com/google-research/tuning_playbook) [^1])
+* build a scaling-law report to understand how prototypes scale
+
+
+### Repository Organization  
+
+```
+src/stimulus/ 🧪
+├── analysis/ 📊
+│   └── analysis_default.py
+├── cli/ 🖥️
+│   ├── analysis_default.py
+│   ├── check_model.py
+│   ├── interpret_json.py
+│   ├── predict.py
+│   ├── shuffle_csv.py
+│   ├── split_csv.py
+│   ├── split_yaml.py
+│   ├── transform_csv.py
+│   └── tuning.py
+├── data/ 📁
+│   ├── csv.py
+│   ├── experiments.py
+│   ├── handlertorch.py
+│   ├── encoding/ 🔐
+│   │   └── encoders.py
+│   ├── splitters/ ✂️
+│   │   └── splitters.py
+│   └── transform/ 🔄
+│       └── data_transformation_generators.py
+├── learner/ 🧠
+│   ├── predict.py
+│   ├── raytune_learner.py
+│   └── raytune_parser.py
+└── utils/ 🛠️
+    ├── json_schema.py
+    ├── launch_utils.py
+    ├── performance.py
+    └── yaml_model_schema.py
+```
 
 ## Installation
 
@@ -24,3 +71,6 @@ pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://
 ```
 
 
+### citations
+
+[^1]: Godbole, V., Dahl, G. E., Gilmer, J., Shallue, C. J., & Nado, Z. (2023). Deep Learning Tuning Playbook (Version 1.0) [Computer software]. http://github.com/google-research/tuning_playbook
