@@ -1,14 +1,8 @@
 import unittest
-import os
-import shutil
-import torch
+
 from src.stimulus.data.experiments import DnaToFloatExperiment
-from src.stimulus.learner.raytune_learner import TuneModel
+from src.stimulus.learner.raytune_learner import TuneWrapper
 from tests.test_model.dnatofloat_model import ModelSimple
-from src.stimulus.learner.raytune_learner import TuneWrapper 
-from src.stimulus.utils.yaml_model_schema import YamlRayConfigLoader
-from torch.utils.data import DataLoader
-from src.stimulus.data.handlertorch import TorchDataset
 
 
 class TestTuneWrapper(unittest.TestCase):
@@ -17,21 +11,22 @@ class TestTuneWrapper(unittest.TestCase):
         model_class = ModelSimple
         experiment_obj = DnaToFloatExperiment()
         data_path = "bin/tests/test_data/dna_experiment/test_with_split.csv"
-        self.wrapper = TuneWrapper(config_path,
-                                   model_class,
-                                   data_path,
-                                   experiment_obj,
-                                   max_cpus=2,
-                                   max_gpus=0,
-                                   )
-    
+        self.wrapper = TuneWrapper(
+            config_path,
+            model_class,
+            data_path,
+            experiment_obj,
+            max_cpus=2,
+            max_gpus=0,
+        )
+
     def test_setup(self):
         self.assertIsInstance(self.wrapper.config, dict)
         self.assertTrue(self.wrapper.tune_config is not None)
         self.assertTrue(self.wrapper.checkpoint_config is not None)
         self.assertTrue(self.wrapper.run_config is not None)
         self.assertTrue(self.wrapper.tuner is not None)
-    
+
     def test_tune(self):
         result_grid = self.wrapper.tune()
         self.assertTrue(result_grid is not None)
@@ -39,6 +34,7 @@ class TestTuneWrapper(unittest.TestCase):
         for i in range(len(result_grid)):
             result = result_grid[i]
             self.assertTrue(result.error is None)
+
 
 # this test here is avoided, because one cannot call TuneModel(config, training, validation) directly
 # TODO find a way to test the TuneModel setup
@@ -57,7 +53,7 @@ class TestTuneWrapper(unittest.TestCase):
 #         self.assertIsInstance(self.learner.loss_dict, dict)
 #         self.assertTrue(self.learner.optimizer is not None)
 #         self.assertIsInstance(self.learner.training, DataLoader)
-#         self.assertIsInstance(self.learner.validation, DataLoader) 
+#         self.assertIsInstance(self.learner.validation, DataLoader)
 
 #     # def test_step(self):
 #     #     #torch.manual_seed(1234)
@@ -77,7 +73,7 @@ class TestTuneWrapper(unittest.TestCase):
 #         self.learner.export_model("bin/tests/test_data/dna_experiment/test_model.pth")
 #         self.assertTrue(os.path.exists("bin/tests/test_data/dna_experiment/test_model.pth"))
 #         os.remove("bin/tests/test_data/dna_experiment/test_model.pth")
-    
+
 #     def test_save_checkpoint(self):
 #         checkpoint_dir = "bin/tests/test_data/dna_experiment/test_checkpoint"
 #         os.mkdir(checkpoint_dir)
@@ -95,5 +91,3 @@ class TestTuneWrapper(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-    
-    
