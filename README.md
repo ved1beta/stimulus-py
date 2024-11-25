@@ -151,7 +151,6 @@ class DnaToFloat(AbstractExperiment):
         self.float = {
             "encoder": encoders.FloatEncoder(),
         }
-        self.split = {"RandomSplitter": splitters.RandomSplitter()}
 ```
 
 Here we define the `data_type` for the dna and float types, note that those `data_type` are the same as the ones defined in the samplesheet dataset above, for example, a dataset on which this experiment would run could look like this: 
@@ -197,6 +196,65 @@ csv.py contains two important classes, `CsvLoader` and `CsvProcessing`
 > 5.  `handlertorch` will feed the `input` torch tensor to the model, use the `label` torch tensor for loss computation and will store the `meta` tensor for downstream analysis
 >
 >Great, now you know how stimulus transparently loads your data into your pytorch model! While this seems complicated, the only thing you really have to do, is to format your data correctly in a csv samplesheet and define your experiment class with the proper encoders (either by using the provided encoders or by writing your own).
+
+### Data transformation
+
+Measuring the impact of data transformations (noising, down/upsampling, augmentation...) on models at training time is a major feature of stimulus.
+
+Data transformations materialize as `DataTransformer` classes, and should inherit from the `AbstractDataTransformer` class (see [docs](https://mathysgrapotte.github.io/stimulus-py/reference/stimulus/data/encoding/encoders/#stimulus.data.encoding.encoders.AbstractEncoder))
+
+> NOTE:
+> Writing your own `DataTransformer` class is the same as writing your own `Encoder` class, you should overwrite the `transform` and `transform_all` methods
+
+> WARNING:
+> Every `DataTransformer` class has to have `seed` in `transform` and `transform_all` methods parameters, and `np.random.seed(seed)` should be called in those methods.
+
+> WARNING:
+> Every `DataTransformer` class should have an `add_row` argument set to either `True` or `False` depending on if it is augmenting the data (adding rows) or not.
+
+### Connecting transformations and dataset
+
+Just like encoders, data transformations are defined in the `Experiment` class alongside encoders. Let's upgrade our `DnaToFloat` minimal class defined above to reflect this.
+
+```python
+class DnaToFloat(AbstractExperiment):
+    def __init__(self) -> None:
+        super().__init__()
+        self.dna = {
+            "encoder": encoders.TextOneHotEncoder(alphabet="acgt"),
+            "data_transformation_generators": {
+                "UniformTextMasker": data_transformation_generators.UniformTextMasker(mask="N"),
+                "ReverseComplement": data_transformation_generators.ReverseComplement(),
+                "GaussianChunk": data_transformation_generators.GaussianChunk(),
+            },
+        }
+        self.float = {
+            "encoder": encoders.FloatEncoder(),
+            "data_transformation_generators": {"GaussianNoise": data_transformation_generators.GaussianNoise()},
+        }
+```
+
+As you can see, our `data_type` arguments get an other field, `"data_transformation_generators"`, there we can initialize the `DataTransformer` classes with their relevant parameters. 
+
+In the `csv` module, the `CsvProcessing` class will call the `transform_all` methods from the classes contained in `"data_transformation_generators"` based on the column type and a list of transformations. 
+
+i.e., if we give the `["ReverseComplement","GaussianChunk"]` list to the `CsvProcessing` class `transform` method the data contained in the `mouse_dna:input:dna` column in our minimal example above will be first reverse complemented and then chunked. 
+
+> TIP:
+> Recap :
+> To transform your dataset,
+>
+> - define your own `DataTransformer` class or use one we provide
+>
+> - add it to your experiment class
+>
+> - load your data through `CsvProcessing` 
+>
+> - set a list of transforms
+>
+> - call `CsvProcessing.transform(transform_list)`
+
+
 
 
 ## Installation

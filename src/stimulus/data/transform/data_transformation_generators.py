@@ -10,7 +10,15 @@ import numpy as np
 class AbstractDataTransformer(ABC):
     """Abstract class for data transformers.
 
-    All data transformers should have the seed in it. This is because the multiprocessing of them could unset the seed.
+    Data transformers implement in_place or augmentation transformations. 
+    Whether it is in_place or augmentation is specified in the "add_row" attribute (should be True or False and set in children classes constructor)
+    
+    Child classes should override the `transform` and `transform_all` methods.
+
+    `transform_all` should always return a list
+
+    Both methods should take an optional `seed` argument set to `None` by default to be compliant with stimulus' core principle of reproducibility.
+    Seed should be initialized through `np.random.seed(seed)` in the method implementation.
 
     Attributes:
         add_row (bool): whether the transformer adds rows to the data
