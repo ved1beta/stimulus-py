@@ -16,7 +16,7 @@ columns:
     parsing : LabelEncoder
 
 transforms:
-  - transformation_name: 'A'
+  - transformation_name: 'A's
     columns:
       - column_name: "col1"
         transformations:
