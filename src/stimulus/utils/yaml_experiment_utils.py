@@ -12,11 +12,19 @@ class TransformKeys:
     PARAMS_KEY: str = "params"
     TRANSFORMATIONS_KEY: str = "transformations"
 
-def get_length_of_params_dict(dict_to_split: dict) -> int:
+def get_length_of_params_dict(input_dict: dict) -> int:
     """
-    This function takes as input a dictionary and returns the length of a params keys in the nested dictionaries (assumes all lengths are equal)
+    This function takes as input a dictionary and returns the length of a params keys in the nested dictionaries
+     
+    We assume nested dictionaries are of the same length, if there are no parameters, we return 1.
+
+    Args:
+        input_dict (dict): dictionary to split
+
+    Returns:
+        int: length of params keys in the nested dictionaries
     """
-    for column in dict_to_split[TransformKeys.COLUMN_KEY]:
+    for column in input_dict[TransformKeys.COLUMN_KEY]:
         for transformation in column[TransformKeys.TRANSFORMATIONS_KEY]:
             if isinstance(transformation[TransformKeys.PARAMS_KEY], dict):
                 # check for lists within the params dict
