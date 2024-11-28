@@ -20,15 +20,15 @@ transforms:
     columns:
       - column_name: "col1"
         transformations:
-          name: ReverseComplement
-          params:
+          - name: ReverseComplement
+            params:
   - transformation_name: 'B'
     columns:
       - column_name: "col1"
         transformations:
-          name: UniformTextMasker
-          params:
-            probability: [0.1, 0.2, 0.3]
+          - name: UniformTextMasker
+            params:
+              probability: [0.1, 0.2, 0.3]
   - transformation_name: 'C'
     columns:
       - column_name: "col1"
