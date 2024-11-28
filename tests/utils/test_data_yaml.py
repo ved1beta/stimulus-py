@@ -129,4 +129,24 @@ def test_split_transform_dict(load_yaml_from_file):
         base_dict = yaml_experiment_utils.get_transform_base_dict(third_dict)
         yaml_experiment_utils.split_transform_dict(third_dict, base_dict, 10)
     
+def test_get_all_transform_dicts(load_yaml_from_file):
+    """Tests the get_all_transform_dicts function.
 
+    This test verifies that get_all_transform_dicts correctly generates a list of dictionaries,
+    each containing a single parameter value from a transform dictionary with multiple parameter lists.
+    It checks:
+    1. A transform with no parameters (should return a list with one unchanged dictionary)
+    2. A transform with a single parameter list (should return a list with one dictionary containing the single value)
+    3. A transform with multiple parameter lists (should return a list with dictionaries containing corresponding values)
+    """
+    first_dict = load_yaml_from_file['transforms'][0]
+    split_dicts = yaml_experiment_utils.get_all_transform_dicts(first_dict)
+    assert len(split_dicts) == 1
+    assert split_dicts[0] == first_dict
+    second_dict = load_yaml_from_file['transforms'][1]
+    split_dicts = yaml_experiment_utils.get_all_transform_dicts(second_dict)
+    assert len(split_dicts) == 3
+
+    third_dict = load_yaml_from_file['transforms'][2]
+    split_dicts = yaml_experiment_utils.get_all_transform_dicts(third_dict)
+    assert len(split_dicts) == 4
