@@ -26,13 +26,16 @@ def get_length_of_params_dict(input_dict: dict) -> int:
     """
     for column in input_dict[TransformKeys.COLUMN_KEY]:
         for transformation in column[TransformKeys.TRANSFORMATIONS_KEY]:
-            if isinstance(transformation[TransformKeys.PARAMS_KEY], dict):
-                # check for lists within the params dict
-                for key, value in transformation[TransformKeys.PARAMS_KEY].items():
-                    if isinstance(value, list):
-                        # check that the list has more than one element
-                        if len(value) > 1:
-                            return len(value)
+            try:
+                if isinstance(transformation[TransformKeys.PARAMS_KEY], dict):
+                    # check for lists within the params dict
+                    for key, value in transformation[TransformKeys.PARAMS_KEY].items():
+                        if isinstance(value, list):
+                            # check that the list has more than one element
+                            if len(value) > 1:
+                                return len(value)
+            except TypeError:
+                print(f"Error: {column[TransformKeys.TRANSFORMATIONS_KEY]} is not parsed as a list, yaml file is not properly formatted, make sure that transformations names are preceded by a dash")
     return 1
 
 def get_transform_base_dict(dict_to_split: dict) -> dict:
