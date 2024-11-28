@@ -39,8 +39,22 @@ def get_length_of_params_dict(input_dict: dict) -> int:
     return 1
 
 def get_transform_base_dict(dict_to_split: dict) -> dict:
-    """
-    This function takes as input a dictionary to expand and returns a dictionary with the params keys reset to empty dictionaries.
+    """Gets a base dictionary with empty parameter values.
+
+    Takes a dictionary containing transform configurations and creates a base dictionary
+    with the same structure but with empty parameter values. This is used as a template
+    for creating split dictionaries.
+
+    Args:
+        dict_to_split: A dictionary containing transform configurations with parameters
+            that need to be split.
+
+    Returns:
+        A dictionary with the same structure as the input but with empty parameter values.
+        The dictionary uses defaultdict to return empty strings for missing keys.
+
+    Raises:
+        TypeError: If the transformations are not properly formatted as a list in the YAML.
     """
     # Create a defaultdict that will return empty string for missing keys
     base_dict  = defaultdict(str, deepcopy(dict_to_split))
@@ -53,8 +67,20 @@ def get_transform_base_dict(dict_to_split: dict) -> dict:
     return dict(base_dict)
 
 def split_transform_dict(dict_to_split: dict, base_dict: dict, split_index: int) -> dict: 
-    """
-    This function takes as input a dictionary to split and returns a dictionary with a single param value.
+    """Splits a transform dictionary to extract a single parameter value.
+
+    Takes a transform dictionary containing parameter lists and creates a new dictionary
+    with only the parameter values at the specified split index. Uses a base dictionary
+    as a template for the structure.
+
+    Args:
+        dict_to_split (dict): The transform dictionary containing parameter lists to split
+        base_dict (dict): Template dictionary with empty parameter values
+        split_index (int): Index to extract from parameter lists
+
+    Returns:
+        dict: A new dictionary with the same structure but containing only single parameter
+            values at the specified index
     """
 
     split_dict = deepcopy(base_dict)
@@ -68,7 +94,11 @@ def split_transform_dict(dict_to_split: dict, base_dict: dict, split_index: int)
                     if isinstance(value, list):
                         # check that the list has more than one element
                         if len(value) > 1:
-                            temp_dict[key] = value[split_index]
+                            try:
+                                temp_dict[key] = value[split_index]
+                            except IndexError:
+                                print(f"Error: {value} is not long enough to be split at index {split_index}")
+                                raise
                         else:
                             temp_dict[key] = value[0]
                     else:
