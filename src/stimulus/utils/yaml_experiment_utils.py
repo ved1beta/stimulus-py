@@ -108,8 +108,17 @@ def split_transform_dict(dict_to_split: dict, base_dict: dict, split_index: int)
     return split_dict
 
 def get_all_transform_dicts(dict_to_split: dict) -> list[dict]:
-    """
-    This function takes as input a dictionary to split and returns a list of dictionaries, each with a single param value.
+    """Splits a transform dictionary into multiple dictionaries with single parameter values.
+
+    Takes a transform dictionary containing parameter lists and creates multiple new dictionaries,
+    each containing single parameter values from the corresponding indices of the parameter lists.
+
+    Args:
+        dict_to_split (dict): The transform dictionary containing parameter lists to split
+
+    Returns:
+        list[dict]: A list of dictionaries, each with the same structure but containing only
+            single parameter values from sequential indices
     """
     length_of_params_dict = get_length_of_params_dict(dict_to_split)
     base_dict = get_transform_base_dict(dict_to_split)
