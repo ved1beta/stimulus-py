@@ -114,6 +114,10 @@ class AbstractExperiment(ABC):
         """
         setattr(self, column_name, {"encoder": encoder})
 
+    def reset_column_attributes(self) -> None:
+        """Reset all column attributes by reinitializing the class"""
+        self.__init__(seed=self.seed)
+
 class DnaToFloatExperiment(AbstractExperiment):
     """Class for dealing with DNA to float predictions (for instance regression from DNA sequence to CAGE value)"""
 
@@ -157,7 +161,3 @@ class TitanicExperiment(AbstractExperiment):
         self.int_reg = {"encoder": encoders.IntRankEncoder(), "data_transformation_generators": {}}
         self.float_rank = {"encoder": encoders.FloatRankEncoder(), "data_transformation_generators": {}}
 
-if __name__ == "__main__":
-    base_experiment = AbstractExperiment()
-    config = base_experiment.build_from_yaml("tests/test_data/dna_experiment/dna_experiment_config_template.yaml")
-    print(config)
