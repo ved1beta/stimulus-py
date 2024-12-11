@@ -5,15 +5,25 @@ columns:
   - column_name : "hello"
     column_type : "input"
     data_type : str
-    parsing : OneHotEncoder
+    encoder:
+      - name: OneHotEncoder
+        params:
+          alphabet: "acgt"
+
   - column_name : "bonjour"
     column_type : "input"
     data_type : str
-    parsing : OneHotEncoder
+    encoder:
+      - name: OneHotEncoder
+        params:
+          alphabet: "acgt"
+
   - column_name : "ciao"
     column_type : "label"
     data_type : int
-    parsing : LabelEncoder
+    encoder:
+      - name: LabelEncoder
+        params:
 
 transforms:
   - transformation_name: 'A'
