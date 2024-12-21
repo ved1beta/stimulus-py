@@ -93,17 +93,22 @@ class AbstractExperiment(ABC):
         Returns:
             Any: The encoder function for the specified data type and parameters
         """
-        try:
-            return getattr(encoders, encoder_name)(**encoder_params)
-        except AttributeError:
-            print(f"Encoder '{encoder_name}' not found in the encoders module.")
-            print(f"Available encoders: {[name for name, obj in encoders.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}")
-            raise
 
-        except TypeError:
-            print(f"Encoder '{encoder_name}' has incorrect parameters: {encoder_params}")
-            print(f"Expected parameters for '{encoder_name}': {inspect.signature(getattr(encoders, encoder_name))}")
-            raise
+        if encoder_params is not None:
+            try:
+                return getattr(encoders, encoder_name)(**encoder_params)
+            except AttributeError:
+                print(f"Encoder '{encoder_name}' not found in the encoders module.")
+                print(f"Available encoders: {[name for name, obj in encoders.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}")
+                raise
+
+            except TypeError:
+                if encoder_params is None:
+                    return getattr(encoders, encoder_name)()
+                else:
+                    print(f"Encoder '{encoder_name}' has incorrect parameters: {encoder_params}")
+                    print(f"Expected parameters for '{encoder_name}': {inspect.signature(getattr(encoders, encoder_name))}")
+                    raise
 
     def set_encoder_as_attribute(self, column_name: str, encoder: encoders.AbstractEncoder) -> None:
         """Sets the encoder as an attribute of the experiment class.
@@ -113,10 +118,17 @@ class AbstractExperiment(ABC):
             encoder (encoders.AbstractEncoder): The encoder to set
         """
         setattr(self, column_name, {"encoder": encoder})
-
-    def reset_column_attributes(self) -> None:
-        """Reset all column attributes by reinitializing the class"""
-        self.__init__(seed=self.seed)
+    
+    def build_experiment_class_encoder_from_config(self, columns: list) -> None:
+        """Build the experiment class from a config dictionary.
+        
+        Args:
+            config (dict): Configuration dictionary containing column names and their encoder specifications.
+        """
+        
+        for column in columns:
+            encoder = self.get_encoder(column["encoder"][0]["name"], column["encoder"][0]["params"])
+            self.set_encoder_as_attribute(column["column_name"], encoder)
 
 class DnaToFloatExperiment(AbstractExperiment):
     """Class for dealing with DNA to float predictions (for instance regression from DNA sequence to CAGE value)"""

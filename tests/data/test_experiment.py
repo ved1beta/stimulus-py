@@ -51,5 +51,18 @@ def test_set_encoder_as_attribute(TextOneHotEncoder_name_and_params):
     assert experiment.ciao["encoder"] == encoder
     assert experiment.get_function_encode_all("ciao") == encoder.encode_all
 
+def test_build_experiment_class_encoder_dict(dna_experiment_config_path):
+    """Test the build_experiment_class_encoder_dict method of the AbstractExperiment class.
+
+    This test checks if the build_experiment_class_encoder_dict method correctly builds the experiment class from a config dictionary.
+    """
+    experiment = experiments.AbstractExperiment()
+    config = experiment.get_config_from_yaml(dna_experiment_config_path)["columns"]
+    experiment.build_experiment_class_encoder_from_config(config)
+    assert hasattr(experiment, "hello")
+    assert hasattr(experiment, "bonjour")
+    assert hasattr(experiment, "ciao")
+
+
 
 
