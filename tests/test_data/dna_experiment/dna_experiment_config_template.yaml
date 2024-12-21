@@ -6,7 +6,7 @@ columns:
     column_type : "input"
     data_type : str
     encoder:
-      - name: OneHotEncoder
+      - name: TextOneHotEncoder
         params:
           alphabet: "acgt"
 
@@ -14,7 +14,7 @@ columns:
     column_type : "input"
     data_type : str
     encoder:
-      - name: OneHotEncoder
+      - name: TextOneHotEncoder
         params:
           alphabet: "acgt"
 
@@ -22,7 +22,7 @@ columns:
     column_type : "label"
     data_type : int
     encoder:
-      - name: LabelEncoder
+      - name: IntEncoder
         params:
 
 transforms:
@@ -63,3 +63,4 @@ split:
       split: [[0.6, 0.2, 0.2]]
   - split_method: random_split
     params:
+      split: [[0.7, 0.15, 0.15]]

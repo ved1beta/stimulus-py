@@ -1,23 +1,33 @@
 """Experiments are classes parsed by CSV master classes to run experiments.
 Conceptually, experiment classes contain data types, transformations etc and are used to duplicate the input data into many datasets.
 Here we provide standard experiments as well as an absctract class for users to implement their own.
-
-
-# TODO implement noise schemes and splitting schemes.
 """
 
 from abc import ABC
 from typing import Any
 
-from .encoding import encoders as encoders
-from .splitters import splitters as splitters
-from .transform import data_transformation_generators as data_transformation_generators
+
+import inspect
+import yaml
+
+from stimulus.data.encoding import encoders as encoders
+from stimulus.data.splitters import splitters as splitters
+from stimulus.data.transform import data_transformation_generators as data_transformation_generators
 
 
 class AbstractExperiment(ABC):
-    """Abstract class for experiments.
+    """Abstract base class for defining experiments.
+    
+    This class provides the base functionality for experiment classes that handle data encoding,
+    transformations and splitting. All data type argument names must be lowercase.
 
-    WARNING, DATA_TYPES ARGUMENT NAMES SHOULD BE ALL LOWERCASE, CHECK THE DATA_TYPES MODULE FOR THE TYPES THAT HAVE BEEN IMPLEMENTED.
+    Attributes:
+        seed (float): Optional random seed for reproducibility
+        split (dict): Dictionary mapping split method names to splitter objects. Defaults to
+            RandomSplitter.
+
+    Note:
+        Check the data_types module for implemented data types.
     """
 
     def __init__(self, seed: float = None) -> None:
@@ -27,17 +37,98 @@ class AbstractExperiment(ABC):
         self.split = {"RandomSplitter": splitters.RandomSplitter()}
 
     def get_function_encode_all(self, data_type: str) -> Any:
-        """This method gets the encoding function for a specific data type."""
+        """Gets the encoding function for a specific data type.
+        
+        Args:
+            data_type (str): The data type to get the encoder for
+
+        Returns:
+            Any: The encode_all function for the specified data type
+        """
         return getattr(self, data_type)["encoder"].encode_all
 
     def get_data_transformer(self, data_type: str, transformation_generator: str) -> Any:
-        """This method transforms the data (noising, data augmentation etc)."""
+        """Gets the transformation function for data augmentation.
+        
+        Args:
+            data_type (str): The data type to transform
+            transformation_generator (str): Name of the transformation to apply
+
+        Returns:
+            Any: The transformation function for the specified data type and transformation
+        """
         return getattr(self, data_type)["data_transformation_generators"][transformation_generator]
 
     def get_function_split(self, split_method: str) -> Any:
-        """This method returns the function for splitting the data."""
-        return self.split[split_method].get_split_indexes
+        """Gets the function for splitting the data.
+        
+        Args:
+            split_method (str): Name of the split method to use
 
+        Returns:
+            Any: The split function for the specified method
+        """
+        return self.split[split_method].get_split_indexes
+    
+    def get_config_from_yaml(self, yaml_path: str) -> dict:
+        """Loads experiment configuration from a YAML file.
+        
+        Args:
+            yaml_path (str): Path to the YAML config file
+
+        Returns:
+            dict: The loaded configuration dictionary
+        """
+        with open(yaml_path, "r") as file:
+            config = yaml.safe_load(file)
+        return config
+
+    def get_encoder(self, encoder_name: str, encoder_params: dict) -> Any:
+        """Gets the encoder function for a specific data type.
+        
+        Args:
+            encoder_name (str): The name of the encoder to get
+            encoder_params (dict): The parameters for the encoder
+
+        Returns:
+            Any: The encoder function for the specified data type and parameters
+        """
+
+        if encoder_params is not None:
+            try:
+                return getattr(encoders, encoder_name)(**encoder_params)
+            except AttributeError:
+                print(f"Encoder '{encoder_name}' not found in the encoders module.")
+                print(f"Available encoders: {[name for name, obj in encoders.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}")
+                raise
+
+            except TypeError:
+                if encoder_params is None:
+                    return getattr(encoders, encoder_name)()
+                else:
+                    print(f"Encoder '{encoder_name}' has incorrect parameters: {encoder_params}")
+                    print(f"Expected parameters for '{encoder_name}': {inspect.signature(getattr(encoders, encoder_name))}")
+                    raise
+
+    def set_encoder_as_attribute(self, column_name: str, encoder: encoders.AbstractEncoder) -> None:
+        """Sets the encoder as an attribute of the experiment class.
+        
+        Args:
+            column_name (str): The name of the column to set the encoder for
+            encoder (encoders.AbstractEncoder): The encoder to set
+        """
+        setattr(self, column_name, {"encoder": encoder})
+    
+    def build_experiment_class_encoder_from_config(self, columns: list) -> None:
+        """Build the experiment class from a config dictionary.
+        
+        Args:
+            config (dict): Configuration dictionary containing column names and their encoder specifications.
+        """
+        
+        for column in columns:
+            encoder = self.get_encoder(column["encoder"][0]["name"], column["encoder"][0]["params"])
+            self.set_encoder_as_attribute(column["column_name"], encoder)
 
 class DnaToFloatExperiment(AbstractExperiment):
     """Class for dealing with DNA to float predictions (for instance regression from DNA sequence to CAGE value)"""
@@ -81,3 +172,4 @@ class TitanicExperiment(AbstractExperiment):
         self.str_class = {"encoder": encoders.StrClassificationIntEncoder(), "data_transformation_generators": {}}
         self.int_reg = {"encoder": encoders.IntRankEncoder(), "data_transformation_generators": {}}
         self.float_rank = {"encoder": encoders.FloatRankEncoder(), "data_transformation_generators": {}}
+
