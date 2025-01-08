@@ -1,5 +1,6 @@
 import pytest
 import stimulus.data.experiments as experiments
+import numpy as np
 from stimulus.data.encoding.encoders import AbstractEncoder
 
 @pytest.fixture
@@ -63,6 +64,6 @@ def test_build_experiment_class_encoder_dict(dna_experiment_config_path):
     assert hasattr(experiment, "bonjour")
     assert hasattr(experiment, "ciao")
 
-
-
-
+    # call encoder from "hello", check that it completes successfully
+    assert experiment.hello["encoder"].encode_all(["a", "c", "g", "t"]) is not None
+    
