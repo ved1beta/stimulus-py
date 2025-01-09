@@ -1,6 +1,11 @@
-"""Experiments are classes parsed by CSV master classes to run experiments.
-Conceptually, experiment classes contain data types, transformations etc and are used to duplicate the input data into many datasets.
-Here we provide standard experiments as well as an absctract class for users to implement their own.
+"""Loaders serve as interfaces between the CSV master class and custom methods.
+
+Mainly, three types of custom methods are supported:
+- Encoders: methods for encoding data before it is fed into the model
+- Data transformers: methods for transforming data (i.e. augmenting, noising...)
+- Splitters: methods for splitting data into train, validation and test sets
+
+Loaders are built from an input config YAML file which format is described in the documentation, you can find an example here: tests/test_data/dna_experiment/dna_experiment_config_template.yaml
 """
 
 from abc import ABC
@@ -14,9 +19,121 @@ from stimulus.data.encoding import encoders as encoders
 from stimulus.data.splitters import splitters as splitters
 from stimulus.data.transform import data_transformation_generators as data_transformation_generators
 
+class AbstractLoader(ABC):
+    """Abstract base class for defining loaders."""
 
+    def get_config_from_yaml(self, yaml_path: str) -> dict:
+        """Loads experiment configuration from a YAML file.
+        
+        Args:
+            yaml_path (str): Path to the YAML config file
+
+        Returns:
+            dict: The loaded configuration dictionary
+        """
+        with open(yaml_path, "r") as file:
+            config = yaml.safe_load(file)
+        return config
+    
+class EncoderLoader(AbstractLoader):
+    """Class for loading encoders from a config file."""
+
+    def __init__(self, seed: float = None) -> None:
+        self.seed = seed
+
+    def build_experiment_class_encoder_from_config(self, config: dict) -> None:
+        """Build the experiment class from a config dictionary.
+        
+        Args:
+            config (dict): Configuration dictionary containing field names (column_name) and their encoder specifications.
+        """
+        for field in config:
+            encoder = self.get_encoder(field["encoder"][0]["name"], field["encoder"][0]["params"])
+            self.set_encoder_as_attribute(field["column_name"], encoder)
+
+    def get_function_encode_all(self, field_name: str) -> Any:
+        """Gets the encoding function for a specific field.
+        
+        Args:
+            field_name (str): The field name to get the encoder for
+
+        Returns:
+            Any: The encode_all function for the specified field
+        """
+        return getattr(self, field_name)["encoder"].encode_all
+
+    def get_encoder(self, encoder_name: str, encoder_params: dict) -> Any:
+        """Gets an encoder object from the encoders module and initializes it with the given parametersß.
+        
+        Args:
+            encoder_name (str): The name of the encoder to get
+            encoder_params (dict): The parameters for the encoder
+
+        Returns:
+            Any: The encoder function for the specified field and parameters
+        """
+
+        try:
+            return getattr(encoders, encoder_name)(**encoder_params)
+        except AttributeError:
+            print(f"Encoder '{encoder_name}' not found in the encoders module.")
+            print(f"Available encoders: {[name for name, obj in encoders.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}")
+            raise
+
+        except TypeError:
+            if encoder_params is None:
+                return getattr(encoders, encoder_name)()
+            else:
+                print(f"Encoder '{encoder_name}' has incorrect parameters: {encoder_params}")
+                print(f"Expected parameters for '{encoder_name}': {inspect.signature(getattr(encoders, encoder_name))}")
+                raise
+
+    def set_encoder_as_attribute(self, field_name: str, encoder: encoders.AbstractEncoder) -> None:
+        """Sets the encoder as an attribute of the experiment class.
+        
+        Args:
+            field_name (str): The name of the field to set the encoder for
+            encoder (encoders.AbstractEncoder): The encoder to set
+        """
+        setattr(self, field_name, {"encoder": encoder})
+
+class TransformLoader(AbstractLoader):
+    """Class for loading transformations from a config file."""
+
+    def __init__(self, seed: float = None) -> None:
+        self.seed = seed
+
+    def get_data_transformer(self, field_name: str, transformation_generator: str) -> Any:
+        """Gets the transformation function.
+        
+        Args:
+            field_name (str): The field name to transform
+            transformation_generator (str): Name of the transformation to apply
+
+        Returns:
+            Any: The transformation function for the specified field and transformation
+        """
+        return getattr(self, field_name)["data_transformation_generators"][transformation_generator]
+    
+class SplitLoader(AbstractLoader):
+    """Class for loading splitters from a config file."""
+
+    def __init__(self, seed: float = None) -> None:
+        self.seed = seed
+        self.split = {"RandomSplitter": splitters.RandomSplitter()}
+
+    def get_function_split(self, split_method: str) -> Any:
+        """Gets the function for splitting the data.
+        
+        Args:
+            split_method (str): Name of the split method to use
+
+        Returns:
+            Any: The split function for the specified method
+        """
+        return self.split[split_method].get_split_indexes
 class AbstractExperiment(ABC):
-    """Abstract base class for defining experiments.
+    """Abstract base class for defining experiments. (soon to be deprecated)
     
     This class provides the base functionality for experiment classes that handle data encoding,
     transformations and splitting. All data type argument names must be lowercase.
@@ -130,7 +247,7 @@ class AbstractExperiment(ABC):
             self.set_encoder_as_attribute(column["column_name"], encoder)
 
 class DnaToFloatExperiment(AbstractExperiment):
-    """Class for dealing with DNA to float predictions (for instance regression from DNA sequence to CAGE value)"""
+    """Class for dealing with DNA to float predictions (for instance regression from DNA sequence to CAGE value), soon to be deprecated"""
 
     def __init__(self) -> None:
         super().__init__()
