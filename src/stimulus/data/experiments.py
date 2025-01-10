@@ -120,7 +120,7 @@ class SplitLoader(AbstractLoader):
 
     def __init__(self, seed: float = None) -> None:
         self.seed = seed
-        self.split = {"RandomSplitter": splitters.RandomSplitter()}
+        self.split = splitters.RandomSplitter()
 
     def get_function_split(self, split_method: str) -> Any:
         """Gets the function for splitting the data.
@@ -131,7 +131,8 @@ class SplitLoader(AbstractLoader):
         Returns:
             Any: The split function for the specified method
         """
-        return self.split[split_method].get_split_indexes
+        return self.split.get_split_indexes
+
 class AbstractExperiment(ABC):
     """Abstract base class for defining experiments. (soon to be deprecated)
     

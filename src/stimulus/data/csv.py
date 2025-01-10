@@ -12,101 +12,268 @@ The parser is a class that takes as input a CSV file and a experiment class that
 
 from functools import partial
 from typing import Any, Tuple, Union
+from abc import ABC
 
 import numpy as np
 import polars as pl
+import yaml
+import stimulus.data.experiments as experiments
+import torch
 
+class DatasetManager:
+    """Class for managing the dataset.
+    
+    This class handles loading and organizing dataset configuration from YAML files.
+    It manages column categorization into input, label and meta types based on the config.
 
-class CsvHandler:
-    """Meta class for handling CSV files."""
+    Attributes:
+        config (dict): The loaded configuration dictionary from YAML
+        column_categories (dict): Dictionary mapping column types to lists of column names
 
-    def __init__(self, experiment: Any, csv_path: str) -> None:
-        self.experiment = experiment
-        self.csv_path = csv_path
-        self.categories = self.check_and_get_categories()
-        self.check_compulsory_categories_exist()
+    Methods:
+        _load_config(config_path: str) -> dict: Loads the config from a YAML file.
+        categorize_columns_by_type() -> dict: Organizes the columns into input, label, meta based on the config.
+    """
 
-    def check_and_get_categories(self) -> list:
-        """Returns the categories contained in the csv file."""
-        with open(self.csv_path) as f:
-            header = f.readline().strip().split(",")
-        categories = []
-        for colname in header:
-            category = colname.split(":")[1].lower()
-            if category not in ["input", "label", "split", "meta"]:
-                raise ValueError(
-                    f"Unknown category {category}, category (the second element of the csv column, seperated by ':') should be input, label, split or meta. The specified csv column is {colname}.",
-                )
-            categories.append(category)
-        return categories
+    def __init__(self, 
+                config_path: str,
+                ) -> None:
+        self.config = self._load_config(config_path)
+        self.column_categories = self.categorize_columns_by_type()
 
-    def update_categories(self) -> None:
-        """Updates the categories of the csv file.
-        Checks colnames in header and updates the categories that are present.
+    def categorize_columns_by_type(self) -> dict:
+        """Organizes columns from config into input, label, and meta categories.
+
+        Reads the column definitions from the config and sorts them into categories
+        based on their column_type field.
+
+        Returns:
+            dict: Dictionary containing lists of column names for each category:
+                {
+                    "input": ["col1", "col2"],  # Input columns
+                    "label": ["target"],        # Label/output columns  
+                    "meta": ["id"]     # Metadata columns
+                }
+
+        Example:
+            >>> manager = DatasetManager("config.yaml")
+            >>> categories = manager.categorize_columns_by_type()
+            >>> print(categories)
+            {
+                'input': ['hello', 'bonjour'],
+                'label': ['ciao'],
+                'meta': ["id"]
+            }
         """
-        for colname in self.data.columns:
-            category = colname.split(":")[1].lower()
-            if category not in self.categories:
-                self.categories.append(category)
+        input_columns = []
+        label_columns = []
+        meta_columns = []
+        for column in self.config["columns"]:
+            if column["column_type"] == "input":
+                input_columns.append(column["column_name"])
+            elif column["column_type"] == "label":
+                label_columns.append(column["column_name"])
+            elif column["column_type"] == "meta":
+                meta_columns.append(column["column_name"])
 
-    def extract_header(self) -> list:
-        """Extracts the header of the csv file."""
-        with open(self.csv_path) as f:
+        return {"input": input_columns, "label": label_columns, "meta": meta_columns}
+
+    def _load_config(self, config_path: str) -> dict:
+        """Loads and parses a YAML configuration file.
+
+        Args:
+            config_path (str): Path to the YAML config file
+
+        Returns:
+            dict: Parsed configuration dictionary
+
+        Example:
+            >>> manager = DatasetManager()
+            >>> config = manager._load_config("config.yaml")
+            >>> print(config["columns"][0]["column_name"])
+            'hello'
+        """
+        with open(config_path, "r") as file:
+            return yaml.safe_load(file)
+
+    def get_split_columns(self) -> str:
+        """Get the columns that are used for splitting."""
+        return self.config["split"]["split_input_columns"]
+  
+
+class EncodeManager:
+    """Manages the encoding of data columns using configured encoders.
+
+    This class handles encoding of data columns based on the encoders specified in the
+    configuration. It uses an EncoderLoader to get the appropriate encoder for each column
+    and applies the encoding.
+
+    Attributes:
+        encoder_loader (experiments.EncoderLoader): Loader that provides encoders based on config.
+
+    Example:
+        >>> encoder_loader = EncoderLoader(config)
+        >>> encode_manager = EncodeManager(encoder_loader)
+        >>> data = ["ACGT", "TGCA", "GCTA"] 
+        >>> encoded = encode_manager.encode_column("dna_seq", data)
+        >>> print(encoded.shape)
+        torch.Size([3, 4, 4])  # 3 sequences, length 4, one-hot encoded
+    """
+
+    def __init__(self, 
+                encoder_loader: experiments.EncoderLoader,
+                ) -> None:
+        """Initializes the EncodeManager.
+
+        Args:
+            encoder_loader: Loader that provides encoders based on configuration.
+        """
+        self.encoder_loader = encoder_loader
+
+    def encode_column(self, column_name: str, column_data: list) -> torch.Tensor:
+        """Encodes a column of data using the configured encoder.
+
+        Gets the appropriate encoder for the column from the encoder_loader and uses it
+        to encode all the data in the column.
+
+        Args:
+            column_name: Name of the column to encode.
+            column_data: List of data values from the column to encode.
+
+        Returns:
+            Encoded data as a torch.Tensor. The exact shape depends on the encoder used.
+
+        Example:
+            >>> data = ["ACGT", "TGCA"]
+            >>> encoded = encode_manager.encode_column("dna_seq", data)
+            >>> print(encoded.shape)
+            torch.Size([2, 4, 4])  # 2 sequences, length 4, one-hot encoded
+        """
+        encoder = self.encoder_loader.get_encoder(column_name)
+        return encoder.encode_all(column_data)
+
+    def encode_columns(self, column_data: dict) -> dict:
+        """Encodes multiple columns of data using the configured encoders.
+
+        Gets the appropriate encoder for each column from the encoder_loader and encodes
+        all data values in those columns.
+
+        Args:
+            column_data: Dict mapping column names to lists of data values to encode.
+
+        Returns:
+            Dict mapping column names to their encoded tensors. The exact shape of each
+            tensor depends on the encoder used for that column.
+
+        Example:
+            >>> data = {
+            ...     "dna_seq": ["ACGT", "TGCA"],
+            ...     "labels": ["1", "2"]
+            ... }
+            >>> encoded = encode_manager.encode_columns(data)
+            >>> print(encoded["dna_seq"].shape)
+            torch.Size([2, 4, 4])  # 2 sequences, length 4, one-hot encoded
+        """
+        return {col: self.encode_column(col, values) for col, values in column_data.items()}
+
+class TransformManager:
+    """Class for managing the transformations."""
+
+    def __init__(self, 
+                transform_loader: experiments.TransformLoader,
+                ) -> None:
+        self.transform_loader = transform_loader
+
+class SplitManager:
+    """Class for managing the splitting."""
+
+    def __init__(self, 
+                split_loader: experiments.SplitLoader,
+                ) -> None:
+        self.split_loader = split_loader
+
+    def get_split_indices(self, data: dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Get the indices for train, validation, and test splits."""
+        split_method = data["name"]
+        return self.split_loader.get_function_split(split_method)(data)
+
+class DatasetHandler:
+    """Main class for handling dataset loading, encoding, transformation and splitting.
+    
+    This class coordinates the interaction between different managers to process
+    CSV datasets according to the provided configuration.
+
+    Attributes:
+        encoder_manager (EncodeManager): Manager for handling data encoding operations.
+        transform_manager (TransformManager): Manager for handling data transformations.
+        split_manager (SplitManager): Manager for handling dataset splitting.
+        dataset_manager (DatasetManager): Manager for organizing dataset columns and config.
+    """
+
+    def __init__(self,
+                 encoder_loader: experiments.EncoderLoader,
+                 transform_loader: experiments.TransformLoader,
+                 split_loader: experiments.SplitLoader,
+                 config_path: str,
+                 csv_path: str,
+                 ) -> None:
+        """Initialize the DatasetHandler with required loaders and config.
+
+        Args:
+            encoder_loader (experiments.EncoderLoader): Loader for getting column encoders.
+            transform_loader (experiments.TransformLoader): Loader for getting data transformations.
+            split_loader (experiments.SplitLoader): Loader for getting dataset split configurations.
+            config_path (str): Path to the dataset configuration file.
+            csv_path (str): Path to the CSV data file.
+        """
+        self.encoder_manager = EncodeManager(encoder_loader)
+        self.transform_manager = TransformManager(transform_loader)
+        self.split_manager = SplitManager(split_loader)
+        self.dataset_manager = DatasetManager(config_path)
+        self.data = self.load_csv(csv_path)
+        self.columns = self.read_csv_header(csv_path)
+
+    def read_csv_header(self, csv_path: str) -> list:
+        """Get the column names from the header of the CSV file.
+        
+        Args:
+            csv_path (str): Path to the CSV file to read headers from.
+
+        Returns:
+            list: List of column names from the CSV header.
+        """
+        with open(csv_path) as f:
             header = f.readline().strip().split(",")
         return header
+    
+    def load_csv(self, csv_path: str) -> pl.DataFrame:
+        """Load the CSV file into a polars DataFrame.
+        
+        Args:
+            csv_path (str): Path to the CSV file to load.
 
-    def get_keys_from_header(
-        self,
-        header,
-        column_name: str = None,
-        category: str = None,
-        data_type: str = None,
-    ) -> list:
-        keys = []
-        for key in header:
-            current_name, current_category, current_dtype = key.split(":")
-            if (
-                (column_name is None or column_name == current_name)
-                and (category is None or category == current_category)
-                and (data_type is None or data_type == current_dtype)
-            ):
-                keys.append(key)
-        if len(keys) == 0:
-            raise ValueError(
-                f"No keys found with the specified column_name={column_name}, category={category}, data_type={data_type}",
-            )
-        return keys
-
-    def get_keys_based_on_name_category_dtype(
-        self,
-        column_name: str = None,
-        category: str = None,
-        data_type: str = None,
-    ) -> list:
-        """Returns the keys that are of a specific type, name or category. Or a combination of those."""
-        if (column_name is None) and (category is None) and (data_type is None):
-            raise ValueError("At least one of the arguments column_name, category or data_type should be provided")
-        header = self.extract_header()
-        keys = self.get_keys_from_header(header, column_name, category, data_type)
-        return keys
-
-    def check_compulsory_categories_exist(self) -> None:
-        """Checks if the compulsory categories exist in the csv file."""
-        if "input" not in self.categories:
-            raise ValueError("The category input is not present in the csv file")
-
-    def load_csv(self) -> pl.DataFrame:
-        """Loads the csv file into a polars dataframe."""
-        return pl.read_csv(self.csv_path)
-
-
-class CsvProcessing(CsvHandler):
-    """Class to load the input csv data and add noise accordingly."""
-
-    def __init__(self, experiment: Any, csv_path: str) -> None:
-        super().__init__(experiment, csv_path)
-        self.data = self.load_csv()
-
+        Returns:
+            pl.DataFrame: Polars DataFrame containing the loaded CSV data.
+        """
+        return pl.read_csv(csv_path)
+    
+    def select_columns(self, columns: list) -> dict:
+        """Select specific columns from the DataFrame and return as a dictionary.
+        
+        Args:
+            columns (list): List of column names to select.
+            
+        Returns:
+            dict: A dictionary where keys are column names and values are lists containing the column data.
+            
+        Example:
+            >>> handler = DatasetHandler(...)
+            >>> data_dict = handler.select_columns(["col1", "col2"])
+            >>> # Returns {'col1': [1, 2, 3], 'col2': [4, 5, 6]}
+        """
+        df = self.data.select(columns)
+        return {col: df[col].to_list() for col in columns}
+    
     def add_split(self, config: dict, force=False) -> None:
         """Add a column specifying the train, validation, test splits of the data.
         An error exception is raised if the split column is already present in the csv file. This behaviour can be overriden by setting force=True.
@@ -117,24 +284,49 @@ class CsvProcessing(CsvHandler):
                             "parameters" (dict) : the split_function specific optional parameters, passed here as a dict with keys named as in the split function definition.
             force (bool) : If True, the split column will be added even if it is already present in the csv file.
         """
-        if ("split" in self.categories) and (not force):
+        if ("split" in self.columns) and (not force):
             raise ValueError(
                 "The category split is already present in the csv file. If you want to still use this function, set force=True",
             )
+        # get relevant split columns from the dataset_manager
+        split_columns = self.dataset_manager.get_split_columns()
+        
+        # if split_columns is none, build an empty dictionary
+        if split_columns is None:
+            split_input_data = {}
+        else:
+            split_input_data = self.select_columns(split_columns)
 
-        # set the split name method
-        split_method = config["name"]
-
-        # get the indices for train, validation and test using the specified split method
-        train, validation, test = self.experiment.get_function_split(split_method)(self.data, **config["params"])
+        # get the split indices
+        train, validation, test = self.split_manager.get_split_indices(split_input_data)
 
         # add the split column to the data
         split_column = np.full(len(self.data), -1).astype(int)
         split_column[train] = 0
         split_column[validation] = 1
         split_column[test] = 2
-        self.data = self.data.with_columns(pl.Series("split:split:int", split_column))
-        self.update_categories()
+        self.data = self.data.with_columns(pl.Series("split", split_column))
+
+        if "split" not in self.columns:
+            self.columns.append("split")
+
+class CsvHandler:
+    """Meta class for handling CSV files."""
+
+    def __init__(self, experiment: Any, csv_path: str) -> None:
+        self.experiment = experiment
+        self.csv_path = csv_path
+
+
+
+class CsvProcessing(CsvHandler):
+    """Class to load the input csv data and add noise accordingly."""
+
+    def __init__(self, experiment: Any, csv_path: str) -> None:
+        super().__init__(experiment, csv_path)
+        self.data = self.load_csv()
+
+
 
     def transform(self, transformations: list) -> None:
         """Transforms the data using the specified configuration."""
