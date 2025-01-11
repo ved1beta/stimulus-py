@@ -194,8 +194,7 @@ class SplitManager:
 
     def get_split_indices(self, data: dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get the indices for train, validation, and test splits."""
-        split_method = data["name"]
-        return self.split_loader.get_function_split(split_method)(data)
+        return self.split_loader.get_function_split()(data)
 
 class DatasetHandler:
     """Main class for handling dataset loading, encoding, transformation and splitting.
@@ -325,8 +324,6 @@ class CsvProcessing(CsvHandler):
     def __init__(self, experiment: Any, csv_path: str) -> None:
         super().__init__(experiment, csv_path)
         self.data = self.load_csv()
-
-
 
     def transform(self, transformations: list) -> None:
         """Transforms the data using the specified configuration."""

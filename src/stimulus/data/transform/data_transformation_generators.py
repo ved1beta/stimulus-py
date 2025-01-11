@@ -91,45 +91,43 @@ class UniformTextMasker(AbstractNoiseGenerator):
 
     This noise generators replace characters with a masking character with a given probability.
 
-    Attributes:
-        mask (str): the character to use for masking
-
     Methods:
         transform: adds character masking to a single data point
         transform_all: adds character masking to a list of data points
     """
 
-    def __init__(self, mask: str) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.mask = mask
 
-    def transform(self, data: str, probability: float = 0.1, seed: float = None) -> str:
+    def transform(self, data: str, probability: float = 0.1, mask: str = "*", seed: float = None) -> str:
         """Adds character masking to the data.
 
         Args:
             data (str): the data to be transformed
             probability (float): the probability of adding noise
+            mask (str): the character to use for masking
             seed (float): the seed for reproducibility
 
         Returns:
             transformed_data (str): the transformed data point
         """
         np.random.seed(seed)
-        return "".join([c if np.random.rand() > probability else self.mask for c in data])
+        return "".join([c if np.random.rand() > probability else mask for c in data])
 
-    def transform_all(self, data: list, probability: float = 0.1, seed: float = None) -> list:
+    def transform_all(self, data: list, probability: float = 0.1, mask: str = "*", seed: float = None) -> list:
         """Adds character masking to multiple data points using multiprocessing.
 
         Args:
             data (list): the data to be transformed
             probability (float): the probability of adding noise
+            mask (str): the character to use for masking
             seed (float): the seed for reproducibility
 
         Returns:
             transformed_data (list): the transformed data points
         """
         with mp.Pool(mp.cpu_count()) as pool:
-            function_specific_input = [(item, probability, seed) for item in data]
+            function_specific_input = [(item, probability, mask, seed) for item in data]
             return pool.starmap(self.transform, function_specific_input)
 
 
