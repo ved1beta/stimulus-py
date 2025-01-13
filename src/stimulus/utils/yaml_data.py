@@ -2,7 +2,7 @@ import yaml
 from copy import deepcopy
 from collections import defaultdict
 from dataclasses import dataclass
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, field_validator
 from typing import List, Optional, Dict
 
 
@@ -154,7 +154,78 @@ def dump_yaml_list_into_files(
             yaml.dump(yaml_dict, f)
 
 
-# TODO: add a param out_dir_path: str
+class YamlGlobalParams(BaseModel):
+    seed: int
+
+
+class YamlColumnsEncoder(BaseModel):
+    name: str
+    params: Optional[Dict[str, str]]  # The dict can contain or not data
+
+
+class YamlColumns(BaseModel):
+    column_name: str
+    column_type: str
+    data_type: str
+    encoder: List[YamlColumnsEncoder]
+
+
+class YamlTransformColumnsTransformation(BaseModel):
+    name: str
+    params: Optional[Dict[str, list]]
+
+
+class YamlTransformColumns(BaseModel):
+    column_name: str
+    transformations: List[YamlTransformColumnsTransformation]
+
+
+class YamlTransform(BaseModel):
+    transformation_name: str
+    columns: List[YamlTransformColumns]
+
+    @field_validator('columns')
+    @classmethod
+    def validate_param_lists_across_columns(cls, columns) -> List[YamlTransformColumns]:
+        # Get all parameter list lengths across all columns and transformations
+        all_list_lengths = set()
+        
+        for column in columns:
+            for transformation in column.transformations:
+                if transformation.params:
+                    for param_value in transformation.params.values():
+                        if isinstance(param_value, list):
+                            if len(param_value) > 0:  # Non-empty list
+                                all_list_lengths.add(len(param_value))
+        
+        # Skip validation if no lists found
+        if not all_list_lengths:
+            return columns
+            
+        # Check if all lists either have length 1, or all have the same length
+        all_list_lengths.discard(1)  # Remove length 1 as it's always valid
+        if len(all_list_lengths) > 1:  # Multiple different lengths found
+            raise ValueError("All parameter lists across columns must either contain one element or have the same length")
+        
+        return columns
+
+
+class YamlSplit(BaseModel):
+    split_method: str
+    params: Optional[Dict[str, list]]
+
+
+class YamlConfigDict(BaseModel):
+    global_params: YamlGlobalParams
+    columns: List[YamlColumns]
+    transforms: List[YamlTransform]
+    split: List[YamlSplit]
+
+
+class YamlSchema(BaseModel):
+    yaml_conf: YamlConfigDict
+
+
 def check_yaml_schema(config_yaml: str) -> str:
     """
     Using pydantic this function confirms that the fields have the correct input type
@@ -168,45 +239,6 @@ def check_yaml_schema(config_yaml: str) -> str:
     Returns:
         None
     """
-
-    class YamlGlobalParams(BaseModel):
-        seed: int
-
-    class YamlColumns(BaseModel):
-        class YamlColumnsEncoder(BaseModel):
-            name: str
-            params: Optional[Dict[str, str]]  # The dict can contain or not data
-
-        column_name: str
-        column_type: str
-        data_type: str
-        encoder: List[YamlColumnsEncoder]
-
-    class YamlTransform(BaseModel):
-        class YamlTransformColumns(BaseModel):
-            class YamlTransformColumnsTransformation(BaseModel):
-                name: str
-                params: Optional[Dict[str, list]]
-
-            column_name: str
-            transformations: List[YamlTransformColumnsTransformation]
-
-        transformation_name: str
-        columns: List[YamlTransformColumns]
-
-    class YamlSplit(BaseModel):
-        split_method: str
-        params: Optional[Dict[str, list]]
-
-    class YamlConfigDict(BaseModel):
-        global_params: YamlGlobalParams
-        columns: List[YamlColumns]
-        transforms: List[YamlTransform]
-        split: List[YamlSplit]
-
-    class YamlSchema(BaseModel):
-        yaml_conf: YamlConfigDict
-
     try:
         YamlSchema(yaml_conf=config_yaml)
     except ValidationError as e:
