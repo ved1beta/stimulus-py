@@ -63,7 +63,7 @@ class EncoderLoader(AbstractLoader):
         """
         return getattr(self, field_name)["encoder"].encode_all
 
-    def get_encoder(self, encoder_name: str, encoder_params: dict) -> Any:
+    def get_encoder(self, encoder_name: str, encoder_params: dict = None) -> Any:
         """Gets an encoder object from the encoders module and initializes it with the given parametersß.
         
         Args:

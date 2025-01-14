@@ -316,8 +316,6 @@ class CsvHandler:
         self.experiment = experiment
         self.csv_path = csv_path
 
-
-
 class CsvProcessing(CsvHandler):
     """Class to load the input csv data and add noise accordingly."""
 

@@ -61,8 +61,8 @@ split:
   - split_method: random_split
     split_input_columns:
     params:
-      split: [[0.6, 0.2, 0.2]]
+      split: [0.6, 0.2, 0.2]
   - split_method: random_split
     split_input_columns:
     params:
-      split: [[0.7, 0.15, 0.15]]
+      split: [0.7, 0.15, 0.15]
