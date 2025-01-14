@@ -149,8 +149,8 @@ class EncodeManager:
             >>> print(encoded.shape)
             torch.Size([2, 4, 4])  # 2 sequences, length 4, one-hot encoded
         """
-        encoder = self.encoder_loader.get_encoder(column_name)
-        return encoder.encode_all(column_data)
+        encode_all_function = self.encoder_loader.get_function_encode_all(column_name)
+        return encode_all_function(column_data)
 
     def encode_columns(self, column_data: dict) -> dict:
         """Encodes multiple columns of data using the configured encoders.
@@ -273,7 +273,7 @@ class DatasetHandler:
         df = self.data.select(columns)
         return {col: df[col].to_list() for col in columns}
     
-    def add_split(self, config: dict, force=False) -> None:
+    def add_split(self, force=False) -> None:
         """Add a column specifying the train, validation, test splits of the data.
         An error exception is raised if the split column is already present in the csv file. This behaviour can be overriden by setting force=True.
 
@@ -308,6 +308,43 @@ class DatasetHandler:
 
         if "split" not in self.columns:
             self.columns.append("split")
+
+    def get_all_items(self) -> dict:
+        """Get the full dataset organized by input, label and meta categories.
+
+        Returns:
+            dict: Dictionary containing:
+                - 'input': Dict mapping input column names to encoded input data
+                - 'label': Dict mapping label column names to encoded label data  
+                - 'meta': Dict mapping meta column names to meta data
+
+        Example:
+            >>> handler = DatasetHandler(...)
+            >>> dataset = handler.get_dataset()
+            >>> print(dataset.keys())
+            dict_keys(['input', 'label', 'meta'])
+            >>> print(dataset['input'].keys())
+            dict_keys(['age', 'fare'])
+        """
+        # Get columns for each category from dataset manager
+        input_cols = self.dataset_manager.column_categories["input"]
+        label_cols = self.dataset_manager.column_categories["label"] 
+        meta_cols = self.dataset_manager.column_categories["meta"]
+
+        # Select and organize data by category
+        input_data = self.select_columns(input_cols) if input_cols else {}
+        label_data = self.select_columns(label_cols) if label_cols else {}
+        meta_data = self.select_columns(meta_cols) if meta_cols else {}
+
+        # Encode input and label data
+        encoded_input = self.encoder_manager.encode_columns(input_data) if input_data else {}
+        encoded_label = self.encoder_manager.encode_columns(label_data) if label_data else {}
+
+        return {
+            "input": encoded_input,
+            "label": encoded_label,
+            "meta": meta_data
+        }
 
 class CsvHandler:
     """Meta class for handling CSV files."""

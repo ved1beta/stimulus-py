@@ -49,8 +49,8 @@ class EncoderLoader(AbstractLoader):
             config (dict): Configuration dictionary containing field names (column_name) and their encoder specifications.
         """
         for field in config:
-            encoder = self.get_encoder(field["encoder"][0]["name"], field["encoder"][0]["params"])
-            self.set_encoder_as_attribute(field["column_name"], encoder)
+            encoder = self.get_encoder(field.encoder[0].name, field.encoder[0].params)
+            self.set_encoder_as_attribute(field.column_name, encoder)
 
     def get_function_encode_all(self, field_name: str) -> Any:
         """Gets the encoding function for a specific field.

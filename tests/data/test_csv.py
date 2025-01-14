@@ -32,7 +32,7 @@ def split_configs(base_config):
 @pytest.fixture
 def encoder_loader(base_config):
     loader = experiments.EncoderLoader()
-    loader.initialize_column_encoders_from_config(base_config["columns"])
+    loader.initialize_column_encoders_from_config(base_config.columns)
     return loader
 
 @pytest.fixture
@@ -88,6 +88,8 @@ def test_encode_manager_initialize_encoders():
 
 def test_encode_manager_encode_numeric():
     encoder_loader = experiments.EncoderLoader()
+    intencoder = encoder_loader.get_encoder("IntEncoder")
+    encoder_loader.set_encoder_as_attribute("test_col", intencoder)
     manager = EncodeManager(encoder_loader)
     data = [1, 2, 3]
     encoded = manager.encode_column("test_col", data)
@@ -107,7 +109,6 @@ def test_transform_manager_initialize_transforms():
 def test_transform_manager_apply_transforms():
     transform_loader = experiments.TransformLoader()
     manager = TransformManager(transform_loader)
-    data = pl.DataFrame({"Age": [20.0, 30.0, 40.0], "Fare": [7.25, 8.05, 13.0]})
     assert hasattr(manager, "transform_loader")
 
 # Test SplitManager
@@ -138,12 +139,11 @@ def test_dataset_handler_init(config_path, titanic_csv_path, encoder_loader, tra
         csv_path=titanic_csv_path
     )
     
-    assert isinstance(handler.encode_manager, EncodeManager)
+    assert isinstance(handler.encoder_manager, EncodeManager)
     assert isinstance(handler.transform_manager, TransformManager)
     assert isinstance(handler.split_manager, SplitManager)
 
-def test_dataset_handler_load_and_validate(config_path, titanic_csv_path):
-    encoder_loader = experiments.EncoderLoader()
+def test_dataset_handler_get_dataset(config_path, titanic_csv_path, encoder_loader):
     transform_loader = experiments.TransformLoader()
     split_loader = experiments.SplitLoader()
     
@@ -155,28 +155,11 @@ def test_dataset_handler_load_and_validate(config_path, titanic_csv_path):
         csv_path=titanic_csv_path
     )
     
-    data = handler.load_data()
-    assert isinstance(data, pl.DataFrame)
-
-def test_dataset_handler_get_dataset(config_path, titanic_csv_path):
-    encoder_loader = experiments.EncoderLoader()
-    transform_loader = experiments.TransformLoader()
-    split_loader = experiments.SplitLoader()
-    
-    handler = DatasetHandler(
-        config_path=config_path,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader, 
-        split_loader=split_loader,
-        csv_path=titanic_csv_path
-    )
-    
-    dataset = handler.get_dataset()
+    dataset = handler.get_all_items()
     assert isinstance(dataset, dict)
 
 @pytest.mark.parametrize("config_idx", [0, 1])  # Test both split configs
-def test_dataset_handler_different_configs(config_path, titanic_csv_path, config_idx):
-    encoder_loader = experiments.EncoderLoader()
+def test_dataset_handler_different_configs(config_path, titanic_csv_path, config_idx, encoder_loader):
     transform_loader = experiments.TransformLoader()
     split_loader = experiments.SplitLoader()
     
@@ -188,5 +171,5 @@ def test_dataset_handler_different_configs(config_path, titanic_csv_path, config
         csv_path=titanic_csv_path
     )
     
-    dataset = handler.get_dataset()
+    dataset = handler.get_all_items()
     assert isinstance(dataset, dict)
