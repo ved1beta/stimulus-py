@@ -309,22 +309,24 @@ class DatasetHandler:
         if "split" not in self.columns:
             self.columns.append("split")
 
-    def get_all_items(self) -> dict:
-        """Get the full dataset organized by input, label and meta categories.
+    def get_all_items(self) -> tuple[dict, dict, dict]:
+        """Get the full dataset as three separate dictionaries for inputs, labels and metadata.
 
         Returns:
-            dict: Dictionary containing:
-                - 'input': Dict mapping input column names to encoded input data
-                - 'label': Dict mapping label column names to encoded label data  
-                - 'meta': Dict mapping meta column names to meta data
+            tuple[dict, dict, dict]: Three dictionaries containing:
+                - Input dictionary mapping input column names to encoded input data
+                - Label dictionary mapping label column names to encoded label data
+                - Meta dictionary mapping meta column names to meta data
 
         Example:
             >>> handler = DatasetHandler(...)
-            >>> dataset = handler.get_dataset()
-            >>> print(dataset.keys())
-            dict_keys(['input', 'label', 'meta'])
-            >>> print(dataset['input'].keys())
+            >>> input_dict, label_dict, meta_dict = handler.get_dataset()
+            >>> print(input_dict.keys())
             dict_keys(['age', 'fare'])
+            >>> print(label_dict.keys()) 
+            dict_keys(['survived'])
+            >>> print(meta_dict.keys())
+            dict_keys(['passenger_id'])
         """
         # Get columns for each category from dataset manager
         input_cols = self.dataset_manager.column_categories["input"]
@@ -340,11 +342,7 @@ class DatasetHandler:
         encoded_input = self.encoder_manager.encode_columns(input_data) if input_data else {}
         encoded_label = self.encoder_manager.encode_columns(label_data) if label_data else {}
 
-        return {
-            "input": encoded_input,
-            "label": encoded_label,
-            "meta": meta_data
-        }
+        return encoded_input, encoded_label, meta_data
 
 class CsvHandler:
     """Meta class for handling CSV files."""

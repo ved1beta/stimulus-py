@@ -41,14 +41,14 @@ columns:
     column_type: "input"
     data_type: "int"
     encoder:
-      - name: IntRankEncoder
+      - name: IntEncoder
         params:
 
   - column_name: "parch"
     column_type: "input"
     data_type: "int"
     encoder:
-      - name: IntRankEncoder
+      - name: IntEncoder
         params:
 
   - column_name: "fare"

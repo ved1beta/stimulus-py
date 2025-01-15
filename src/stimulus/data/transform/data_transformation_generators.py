@@ -30,37 +30,36 @@ class AbstractDataTransformer(ABC):
 
     def __init__(self):
         self.add_row = None
+        self.seed = 42
 
     @abstractmethod
-    def transform(self, data: Any, seed: float = None) -> Any:
+    def transform(self, data: Any) -> Any:
         """Transforms a single data point.
 
         This is an abstract method that should be implemented by the child class.
 
         Args:
             data (Any): the data to be transformed
-            seed (float): the seed for reproducibility
 
         Returns:
             transformed_data (Any): the transformed data
         """
-        #  np.random.seed(seed)
+        #  np.random.seed(self.seed)
         raise NotImplementedError
 
     @abstractmethod
-    def transform_all(self, data: list, seed: float = None) -> list:
+    def transform_all(self, data: list) -> list:
         """Transforms a list of data points.
 
         This is an abstract method that should be implemented by the child class.
 
         Args:
             data (list): the data to be transformed
-            seed (float): the seed for reproducibility
 
         Returns:
             transformed_data (list): the transformed data
         """
-        #  np.random.seed(seed)
+        #  np.random.seed(self.seed)
         raise NotImplementedError
 
 
@@ -96,38 +95,36 @@ class UniformTextMasker(AbstractNoiseGenerator):
         transform_all: adds character masking to a list of data points
     """
 
-    def __init__(self) -> None:
+    def __init__(self, probability: float = 0.1, mask: str = "*", seed: float = 42) -> None:
         super().__init__()
+        self.probability = probability
+        self.mask = mask
+        self.seed = seed
 
-    def transform(self, data: str, probability: float = 0.1, mask: str = "*", seed: float = None) -> str:
+    def transform(self, data: str) -> str:
         """Adds character masking to the data.
 
         Args:
             data (str): the data to be transformed
-            probability (float): the probability of adding noise
-            mask (str): the character to use for masking
-            seed (float): the seed for reproducibility
 
         Returns:
             transformed_data (str): the transformed data point
         """
-        np.random.seed(seed)
-        return "".join([c if np.random.rand() > probability else mask for c in data])
+        np.random.seed(self.seed)
+        return "".join([c if np.random.rand() > self.probability else self.mask for c in data])
 
-    def transform_all(self, data: list, probability: float = 0.1, mask: str = "*", seed: float = None) -> list:
+    def transform_all(self, data: list) -> list:
         """Adds character masking to multiple data points using multiprocessing.
 
         Args:
             data (list): the data to be transformed
-            probability (float): the probability of adding noise
-            mask (str): the character to use for masking
-            seed (float): the seed for reproducibility
+
 
         Returns:
             transformed_data (list): the transformed data points
         """
         with mp.Pool(mp.cpu_count()) as pool:
-            function_specific_input = [(item, probability, mask, seed) for item in data]
+            function_specific_input = [(item) for item in data]
             return pool.starmap(self.transform, function_specific_input)
 
 
@@ -141,35 +138,35 @@ class GaussianNoise(AbstractNoiseGenerator):
         transform_all: adds noise to a list of data points
     """
 
-    def transform(self, data: float, mean: float = 0, std: float = 1, seed: float = None) -> float:
+    def __init__(self, mean: float = 0, std: float = 1, seed: float = 42) -> None:
+        super().__init__()
+        self.mean = mean
+        self.std = std
+        self.seed = seed
+
+    def transform(self, data: float) -> float:
         """Adds Gaussian noise to a single point of data.
 
         Args:
             data (float): the data to be transformed
-            mean (float): the mean of the Gaussian distribution
-            std (float): the standard deviation of the Gaussian distribution
-            seed (float): the seed for reproducibility
 
         Returns:
             transformed_data (float): the transformed data point
         """
-        np.random.seed(seed)
-        return data + np.random.normal(mean, std)
+        np.random.seed(self.seed)
+        return data + np.random.normal(self.mean, self.std)
 
-    def transform_all(self, data: list, mean: float = 0, std: float = 0, seed: float = None) -> np.array:
+    def transform_all(self, data: list) -> np.array:
         """Adds Gaussian noise to a list of data points
 
         Args:
             data (list): the data to be transformed
-            mean (float): the mean of the Gaussian distribution
-            std (float): the standard deviation of the Gaussian distribution
-            seed (float): the seed for reproducibility
 
         Returns:
             transformed_data (np.array): the transformed data points
         """
-        np.random.seed(seed)
-        return np.array(np.array(data) + np.random.normal(mean, std, len(data)))
+        np.random.seed(self.seed)
+        return np.array(np.array(data) + np.random.normal(self.mean, self.std, len(data)))
 
 
 class ReverseComplement(AbstractAugmentationGenerator):
@@ -235,7 +232,13 @@ class GaussianChunk(AbstractAugmentationGenerator):
         transform_all: chunks multiple lists
     """
 
-    def transform(self, data: str, chunk_size: int, seed: float = None, std: float = 1) -> str:
+    def __init__(self, chunk_size: int, seed: float = 42, std: float = 1) -> None:
+        super().__init__()
+        self.chunk_size = chunk_size
+        self.seed = seed
+        self.std = std
+
+    def transform(self, data: str) -> str:
         """Chunks a sequence of size chunk_size from the middle position +/- a value obtained through a gaussian distribution.
 
         Args:
@@ -250,31 +253,31 @@ class GaussianChunk(AbstractAugmentationGenerator):
         Raises:
             AssertionError: if the input data is shorter than the chunk size
         """
-        np.random.seed(seed)
+        np.random.seed(self.seed)
 
         # make sure that the data is longer than chunk_size otherwise raise an error
-        assert len(data) > chunk_size, "The input data is shorter than the chunk size"
+        assert len(data) > self.chunk_size, "The input data is shorter than the chunk size"
 
         # Get the middle position of the input sequence
         middle_position = len(data) // 2
 
         # Change the middle position by a value obtained through a gaussian distribution
-        new_middle_position = int(middle_position + np.random.normal(0, std))
+        new_middle_position = int(middle_position + np.random.normal(0, self.std))
 
         # Get the start and end position of the chunk
-        start_position = new_middle_position - chunk_size // 2
-        end_position = new_middle_position + chunk_size // 2
+        start_position = new_middle_position - self.chunk_size // 2
+        end_position = new_middle_position + self.chunk_size // 2
 
         # if the start position is negative, set it to 0
         start_position = max(start_position, 0)
 
         # Get the chunk of size chunk_size from the start position if the end position is smaller than the length of the data
         if end_position < len(data):
-            return data[start_position : start_position + chunk_size]
+            return data[start_position : start_position + self.chunk_size]
         # Otherwise return the chunk of the sequence from the end of the sequence of size chunk_size
-        return data[-chunk_size:]
+        return data[-self.chunk_size:]
 
-    def transform_all(self, data: list, chunk_size: int, seed: float = None, std: float = 1) -> list:
+    def transform_all(self, data: list) -> list:
         """Adds chunks to multiple lists using multiprocessing.
 
         Args:
@@ -287,5 +290,5 @@ class GaussianChunk(AbstractAugmentationGenerator):
             transformed_data (list): the transformed sequences
         """
         with mp.Pool(mp.cpu_count()) as pool:
-            function_specific_input = [(item, chunk_size, seed, std) for item in data]
+            function_specific_input = [(item) for item in data]
             return pool.starmap(self.transform, function_specific_input)

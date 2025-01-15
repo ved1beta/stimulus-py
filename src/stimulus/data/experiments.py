@@ -19,6 +19,7 @@ import yaml
 from stimulus.data.encoding import encoders as encoders
 from stimulus.data.splitters import splitters as splitters
 from stimulus.data.transform import data_transformation_generators as data_transformation_generators
+from stimulus.utils.yaml_data import YamlConfigDict
 
 class AbstractLoader(ABC):
     """Abstract base class for defining loaders."""
@@ -33,7 +34,7 @@ class AbstractLoader(ABC):
             dict: The loaded configuration dictionary
         """
         with open(yaml_path, "r") as file:
-            config = yaml.safe_load(file)
+            config = YamlConfigDict(**yaml.safe_load(file))
         return config
     
 class EncoderLoader(AbstractLoader):
@@ -104,7 +105,7 @@ class TransformLoader(AbstractLoader):
     def __init__(self, seed: float = None) -> None:
         self.seed = seed
 
-    def get_data_transformer(self, transformation_name: str) -> Any:
+    def get_data_transformer(self, transformation_name: str, transformation_params: dict = None) -> Any:
         """Gets a transformer object from the transformers module.
         
         Args:
@@ -114,11 +115,19 @@ class TransformLoader(AbstractLoader):
             Any: The transformer function for the specified transformation
         """
         try:
-            return getattr(data_transformation_generators, transformation_name)()
+            return getattr(data_transformation_generators, transformation_name)(**transformation_params)
         except AttributeError:
             print(f"Transformer '{transformation_name}' not found in the transformers module.")
             print(f"Available transformers: {[name for name, obj in data_transformation_generators.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}")
             raise
+
+        except TypeError:
+            if transformation_params is None:
+                return getattr(data_transformation_generators, transformation_name)()
+            else:
+                print(f"Transformer '{transformation_name}' has incorrect parameters: {transformation_params}")
+                print(f"Expected parameters for '{transformation_name}': {inspect.signature(getattr(data_transformation_generators, transformation_name))}")
+                raise
     
     def set_data_transformer_as_attribute(self, field_name: str, data_transformer: Any) -> None:
         """Sets the data transformer as an attribute of the loader.
@@ -145,13 +154,13 @@ class TransformLoader(AbstractLoader):
         
         # First pass: collect all transformations by column
         for transform_group in config:
-            for column in transform_group["columns"]:
-                col_name = column["column_name"]
+            for column in transform_group.columns:
+                col_name = column.column_name
                 
                 # Process each transformation for this column
-                for transform_spec in column["transformations"]:
+                for transform_spec in column.transformations:
                     # Create transformer instance
-                    transformer = self.get_data_transformer(transform_spec["name"])
+                    transformer = self.get_data_transformer(transform_spec.name)
                     
                     # Get transformer class for comparison
                     transformer_type = type(transformer)

@@ -60,7 +60,7 @@ def test_build_experiment_class_encoder_dict(dna_experiment_config_path):
     This test checks if the build_experiment_class_encoder_dict method correctly builds the experiment class from a config dictionary.
     """
     experiment = experiments.EncoderLoader()
-    config = experiment.get_config_from_yaml(dna_experiment_config_path)["columns"]
+    config = experiment.get_config_from_yaml(dna_experiment_config_path).columns
     experiment.initialize_column_encoders_from_config(config)
     assert hasattr(experiment, "hello")
     assert hasattr(experiment, "bonjour")
@@ -97,7 +97,7 @@ def test_initialize_column_data_transformers_from_config(dna_experiment_config_p
     the experiment class from a config dictionary.
     """
     experiment = experiments.TransformLoader()
-    config = experiment.get_config_from_yaml(dna_experiment_config_path)["transforms"]
+    config = experiment.get_config_from_yaml(dna_experiment_config_path).transforms
     experiment.initialize_column_data_transformers_from_config(config)
     
     # Check columns have transformers set

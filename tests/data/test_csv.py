@@ -156,7 +156,29 @@ def test_dataset_handler_get_dataset(config_path, titanic_csv_path, encoder_load
     )
     
     dataset = handler.get_all_items()
-    assert isinstance(dataset, dict)
+    assert isinstance(dataset, tuple)
+
+def test_dataset_handler_print_dataset_info(config_path, titanic_csv_path, encoder_loader):
+    transform_loader = experiments.TransformLoader()
+    split_loader = experiments.SplitLoader()
+    
+    handler = DatasetHandler(
+        config_path=config_path,
+        encoder_loader=encoder_loader,
+        transform_loader=transform_loader, 
+        split_loader=split_loader,
+        csv_path=titanic_csv_path
+    )
+    
+    input_dict, label_dict, meta_dict = handler.get_all_items()
+    # Print input dict keys and first 5 elements of each value
+    print("\nInput dictionary contents:")
+    for key, value in input_dict.items():
+        print(f"\n{key}:")
+        if isinstance(value, np.ndarray):
+            print(value[:5])  # Print first 5 elements if numpy array
+        else:
+            print(value[:5])  # Print first 5 elements if list
 
 @pytest.mark.parametrize("config_idx", [0, 1])  # Test both split configs
 def test_dataset_handler_different_configs(config_path, titanic_csv_path, config_idx, encoder_loader):
@@ -172,4 +194,4 @@ def test_dataset_handler_different_configs(config_path, titanic_csv_path, config
     )
     
     dataset = handler.get_all_items()
-    assert isinstance(dataset, dict)
+    assert isinstance(dataset, tuple)
