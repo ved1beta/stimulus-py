@@ -180,6 +180,9 @@ def generate_data_configs(yaml_config: YamlConfigDict) -> list[YamlSubConfigDict
             length will be the product of the number of parameter combinations
             and the number of splits.
     """
+    if isinstance(yaml_config, dict) and not isinstance(yaml_config, YamlConfigDict):
+        raise TypeError("Input must be a YamlConfigDict object")
+
     sub_transforms = expand_transform_list_combinations(yaml_config.transforms)
     sub_splits = yaml_config.split
     sub_configs = []
