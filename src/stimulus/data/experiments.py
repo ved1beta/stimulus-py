@@ -43,11 +43,11 @@ class EncoderLoader(AbstractLoader):
     def __init__(self, seed: float = None) -> None:
         self.seed = seed
 
-    def initialize_column_encoders_from_config(self, config: dict) -> None:
+    def initialize_column_encoders_from_config(self, config: YamlConfigDict) -> None:
         """Build the loader from a config dictionary.
         
         Args:
-            config (dict): Configuration dictionary containing field names (column_name) and their encoder specifications.
+            config (YamlConfigDict): Configuration dictionary containing field names (column_name) and their encoder specifications.
         """
         for field in config:
             encoder = self.get_encoder(field.encoder[0].name, field.encoder[0].params)
@@ -138,16 +138,15 @@ class TransformLoader(AbstractLoader):
         """
         setattr(self, field_name, {"data_transformation_generators": data_transformer})
 
-    def initialize_column_data_transformers_from_config(self, config: dict) -> None:
+    def initialize_column_data_transformers_from_config(self, config: YamlConfigDict) -> None:
         """Build the loader from a config dictionary.
         
         Args:
-            config (dict): Configuration dictionary containing transforms configurations.
+            config (YamlConfigDict): Configuration dictionary containing transforms configurations.
                 Each transform can specify multiple columns and their transformations.
                 The method will organize transformers by column, ensuring each column
                 has all its required transformations.
         """
-        
         
         # Use defaultdict to automatically initialize empty lists
         column_transformers = defaultdict(list)
@@ -191,7 +190,7 @@ class SplitLoader(AbstractLoader):
         """
         return self.split.get_split_indexes
     
-    def get_splitter(self, splitter_name: str) -> Any:
+    def get_splitter(self, splitter_name: str, splitter_params: dict = None) -> Any:
         """Gets a splitter object from the splitters module.
         
         Args:
@@ -200,13 +199,30 @@ class SplitLoader(AbstractLoader):
         Returns:
             Any: The splitter function for the specified splitter
         """
-        return getattr(splitters, splitter_name)()
+        try:
+            return getattr(splitters, splitter_name)(**splitter_params)
+        except TypeError:
+            if splitter_params is None:
+                return getattr(splitters, splitter_name)()
+            else:
+                print(f"Splitter '{splitter_name}' has incorrect parameters: {splitter_params}")
+                print(f"Expected parameters for '{splitter_name}': {inspect.signature(getattr(splitters, splitter_name))}")
+                raise
     
-    def set_splitter_as_attribute(self, field_name: str, splitter: Any) -> None:
+    def set_splitter_as_attribute(self, splitter: Any) -> None:
         """Sets the splitter as an attribute of the loader.
         
         Args:
             field_name (str): The name of the field to set the splitter for
             splitter (Any): The splitter to set
         """
-        setattr(self, field_name, {"splitter": splitter})
+        setattr(self, "split", splitter)
+
+    def initialize_splitter_from_config(self, config: YamlConfigDict, split_index: int = 0) -> None:
+        """Build the loader from a config dictionary.
+        
+        Args:
+            config (dict): Configuration dictionary containing split configurations.
+        """
+        splitter = self.get_splitter(config.split[split_index].split_method, config.split[split_index].params)
+        self.set_splitter_as_attribute(splitter)

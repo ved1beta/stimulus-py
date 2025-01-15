@@ -1,10 +1,11 @@
 import pytest
-import stimulus.data.experiments as experiments
+
 import numpy as np
 
 from stimulus.data.transform import data_transformation_generators
 from stimulus.data.encoding.encoders import AbstractEncoder
-
+import stimulus.data.experiments as experiments
+import stimulus.data.splitters as splitters
 @pytest.fixture
 def dna_experiment_config_path():
     """Fixture that provides the path to the DNA experiment config template YAML file.
@@ -16,6 +17,10 @@ def dna_experiment_config_path():
         str: Path to the DNA experiment config template YAML file
     """
     return "tests/test_data/dna_experiment/dna_experiment_config_template.yaml"
+
+@pytest.fixture
+def titanic_yaml_path():
+    return "tests/test_data/titanic/titanic.yaml"
 
 @pytest.fixture
 def TextOneHotEncoder_name_and_params():
@@ -115,3 +120,10 @@ def test_initialize_column_data_transformers_from_config(dna_experiment_config_p
 
     # Verify col2 has the expected transformer
     assert any(isinstance(t, data_transformation_generators.GaussianNoise) for t in col2_transformers)
+
+def test_initialize_splitter_from_config(titanic_yaml_path):
+    experiment = experiments.SplitLoader()
+    config = experiment.get_config_from_yaml(titanic_yaml_path)
+    experiment.initialize_splitter_from_config(config)
+    assert hasattr(experiment, "split")
+    assert isinstance(experiment.split, splitters.RandomSplit)

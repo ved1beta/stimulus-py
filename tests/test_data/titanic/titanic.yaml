@@ -79,11 +79,7 @@ transforms:
               std: [0.1, 0.2, 0.3]
 
 split:
-  - split_method: random_split
+  - split_method: RandomSplit
     split_input_columns:
     params:
       split: [0.7, 0.15, 0.15]
-  - split_method: random_split
-    split_input_columns:
-    params:
-      split: [0.8, 0.1, 0.1]

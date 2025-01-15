@@ -126,9 +126,8 @@ def test_split_manager_apply_split():
     split_loader = experiments.SplitLoader(seed=42)
     manager = SplitManager(split_loader)
     data = pl.DataFrame({"col": range(100)})
-    assert hasattr(manager, "split_loader")
-
-
+    split_indices = manager.get_split_indices(data)
+    assert len(split_indices) == 100
 
 def test_dataset_handler_init(config_path, titanic_csv_path, encoder_loader, transform_loader, split_loader):
     handler = DatasetHandler(

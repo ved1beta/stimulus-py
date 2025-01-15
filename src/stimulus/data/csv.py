@@ -18,6 +18,7 @@ import numpy as np
 import polars as pl
 import yaml
 import stimulus.data.experiments as experiments
+import stimulus.utils.yaml_data as yaml_data
 import torch
 
 class DatasetManager:
@@ -68,13 +69,13 @@ class DatasetManager:
         input_columns = []
         label_columns = []
         meta_columns = []
-        for column in self.config["columns"]:
-            if column["column_type"] == "input":
-                input_columns.append(column["column_name"])
-            elif column["column_type"] == "label":
-                label_columns.append(column["column_name"])
-            elif column["column_type"] == "meta":
-                meta_columns.append(column["column_name"])
+        for column in self.config.columns:
+            if column.column_type == "input":
+                input_columns.append(column.column_name)
+            elif column.column_type == "label":
+                label_columns.append(column.column_name)
+            elif column.column_type == "meta":
+                meta_columns.append(column.column_name)
 
         return {"input": input_columns, "label": label_columns, "meta": meta_columns}
 
@@ -94,11 +95,11 @@ class DatasetManager:
             'hello'
         """
         with open(config_path, "r") as file:
-            return yaml.safe_load(file)
+            return yaml_data.YamlConfigDict(**yaml.safe_load(file))
 
     def get_split_columns(self) -> str:
         """Get the columns that are used for splitting."""
-        return self.config["split"]["split_input_columns"]
+        return self.config.split.split_input_columns
   
 
 class EncodeManager:
