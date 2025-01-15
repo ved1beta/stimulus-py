@@ -9,7 +9,10 @@ import numpy as np
 import torch
 import pytest
 
-from src.stimulus.data.encoding.encoders import TextOneHotEncoder, FloatEncoder, IntEncoder
+from src.stimulus.data.encoding.encoders import (TextOneHotEncoder, 
+                                                FloatEncoder, 
+                                                IntEncoder, 
+                                                StrClassificationIntEncoder)
 
 # ------------------------------------------------------------------------------
 # Tests for TextOneHotEncoder
@@ -305,3 +308,60 @@ def test_decode_multi_int(int_encoder):
     assert len(decoded) == 2, "Decoded list should have two elements."
     assert decoded[0] == 3, "First decoded value does not match."
     assert decoded[1] == 4, "Second decoded value does not match."
+
+# ------------------------------------------------------------------------------
+# Tests for StrClassificationIntEncoder
+# ------------------------------------------------------------------------------
+
+@pytest.fixture
+def str_encoder():
+    """Pytest fixture to instantiate StrClassificationIntEncoder."""
+    return StrClassificationIntEncoder()
+
+def test_encode_raises_not_implemented(str_encoder):
+    """
+    Tests that calling encode() with a single string 
+    raises NotImplementedError as per the docstring.
+    """
+    with pytest.raises(NotImplementedError) as exc_info:
+        str_encoder.encode("example")
+    assert "Encoding a single string does not make sense. Use encode_all instead." in str(exc_info.value)
+
+def test_encode_all_list_of_strings(str_encoder):
+    """
+    Tests that passing multiple unique strings returns 
+    a torch tensor of the correct shape and encoded values.
+    """
+    input_data = ["apple", "banana", "orange"]
+    output_tensor = str_encoder.encode_all(input_data)
+
+    assert isinstance(output_tensor, torch.Tensor), "Output should be a torch.Tensor."
+    assert output_tensor.shape == (3,), "Expected a shape of (3,) for three input strings."
+
+    # We don't rely on a specific ordering from LabelEncoder (like alphabetical)
+    # but we do expect a consistent integer encoding for each unique string.
+    # For example, if it's alphabetical: apple -> 0, banana -> 1, orange -> 2
+    # But the exact order may differ depending on LabelEncoder's implementation.
+    # We can, however, ensure that the tensor has 3 unique integers in 0..2.
+    unique_vals = set(output_tensor.tolist())
+    assert len(unique_vals) == 3, "There should be 3 unique integer encodings."
+    assert all(val in [0, 1, 2] for val in unique_vals), "Encoded values should be 0, 1, or 2."
+
+def test_encode_all_raises_value_error_on_non_string(str_encoder):
+    """
+    Tests that encode_all raises ValueError 
+    if the input is not a string or list of strings.
+    """
+    input_data = ["apple", 42, "banana"]  # 42 is not a string
+    with pytest.raises(ValueError) as exc_info:
+        str_encoder.encode_all(input_data)
+    assert "Expected input data to be a list of strings" in str(exc_info.value)
+
+def test_decode_raises_not_implemented(str_encoder):
+    """
+    Tests that decode() raises NotImplementedError 
+    since decoding is not supported in this encoder.
+    """
+    with pytest.raises(NotImplementedError) as exc_info:
+        str_encoder.decode(torch.tensor([0]))
+    assert "Decoding is not yet supported for StrClassificationInt." in str(exc_info.value)

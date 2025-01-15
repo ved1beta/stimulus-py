@@ -365,7 +365,7 @@ class FloatEncoder(AbstractEncoder):
         Returns:
             decoded_data (List[float]): the decoded data
         """
-        return data.numpy().tolist()
+        return data.cpu().numpy().tolist()
 
     def _check_input_dtype(self, data: Union[int, float, List[int], List[float]]) -> None:
         """Check if the input data is int or float data.
@@ -381,6 +381,7 @@ class FloatEncoder(AbstractEncoder):
             err_msg = f"Expected input data to be a float, got {type(data).__name__}"
             logger.error(err_msg)
             raise ValueError(err_msg)
+
 
 class IntEncoder(FloatEncoder):
     """Encoder for integer data."""
@@ -408,6 +409,7 @@ class IntEncoder(FloatEncoder):
             logger.error(err_msg)
             raise ValueError(err_msg)
 
+
 class StrClassificationIntEncoder(AbstractEncoder):
     """Considering a ensemble of strings, this encoder encodes them into integers from 0 to (n-1) where n is the number of unique strings."""
 
@@ -415,19 +417,40 @@ class StrClassificationIntEncoder(AbstractEncoder):
         """Returns an error since encoding a single string does not make sense."""
         raise NotImplementedError("Encoding a single string does not make sense. Use encode_all instead.")
 
-    def encode_all(self, data: list) -> np.array:
+    def encode_all(self, data: List[str]) -> torch.tensor:
         """Encodes the data.
         This method takes as input a list of data points, should be mappable to a single output, using LabelEncoder from scikit learn and returning a numpy array.
         For more info visit : https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.LabelEncoder.html
+
+        Args:
+            data (List[str]): a list of strings
+        
+        Returns:
+            encoded_data (torch.tensor): the encoded data
         """
         if not isinstance(data, list):
             data = [data]
+        self._check_dtype(data)
         encoder = preprocessing.LabelEncoder()
-        return encoder.fit_transform(data)
+        return torch.tensor(encoder.fit_transform(data))
 
     def decode(self, data: Any) -> Any:
         """Returns an error since decoding does not make sense without encoder information, which is not yet supported."""
         raise NotImplementedError("Decoding is not yet supported for StrClassificationInt.")
+    
+    def _check_dtype(self, data: List[str]) -> None:
+        """Check if the input data is string data.
+
+        Args:
+            data (List[str]): a list of strings
+        
+        Raises:
+            ValueError: If the input data is not a string
+        """
+        if not all(isinstance(d, str) for d in data):
+            err_msg = f"Expected input data to be a list of strings"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
 
 
 class StrClassificationScaledEncoder(StrClassificationIntEncoder):
