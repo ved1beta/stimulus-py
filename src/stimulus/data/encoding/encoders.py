@@ -288,7 +288,8 @@ class TextOneHotEncoder(AbstractEncoder):
         if data.dim() == 2:
             # Single sequence
             data_np = data.numpy().reshape(-1, len(self.alphabet))
-            return ''.join(self.encoder.inverse_transform(data_np).flatten())
+            decoded = self.encoder.inverse_transform(data_np).flatten()
+            return ''.join([i for i in decoded if i != None])
         
         elif data.dim() == 3:
             # Multiple sequences
