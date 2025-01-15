@@ -99,8 +99,9 @@ class DatasetManager:
 
     def get_split_columns(self) -> str:
         """Get the columns that are used for splitting."""
-        return self.config.split.split_input_columns
-  
+
+        return self.config.split[0].split_input_columns
+
 
 class EncodeManager:
     """Manages the encoding of data columns using configured encoders.
@@ -290,12 +291,7 @@ class DatasetHandler:
             )
         # get relevant split columns from the dataset_manager
         split_columns = self.dataset_manager.get_split_columns()
-        
-        # if split_columns is none, build an empty dictionary
-        if split_columns is None:
-            split_input_data = {}
-        else:
-            split_input_data = self.select_columns(split_columns)
+        split_input_data = self.select_columns(split_columns)
 
         # get the split indices
         train, validation, test = self.split_manager.get_split_indices(split_input_data)

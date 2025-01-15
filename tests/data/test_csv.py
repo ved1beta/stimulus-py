@@ -38,18 +38,13 @@ def encoder_loader(base_config):
 @pytest.fixture
 def transform_loader(base_config):
     loader = experiments.TransformLoader()
-    if "transforms" in base_config:
-        loader.initialize_column_data_transformers_from_config(base_config["transforms"])
+    loader.initialize_column_data_transformers_from_config(base_config.transforms)
     return loader
 
 @pytest.fixture
 def split_loader(base_config):
     loader = experiments.SplitLoader()
-    if "split" in base_config:
-        # Get first split configuration
-        split_config = base_config["split"][0]
-        splitter = loader.get_splitter(split_config["split_method"])
-        loader.set_splitter_as_attribute("split", splitter)
+    loader.initialize_splitter_from_config(base_config)
     return loader
 
 # Test DatasetManager
@@ -112,22 +107,22 @@ def test_transform_manager_apply_transforms():
     assert hasattr(manager, "transform_loader")
 
 # Test SplitManager
-def test_split_manager_init():
-    split_loader = experiments.SplitLoader()
+def test_split_manager_init(split_loader):
     manager = SplitManager(split_loader)
     assert hasattr(manager, "split_loader")
 
-def test_split_manager_initialize_splits():
-    split_loader = experiments.SplitLoader()
+def test_split_manager_initialize_splits(split_loader):
     manager = SplitManager(split_loader)
     assert hasattr(manager, "split_loader")
 
-def test_split_manager_apply_split():
-    split_loader = experiments.SplitLoader(seed=42)
+def test_split_manager_apply_split(split_loader):
     manager = SplitManager(split_loader)
-    data = pl.DataFrame({"col": range(100)})
+    data = {"col": range(100)}
     split_indices = manager.get_split_indices(data)
-    assert len(split_indices) == 100
+    assert len(split_indices) == 3
+    assert len(split_indices[0]) == 70
+    assert len(split_indices[1]) == 15
+    assert len(split_indices[2]) == 15
 
 def test_dataset_handler_init(config_path, titanic_csv_path, encoder_loader, transform_loader, split_loader):
     handler = DatasetHandler(
@@ -141,6 +136,19 @@ def test_dataset_handler_init(config_path, titanic_csv_path, encoder_loader, tra
     assert isinstance(handler.encoder_manager, EncodeManager)
     assert isinstance(handler.transform_manager, TransformManager)
     assert isinstance(handler.split_manager, SplitManager)
+
+def test_dataset_hanlder_apply_split(config_path, titanic_csv_path, encoder_loader, transform_loader, split_loader):
+    handler = DatasetHandler(
+        config_path=config_path,
+        encoder_loader=encoder_loader,
+        transform_loader=transform_loader, 
+        split_loader=split_loader,
+        csv_path=titanic_csv_path
+    )
+    handler.add_split()
+    assert "split" in handler.columns
+    assert "split" in handler.data.columns
+    assert len(handler.data["split"]) == 712
 
 def test_dataset_handler_get_dataset(config_path, titanic_csv_path, encoder_loader):
     transform_loader = experiments.TransformLoader()
@@ -156,28 +164,6 @@ def test_dataset_handler_get_dataset(config_path, titanic_csv_path, encoder_load
     
     dataset = handler.get_all_items()
     assert isinstance(dataset, tuple)
-
-def test_dataset_handler_print_dataset_info(config_path, titanic_csv_path, encoder_loader):
-    transform_loader = experiments.TransformLoader()
-    split_loader = experiments.SplitLoader()
-    
-    handler = DatasetHandler(
-        config_path=config_path,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader, 
-        split_loader=split_loader,
-        csv_path=titanic_csv_path
-    )
-    
-    input_dict, label_dict, meta_dict = handler.get_all_items()
-    # Print input dict keys and first 5 elements of each value
-    print("\nInput dictionary contents:")
-    for key, value in input_dict.items():
-        print(f"\n{key}:")
-        if isinstance(value, np.ndarray):
-            print(value[:5])  # Print first 5 elements if numpy array
-        else:
-            print(value[:5])  # Print first 5 elements if list
 
 @pytest.mark.parametrize("config_idx", [0, 1])  # Test both split configs
 def test_dataset_handler_different_configs(config_path, titanic_csv_path, config_idx, encoder_loader):

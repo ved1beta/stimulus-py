@@ -187,7 +187,20 @@ class SplitLoader(AbstractLoader):
 
         Returns:
             Any: The split function for the specified method
+        
+        Raises:
+            AttributeError: If splitter hasn't been initialized using initialize_splitter_from_config()
         """
+
+        if not hasattr(self, 'split'):
+            # Raise a more specific error and chain it to the original AttributeError
+            try:
+                getattr(self, 'split')
+            except AttributeError as e:
+                raise AttributeError(
+                    "Splitter not initialized. Please call initialize_splitter_from_config() or set_splitter_as_attribute() "
+                    "before attempting to get split function."
+                ) from e
         return self.split.get_split_indexes
     
     def get_splitter(self, splitter_name: str, splitter_params: dict = None) -> Any:
