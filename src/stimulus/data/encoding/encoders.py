@@ -307,24 +307,39 @@ class TextOneHotEncoder(AbstractEncoder):
 class FloatEncoder(AbstractEncoder):
     """Encoder for float data."""
 
-    def encode(self, data: float) -> float:
+    def __init__(self, dtype: torch.dtype = torch.float) -> None:
+        """Initialize the FloatEncoder class.
+
+        Args:
+            dtype (torch.dtype): the data type of the encoded data. Default = torch.float (32-bit floating point)
+        """
+        self.dtype = dtype
+
+    def encode(self, data: float) -> torch.Tensor:
         """Encodes the data.
         This method takes as input a single data point, should be mappable to a single output.
         """
-        return float(data)
+        return self.encode_all(data) # there is no difference in this case
 
-    def encode_all(self, data: list) -> np.array:
+    def encode_all(self, data: Union[float, List[float]]) -> torch.Tensor:
         """Encodes the data.
         This method takes as input a list of data points, should be mappable to a single output.
         """
         if not isinstance(data, list):
             data = [data]
-        return np.array([self.encode(d) for d in data])
+        try:
+            return torch.tensor(data, dtype=self.dtype)
+        except (TypeError, ValueError) as e:
+            err_msg = (
+                f"Failed to convert {data} to tensor of type {self.dtype}. "
+                "Make sure all elements are valid floats."
+            )
+            logger.error(err_msg)
+            raise RuntimeError(err_msg) from e
 
-    def decode(self, data: float) -> float:
+    def decode(self, data: torch.Tensor) -> List[float]:
         """Decodes the data."""
-        return data
-
+        return data.numpy().tolist()
 
 class IntEncoder(FloatEncoder):
     """Encoder for integer data."""
