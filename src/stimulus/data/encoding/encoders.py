@@ -3,7 +3,7 @@
 import logging
 import multiprocessing as mp
 from abc import ABC, abstractmethod
-from typing import Any, Union
+from typing import Any, Union, List
 
 import numpy as np
 import torch
@@ -126,6 +126,9 @@ class TextOneHotEncoder(AbstractEncoder):
             handle_unknown="ignore",
         )  # handle_unknown='ignore' unsures that a vector of zeros is returned for unknown characters, such as 'Ns' in DNA sequences
 
+        # Fit the encoder with all possible characters
+        self.encoder.fit(np.array(list(alphabet)).reshape(-1, 1))
+
     def _sequence_to_array(self, sequence: str) -> np.array:
         """This function transforms the given sequence to an array.
 
@@ -197,11 +200,11 @@ class TextOneHotEncoder(AbstractEncoder):
                     [0, 0, 0, 1]])
         """
         sequence_array = self._sequence_to_array(data)
-        transformed = self.encoder.fit_transform(sequence_array)
+        transformed = self.encoder.transform(sequence_array)
         numpy_array = np.squeeze(np.stack(transformed.toarray()))
         return torch.from_numpy(numpy_array)
 
-    def encode_all(self, data: Union[list, str]) -> torch.Tensor:
+    def encode_all(self, data: Union[str, List[str]]) -> torch.Tensor:
         """Encodes a list of sequences.
 
         Takes a list of string sequences and returns a torch tensor of shape (number_of_sequences, sequence_length, alphabet_length).
@@ -220,11 +223,12 @@ class TextOneHotEncoder(AbstractEncoder):
 
         Examples:
             >>> encoder = TextOneHotEncoder(alphabet="acgt")
-            >>> encoder.encode_all(["acgt",["acgtn"])
+            >>> encoder.encode_all(["acgt","acgtn"])
             tensor([[[1, 0, 0, 0],
                      [0, 1, 0, 0],
                      [0, 0, 1, 0],
-                     [0, 0, 0, 1]],
+                     [0, 0, 0, 1],
+                     [0, 0, 0, 0]], // this is padded with zeros
 
                     [[1, 0, 0, 0],
                      [0, 1, 0, 0],
@@ -262,10 +266,41 @@ class TextOneHotEncoder(AbstractEncoder):
             logger.error(f"Failed to convert sequences to tensor: {str(e)}")
             raise RuntimeError(f"Failed to convert sequences to tensor: {str(e)}")
 
-    def decode(self, data: torch.Tensor) -> str:
-        """Decodes the data."""
-        return self.encoder.inverse_transform(data)
+    def decode(self, data: torch.Tensor) -> Union[str, List[str]]:
+        """Decodes one-hot encoded tensor back to sequences.
+        
+        Args:
+            data (torch.Tensor): 2D or 3D tensor of one-hot encoded sequences
+                - 2D shape: (sequence_length, alphabet_size)
+                - 3D shape: (batch_size, sequence_length, alphabet_size)
 
+        NOTE that when decoding 3D shape tensor, it assumes all sequences have the same length.
+        
+        Returns:
+            Union[str, List[str]]: Single sequence string or list of sequence strings
+
+        Raises:
+            ValueError: If the input data is not a 2D or 3D tensor
+
+        Examples:
+        
+        """
+        if data.dim() == 2:
+            # Single sequence
+            data_np = data.numpy().reshape(-1, len(self.alphabet))
+            return ''.join(self.encoder.inverse_transform(data_np).flatten())
+        
+        elif data.dim() == 3:
+            # Multiple sequences
+            batch_size, seq_len, _ = data.shape
+            data_np = data.reshape(-1, len(self.alphabet)).numpy()
+            decoded = self.encoder.inverse_transform(data_np)
+            sequences = decoded.reshape(batch_size, seq_len)
+            sequences = np.where(sequences == None, '-', sequences)
+            return [''.join(seq) for seq in sequences]
+        
+        else:
+            raise ValueError(f"Expected 2D or 3D tensor, got {data.dim()}D")
 
 
 class FloatEncoder(AbstractEncoder):
