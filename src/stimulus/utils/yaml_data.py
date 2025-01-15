@@ -59,7 +59,7 @@ class YamlTransform(BaseModel):
 class YamlSplit(BaseModel):
     split_method: str
     params: Dict[str, List[float]]  # More specific type for split parameters
-    split_input_columns: Optional[List[str]]
+    split_input_columns: List[str]
 
 class YamlConfigDict(BaseModel):
     global_params: YamlGlobalParams
