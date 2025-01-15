@@ -318,15 +318,34 @@ class FloatEncoder(AbstractEncoder):
     def encode(self, data: float) -> torch.Tensor:
         """Encodes the data.
         This method takes as input a single data point, should be mappable to a single output.
+
+        Args:
+            data (float): a single data point
+        
+        Returns:
+            encoded_data_point (torch.Tensor): the encoded data point
         """
+        self._check_input_dtype(data)
         return self.encode_all(data) # there is no difference in this case
 
     def encode_all(self, data: Union[float, List[float]]) -> torch.Tensor:
         """Encodes the data.
-        This method takes as input a list of data points, should be mappable to a single output.
+        This method takes as input a list of data points, or a single float, and returns a torch.tensor.
+
+        Args:
+            data (Union[float, List[float]]): a list of data points or a single data point
+
+        Returns:
+            encoded_data (torch.Tensor): the encoded data
         """
+        # check data type
+        self._check_input_dtype(data)
+
+        # convert to list if needed
         if not isinstance(data, list):
             data = [data]
+
+        # convert to tensor
         try:
             return torch.tensor(data, dtype=self.dtype)
         except (TypeError, ValueError) as e:
@@ -338,18 +357,56 @@ class FloatEncoder(AbstractEncoder):
             raise RuntimeError(err_msg) from e
 
     def decode(self, data: torch.Tensor) -> List[float]:
-        """Decodes the data."""
+        """Decodes the data.
+
+        Args:
+            data (torch.Tensor): the encoded data
+
+        Returns:
+            decoded_data (List[float]): the decoded data
+        """
         return data.numpy().tolist()
+
+    def _check_input_dtype(self, data: Union[int, float, List[int], List[float]]) -> None:
+        """Check if the input data is int or float data.
+
+        Args:
+            data (int or float): a single data point or a list of data points
+        
+        Raises:
+            ValueError: If the input data is not a float
+        """
+        if ((isinstance(data, list) and not all(isinstance(d, (int, float)) for d in data)) 
+        or (not isinstance(data, list) and not isinstance(data, (int, float)))):
+            err_msg = f"Expected input data to be a float, got {type(data).__name__}"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
 
 class IntEncoder(FloatEncoder):
     """Encoder for integer data."""
 
-    def encode(self, data: int) -> int:
-        """Encodes the data.
-        This method takes as input a single data point, should be mappable to a single output.
-        """
-        return int(data)
+    def __init__(self, dtype: torch.dtype = torch.int) -> None:
+        """Initialize the IntEncoder class.
 
+        Args:
+            dtype (torch.dtype): the data type of the encoded data. Default = torch.int (32-bit integer)
+        """
+        super().__init__(dtype)
+
+    def _check_input_dtype(self, data: Union[int, List[int]]) -> None:
+        """Check if the input data is int data.
+
+        Args:
+            data (int): a single data point or a list of data points
+        
+        Raises:
+            ValueError: If the input data is not a int
+        """
+        if ((isinstance(data, list) and not all(isinstance(d, int) for d in data)) 
+        or (not isinstance(data, list) and not isinstance(data, int))):
+            err_msg = f"Expected input data to be a int, got {type(data).__name__}"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
 
 class StrClassificationIntEncoder(AbstractEncoder):
     """Considering a ensemble of strings, this encoder encodes them into integers from 0 to (n-1) where n is the number of unique strings."""

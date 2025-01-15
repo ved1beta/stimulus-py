@@ -9,8 +9,7 @@ import numpy as np
 import torch
 import pytest
 
-from src.stimulus.data.encoding.encoders import TextOneHotEncoder
-from src.stimulus.data.encoding.encoders import FloatEncoder
+from src.stimulus.data.encoding.encoders import TextOneHotEncoder, FloatEncoder, IntEncoder
 
 # ------------------------------------------------------------------------------
 # Tests for TextOneHotEncoder
@@ -194,14 +193,14 @@ def test_encode_single_float(float_encoder):
     assert output.item() == pytest.approx(input_val), "Encoded value does not match the input float."
 
 def test_encode_non_float_raises(float_encoder):
-    """Test that encoding a non-float raises a RuntimeError."""
-    with pytest.raises(RuntimeError) as exc_info:
+    """Test that encoding a non-float raises a ValueError."""
+    with pytest.raises(ValueError) as exc_info:
         float_encoder.encode("not_a_float")
-    assert "Failed to convert data to tensor" in str(exc_info.value), (
-        "Expected RuntimeError with specific error message."
+    assert "Expected input data to be a float, got str" in str(exc_info.value), (
+        "Expected ValueError with specific error message."
     )
 
-def test_encode_all_single_value(float_encoder):
+def test_encode_all_single_float(float_encoder):
     """
     Test encode_all when given a single float. 
     It should be treated as a list of one float internally.
@@ -213,7 +212,7 @@ def test_encode_all_single_value(float_encoder):
     assert output.numel() == 1, "Tensor should have exactly one element."
     assert output.item() == pytest.approx(input_val), "Encoded value does not match the input."
 
-def test_encode_all_list_of_floats(float_encoder):
+def test_encode_all_multi_float(float_encoder):
     """Test encode_all with a list of floats."""
     input_vals = [3.14, 4.56]
     output = float_encoder.encode_all(input_vals)
@@ -223,7 +222,7 @@ def test_encode_all_list_of_floats(float_encoder):
     assert output[0].item() == pytest.approx(3.14), "First element does not match."
     assert output[1].item() == pytest.approx(4.56), "Second element does not match."
 
-def test_decode_single_tensor(float_encoder):
+def test_decode_single_float(float_encoder):
     """Test decoding a tensor of shape (1)."""
     input_tensor = torch.tensor([3.14], dtype=torch.float32)
     decoded = float_encoder.decode(input_tensor)
@@ -232,7 +231,7 @@ def test_decode_single_tensor(float_encoder):
     assert len(decoded) == 1, "Decoded list should have one element."
     assert decoded[0] == pytest.approx(3.14), "Decoded value does not match."
 
-def test_decode_multi_tensor(float_encoder):
+def test_decode_multi_float(float_encoder):
     """Test decoding a tensor of shape (n)."""
     input_tensor = torch.tensor([3.14, 2.71], dtype=torch.float32)
     decoded = float_encoder.decode(input_tensor)
@@ -240,3 +239,69 @@ def test_decode_multi_tensor(float_encoder):
     assert len(decoded) == 2, "Decoded list should have two elements."
     assert decoded[0] == pytest.approx(3.14), "First decoded value does not match."
     assert decoded[1] == pytest.approx(2.71), "Second decoded value does not match."
+
+# ------------------------------------------------------------------------------
+# Tests for IntEncoder
+# ------------------------------------------------------------------------------
+
+@pytest.fixture
+def int_encoder():
+    """Fixture to instantiate the IntEncoder."""
+    return IntEncoder()
+
+def test_encode_single_int(int_encoder):
+    """Test encoding a single int value."""
+    input_val = 3
+    output = int_encoder.encode(input_val)
+    assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
+    assert output.dtype == torch.int32, "Tensor dtype should be int32."
+    assert output.numel() == 1, "Tensor should have exactly one element."
+    assert output.item() == input_val
+
+def test_encode_non_int_raises(int_encoder):
+    """Test that encoding a non-int raises a RuntimeError."""
+    with pytest.raises(ValueError) as exc_info:
+        int_encoder.encode("not_a_int")
+    assert "Expected input data to be a int, got str" in str(exc_info.value), (
+        "Expected ValueError with specific error message."
+    )
+
+def test_encode_all_single_int(int_encoder):
+    """
+    Test encode_all when given a single int. 
+    It should be treated as a list of one int internally.
+    """
+    input_val = 2
+    output = int_encoder.encode_all(input_val)
+    assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
+    assert output.dtype == torch.int32, "Tensor dtype should be int32."
+    assert output.numel() == 1, "Tensor should have exactly one element."
+    assert output.item() == input_val
+
+def test_encode_all_multi_int(int_encoder):
+    """Test encode_all with a list of integers."""
+    input_vals = [3, 4]
+    output = int_encoder.encode_all(input_vals)
+    assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
+    assert output.dtype == torch.int32, "Tensor dtype should be int32."
+    assert output.numel() == 2, "Tensor should have exactly one element."
+    assert output[0].item() == 3, "First element does not match."
+    assert output[1].item() == 4, "Second element does not match."
+
+def test_decode_single_int(int_encoder):
+    """Test decoding a tensor of shape (1)."""
+    input_tensor = torch.tensor([3], dtype=torch.int32)
+    decoded = int_encoder.decode(input_tensor)
+    # decode returns data.numpy().tolist()
+    assert isinstance(decoded, list), "Decoded output should be a list."
+    assert len(decoded) == 1, "Decoded list should have one element."
+    assert decoded[0] == 3, "Decoded value does not match."
+
+def test_decode_multi_int(int_encoder):
+    """Test decoding a tensor of shape (n)."""
+    input_tensor = torch.tensor([3, 4], dtype=torch.int32)
+    decoded = int_encoder.decode(input_tensor)
+    assert isinstance(decoded, list), "Decoded output should be a list."
+    assert len(decoded) == 2, "Decoded list should have two elements."
+    assert decoded[0] == 3, "First decoded value does not match."
+    assert decoded[1] == 4, "Second decoded value does not match."
