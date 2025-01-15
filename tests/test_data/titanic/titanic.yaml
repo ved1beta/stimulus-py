@@ -64,6 +64,7 @@ columns:
     encoder:
       - name: StrClassificationIntEncoder
         params:
+
 transforms:
   - transformation_name: "noise"
     columns:
@@ -80,6 +81,6 @@ transforms:
 
 split:
   - split_method: RandomSplit
-    split_input_columns:
+    split_input_columns: ["age"]
     params:
       split: [0.7, 0.15, 0.15]
