@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Union
 
 import numpy as np
+import torch
 from sklearn import preprocessing
 
 logger = logging.getLogger(__name__)
@@ -14,11 +15,11 @@ logger = logging.getLogger(__name__)
 class AbstractEncoder(ABC):
     """Abstract class for encoders.
 
-    Encoders are classes that encode string data into numerical representations, said numerical representations should be the exact input of the model.
+    Encoders are classes that encode the raw data into torch.tensors in meaningful ways.
 
     Methods:
         encode: encodes a single data point
-        encode_all: encodes a list of data points into a numpy array
+        encode_all: encodes a list of data points into a torch.tensor
         encode_multiprocess: encodes a list of data points using multiprocessing
         decode: decodes a single data point
 
@@ -86,7 +87,9 @@ class TextOneHotEncoder(AbstractEncoder):
     If a character c is not in the alphabet, c will be represented by a vector of zeros.
 
     Attributes:
-        alphabet (str): the alphabet to one hot encode the data with
+        alphabet (str): the alphabet to one hot encode the data with.
+        case_sensitive (bool): whether the encoder is case sensitive or not. Default = False
+        padding (bool): whether to pad the sequences with zero or not. Default = True
         encoder (OneHotEncoder): preprocessing.OneHotEncoder object initialized with self.alphabet
 
     Methods:
@@ -97,20 +100,27 @@ class TextOneHotEncoder(AbstractEncoder):
         _sequence_to_array: transforms a sequence into a numpy array
     """
 
-    def __init__(self, alphabet: str = "acgt") -> None:
+    def __init__(self, alphabet: str = "acgt", case_sensitive: bool = False, padding = True) -> None:
         """Initialize the TextOneHotEncoder class.
 
         Args:
-            alphabet (str): the alphabet to one hot encode the data with
+            alphabet (str): the alphabet to one hot encode the data with.
 
         Raises:
             ValueError: If the input alphabet is not a string.
         """
         if not isinstance(alphabet, str):
-            error_msg = f"Expected string input, got {type(alphabet).__name__}"
+            error_msg = f"Expected a string input for alphabet, got {type(alphabet).__name__}"
             logger.error(error_msg)
             raise ValueError(error_msg)
+        
+        if not case_sensitive:
+            alphabet = alphabet.lower()
+        
         self.alphabet = alphabet
+        self.case_sensitive = case_sensitive
+        self.padding = padding
+
         self.encoder = preprocessing.OneHotEncoder(
             categories=[list(alphabet)],
             handle_unknown="ignore",
@@ -120,7 +130,7 @@ class TextOneHotEncoder(AbstractEncoder):
         """This function transforms the given sequence to an array.
 
         Args:
-            sequence (str): a sequence of characters
+            sequence (str): a sequence of characters.
 
         Returns:
             sequence_array (np.array): the sequence as a numpy array
@@ -130,30 +140,32 @@ class TextOneHotEncoder(AbstractEncoder):
 
         Examples:
             >>> encoder = TextOneHotEncoder(alphabet="acgt")
-            >>> encoder._sequence_to_array("acgt")
-            array(['a'],['b'],['c'],['d'])
+            >>> encoder._sequence_to_array("acctg")
+            array(['a'],['c'],['c'],['t'],['g'])
         """
         if not isinstance(sequence, str):
-            error_msg = f"Expected string input, got {type(sequence).__name__}"
+            error_msg = f"Expected string input for sequence, got {type(sequence).__name__}"
             logger.error(error_msg)
             raise ValueError(error_msg)
+        
+        if not self.case_sensitive:
+            sequence = sequence.lower()
 
-        sequence_lower_case = sequence.lower()
-        sequence_array = np.array(list(sequence_lower_case))
+        sequence_array = np.array(list(sequence))
         return sequence_array.reshape(-1, 1)
 
-    def encode(self, data: str) -> np.array:
+    def encode(self, data: str) -> torch.Tensor:
         """One hot encodes a single sequence.
 
-        Takes a single string sequence and returns a numpy array of shape (sequence_length, alphabet_length).
-        The returned numpy array corresponds to the one hot encoding of the sequence.
+        Takes a single string sequence and returns a torch tensor of shape (sequence_length, alphabet_length).
+        The returned tensor corresponds to the one hot encoding of the sequence.
         Unknown characters are represented by a vector of zeros.
 
         Args:
             data (str): single sequence
 
         Returns:
-            encoded_data_point (np.array): one hot encoded sequence
+            encoded_data_point (torch.Tensor): one hot encoded sequence
 
         Raises:
             ValueError: If the input data is not a string.
@@ -161,44 +173,99 @@ class TextOneHotEncoder(AbstractEncoder):
         Examples:
             >>> encoder = TextOneHotEncoder(alphabet="acgt")
             >>> encoder.encode("acgt")
-            array([[1, 0, 0, 0],
-                   [0, 1, 0, 0],
-                   [0, 0, 1, 0],
-                   [0, 0, 0, 1]])
-
+            tensor([[1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1]])
             >>> encoder.encode("acgtn")
-            array([[1, 0, 0, 0],
-                   [0, 1, 0, 0],
-                   [0, 0, 1, 0],
-                   [0, 0, 0, 1],
-                   [0, 0, 0, 0]])
+            tensor([[1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                    [0, 0, 0, 0]])
+
+            >>> encoder = TextOneHotEncoder(alphabet="ACgt", case_sensitive=True)
+            >>> encoder.encode('acgt')
+            tensor([[0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1]])
+            >>> encoder.encode('ACgt')
+            tensor([[1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1]])
         """
         sequence_array = self._sequence_to_array(data)
         transformed = self.encoder.fit_transform(sequence_array)
-        return np.squeeze(np.stack(transformed.toarray()))
+        numpy_array = np.squeeze(np.stack(transformed.toarray()))
+        return torch.from_numpy(numpy_array)
 
-    def encode_all(self, data: Union[list, str]) -> Union[np.array, list]:
-        """Encodes a list of data points
+    def encode_all(self, data: Union[list, str]) -> torch.Tensor:
+        """Encodes a list of sequences.
 
-        TODO instead maybe we can run encode_multiprocess when data size is larger than a certain threshold.
+        Takes a list of string sequences and returns a torch tensor of shape (number_of_sequences, sequence_length, alphabet_length).
+        The returned tensor corresponds to the one hot encoding of the sequences.
+        Unknown characters are represented by a vector of zeros.
+
+        Args:
+            data (Union[list, str]): list of sequences or a single sequence
+
+        Returns:
+            encoded_data (torch.Tensor): one hot encoded sequences
+
+        Raises:
+            ValueError: If the input data is not a list or a string.
+            ValueError: If all sequences do not have the same length when padding is False.
+
+        Examples:
+            >>> encoder = TextOneHotEncoder(alphabet="acgt")
+            >>> encoder.encode_all(["acgt",["acgtn"])
+            tensor([[[1, 0, 0, 0],
+                     [0, 1, 0, 0],
+                     [0, 0, 1, 0],
+                     [0, 0, 0, 1]],
+
+                    [[1, 0, 0, 0],
+                     [0, 1, 0, 0],
+                     [0, 0, 1, 0],
+                     [0, 0, 0, 1],
+                     [0, 0, 0, 0]]])
         """
-        if not isinstance(data, list):
+        # encode data
+        if isinstance(data, str):
             encoded_data = self.encode(data)
-            return np.array(
-                [encoded_data],
-            )  # reshape the array in a batch of 1 configuration as a np.ndarray (so shape is (1, sequence_length, alphabet_length))
+            return torch.stack([encoded_data])
+        elif isinstance(data, list):
+            # TODO instead maybe we can run encode_multiprocess when data size is larger than a certain threshold.
+            encoded_data = self.encode_multiprocess(data)
+        else:
+            error_msg = f"Expected list or string input for data, got {type(data).__name__}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
-        encoded_data = self.encode_multiprocess(data)
-        # try to transform the list of arrays to a single array and return it
-        # if it fails (when the list of arrays is not of the same length), return the list of arrays
+        # handle padding
+        if self.padding:
+            max_length = max([len(d) for d in encoded_data])
+            encoded_data = [np.pad(d, ((0, max_length - len(d)), (0, 0))) for d in encoded_data]
+        else:
+            lengths = set([len(d) for d in encoded_data])
+            if len(lengths) > 1:
+                error_msg = f"All sequences must have the same length when padding is False."
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+        # convert to torch tensor
         try:
-            return np.array(encoded_data)
-        except ValueError:
-            return encoded_data
+            return torch.from_numpy(np.array(encoded_data))
+        except Exception as e:
+            logger.error(f"Failed to convert sequences to tensor: {str(e)}")
+            raise RuntimeError(f"Failed to convert sequences to tensor: {str(e)}")
 
-    def decode(self, data: np.array) -> str:
+    def decode(self, data: torch.Tensor) -> str:
         """Decodes the data."""
         return self.encoder.inverse_transform(data)
+
 
 
 class FloatEncoder(AbstractEncoder):
