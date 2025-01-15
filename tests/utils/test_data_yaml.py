@@ -1,7 +1,7 @@
 import pytest
 import yaml
-from stimulus.utils import yaml_data
-from stimulus.utils.yaml_data import YamlConfigDict, YamlTransform, YamlSubConfigDict
+from src.stimulus.utils import yaml_data
+from src.stimulus.utils.yaml_data import YamlConfigDict, YamlTransform, YamlSubConfigDict
 
 @pytest.fixture
 def load_yaml_from_file() -> YamlConfigDict:
