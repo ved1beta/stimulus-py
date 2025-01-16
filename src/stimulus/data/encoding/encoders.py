@@ -15,14 +15,15 @@ logger = logging.getLogger(__name__)
 class AbstractEncoder(ABC):
     """Abstract class for encoders.
 
-    Encoders are classes that encode the raw data into torch.tensors in meaningful ways.
+    Encoders are classes that encode the raw data into torch.tensors.
+    Different encoders provide different encoding methods.
+    Different encoders may take different types of data as input.
 
     Methods:
         encode: encodes a single data point
         encode_all: encodes a list of data points into a torch.tensor
         encode_multiprocess: encodes a list of data points using multiprocessing
         decode: decodes a single data point
-
     """
 
     @abstractmethod
@@ -89,7 +90,7 @@ class TextOneHotEncoder(AbstractEncoder):
     Attributes:
         alphabet (str): the alphabet to one hot encode the data with.
         case_sensitive (bool): whether the encoder is case sensitive or not. Default = False
-        padding (bool): whether to pad the sequences with zero or not. Default = True
+        padding (bool): whether to pad the sequences with zero or not. Default = False
         encoder (OneHotEncoder): preprocessing.OneHotEncoder object initialized with self.alphabet
 
     Methods:
@@ -100,7 +101,7 @@ class TextOneHotEncoder(AbstractEncoder):
         _sequence_to_array: transforms a sequence into a numpy array
     """
 
-    def __init__(self, alphabet: str = "acgt", case_sensitive: bool = False, padding = True) -> None:
+    def __init__(self, alphabet: str = "acgt", case_sensitive: bool = False, padding = False) -> None:
         """Initialize the TextOneHotEncoder class.
 
         Args:
@@ -125,8 +126,6 @@ class TextOneHotEncoder(AbstractEncoder):
             categories=[list(alphabet)],
             handle_unknown="ignore",
         )  # handle_unknown='ignore' unsures that a vector of zeros is returned for unknown characters, such as 'Ns' in DNA sequences
-
-        # Fit the encoder with all possible characters
         self.encoder.fit(np.array(list(alphabet)).reshape(-1, 1))
 
     def _sequence_to_array(self, sequence: str) -> np.array:
@@ -259,12 +258,7 @@ class TextOneHotEncoder(AbstractEncoder):
                 logger.error(error_msg)
                 raise ValueError(error_msg)
             
-        # convert to torch tensor
-        try:
-            return torch.from_numpy(np.array(encoded_data))
-        except Exception as e:
-            logger.error(f"Failed to convert sequences to tensor: {str(e)}")
-            raise RuntimeError(f"Failed to convert sequences to tensor: {str(e)}")
+        return torch.from_numpy(np.array(encoded_data))
 
     def decode(self, data: torch.Tensor) -> Union[str, List[str]]:
         """Decodes one-hot encoded tensor back to sequences.
@@ -338,23 +332,10 @@ class FloatEncoder(AbstractEncoder):
         Returns:
             encoded_data (torch.Tensor): the encoded data
         """
-        # check data type
         self._check_input_dtype(data)
-
-        # convert to list if needed
         if not isinstance(data, list):
             data = [data]
-
-        # convert to tensor
-        try:
-            return torch.tensor(data, dtype=self.dtype)
-        except (TypeError, ValueError) as e:
-            err_msg = (
-                f"Failed to convert {data} to tensor of type {self.dtype}. "
-                "Make sure all elements are valid floats."
-            )
-            logger.error(err_msg)
-            raise RuntimeError(err_msg) from e
+        return torch.tensor(data, dtype=self.dtype)
 
     def decode(self, data: torch.Tensor) -> List[float]:
         """Decodes the data.

@@ -43,7 +43,7 @@ class TestTextOneHotEncoder:
         encoder = TextOneHotEncoder(alphabet="acgt")
         assert encoder.alphabet == "acgt"
         assert encoder.case_sensitive is False
-        assert encoder.padding is True
+        assert encoder.padding is False
 
     # ---- Tests for _sequence_to_array ---- #
 
