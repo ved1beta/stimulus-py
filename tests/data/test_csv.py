@@ -31,6 +31,7 @@ def generate_sub_configs(base_config):
 def dump_single_split_config_to_disk(split_configs):
     config_to_dump = [split_configs[0]]
     dump_yaml_list_into_files(config_to_dump, "tests/test_data/titanic/", "titanic_sub_config")
+    return "tests/test_data/titanic/titanic_sub_config_0.yaml"
 
 
 # Test DatasetHandler Integration
