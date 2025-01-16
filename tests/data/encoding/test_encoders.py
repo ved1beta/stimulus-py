@@ -11,7 +11,9 @@ from src.stimulus.data.encoding.encoders import (
     FloatEncoder, 
     IntEncoder, 
     StrClassificationIntEncoder,
-    StrClassificationScaledEncoder
+    StrClassificationScaledEncoder,
+    FloatRankEncoder,
+    IntRankEncoder
 )
 
 
@@ -390,3 +392,78 @@ class TestStrClassificationIntEncoder:
         with pytest.raises(NotImplementedError) as exc_info:
             encoder.decode(torch.tensor([0]))
         assert "Decoding is not yet supported." in str(exc_info.value)
+
+class TestFloatRankEncoder:
+    """Test suite for FloatRankEncoder."""
+
+    @staticmethod
+    @pytest.fixture
+    def float_rank_encoder():
+        """Fixture to instantiate the FloatRankEncoder."""
+        return FloatRankEncoder()
+
+    def test_encode_raises_not_implemented(self, float_rank_encoder):
+        """Test that encoding a single float raises NotImplementedError."""
+        with pytest.raises(NotImplementedError) as exc_info:
+            float_rank_encoder.encode(3.14)
+        assert "Encoding a single float does not make sense. Use encode_all instead." in str(exc_info.value)
+
+    def test_encode_all_with_valid_floats(self, float_rank_encoder):
+        """Test encoding a list of float values."""
+        input_vals = [3.14, 2.71, 1.41]
+        output = float_rank_encoder.encode_all(input_vals)
+        assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
+        assert output.dtype == torch.float32, "Tensor dtype should be float32."
+        assert output.numel() == 3, "Tensor should have exactly three elements."
+        assert torch.allclose(output, torch.tensor([1.0, 0.5, 0.0])), "Encoded values do not match expected ranks."
+
+    def test_encode_all_with_non_float_raises(self, float_rank_encoder):
+        """Test that encoding a non-float raises a ValueError."""
+        with pytest.raises(ValueError) as exc_info:
+            float_rank_encoder.encode_all(["not_a_float"])
+        assert "Expected input data to be a float" in str(exc_info.value), "Expected ValueError with specific error message."
+
+    def test_decode_raises_not_implemented(self, float_rank_encoder):
+        """Test that decoding raises NotImplementedError."""
+        with pytest.raises(NotImplementedError) as exc_info:
+            float_rank_encoder.decode(torch.tensor([0.0]))
+        assert "Decoding is not yet supported for FloatRank." in str(exc_info.value)
+
+class TestIntRankEncoder:
+    """Test suite for IntRankEncoder."""
+
+    @staticmethod
+    @pytest.fixture
+    def int_rank_encoder():
+        """Fixture to instantiate the IntRankEncoder."""
+        return IntRankEncoder()
+
+    def test_encode_raises_not_implemented(self, int_rank_encoder):
+        """Test that encoding a single integer raises NotImplementedError."""
+        with pytest.raises(NotImplementedError) as exc_info:
+            int_rank_encoder.encode(3)
+        assert "Encoding a single integer does not make sense. Use encode_all instead." in str(exc_info.value)
+
+    def test_encode_all_with_valid_integers(self, int_rank_encoder):
+        """Test encoding a list of integer values."""
+        input_vals = [3, 1, 2]
+        output = int_rank_encoder.encode_all(input_vals)
+        assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
+        assert output.dtype == torch.int32, "Tensor dtype should be int32."
+        assert output.numel() == 3, "Tensor should have exactly three elements."
+        assert torch.allclose(output, torch.tensor([2, 0, 1], dtype=torch.int32)), "Encoded values do not match expected ranks."
+
+    def test_encode_all_with_non_int_raises(self, int_rank_encoder):
+        """Test that encoding a non-integer raises a ValueError."""
+        with pytest.raises(ValueError) as exc_info:
+            int_rank_encoder.encode_all(["not_an_int"])
+        assert "Expected input data to be a int" in str(exc_info.value), "Expected ValueError with specific error message."
+
+    def test_decode_raises_not_implemented(self, int_rank_encoder):
+        """Test that decoding raises NotImplementedError."""
+        with pytest.raises(NotImplementedError) as exc_info:
+            int_rank_encoder.decode(torch.tensor([0]))
+        assert "Decoding is not yet supported for IntRank." in str(exc_info.value)
+
+
+

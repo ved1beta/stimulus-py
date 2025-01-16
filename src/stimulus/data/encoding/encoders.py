@@ -468,56 +468,101 @@ class StrClassificationScaledEncoder(StrClassificationIntEncoder):
             encoded_data (torch.Tensor): the encoded data
         """
         encoded_data = super().encode_all(data)
-        return encoded_data / (len(np.unique(encoded_data)) - 1)
+        return encoded_data / max(len(encoded_data) - 1, 1)
 
 class FloatRankEncoder(AbstractEncoder):
     """Considering an ensemble of float values, this encoder encodes them into floats from 0 to 1, where 1 is the maximum value and 0 is the minimum value."""
 
-    def encode(self, data: float) -> float:
+    def encode(self, data: float, dtype: torch.dtype = torch.float) -> torch.Tensor:
         """Returns an error since encoding a single float does not make sense."""
         raise NotImplementedError("Encoding a single float does not make sense. Use encode_all instead.")
 
-    def encode_all(self, data: list) -> np.array:
+    def encode_all(self, data: List[float], dtype: torch.dtype = torch.float) -> torch.Tensor:
         """Encodes the data.
-        This method takes as input a list of data points, should be mappable to a single output
+        This method takes as input a list of data points, converts them to numpy array, and returns the ranks of the data points.
+        The ranks are normalized to be between 0 and 1.
+
+        Args:
+            data (List[float]): a list of float values
+
+        Returns:
+            encoded_data (torch.Tensor): the encoded data
         """
-        # Convert to array if needed
+        self._check_input_dtype(data)
         if not isinstance(data, list):
             data = [data]
-        data = np.array(data)
-
-        # Get ranks (0 is lowest, n-1 is highest)
-        ranks = np.argsort(np.argsort(data))
-
-        # normalize ranks to be between 0 and 1
-        return ranks / (len(ranks) - 1)
+        try:
+            data = np.array(data, dtype=float)
+            # Get ranks (0 is lowest, n-1 is highest)
+            # and normalize to be between 0 and 1
+            ranks = np.argsort(np.argsort(data))
+            ranks = ranks / max(len(ranks) - 1, 1)
+            return torch.tensor(ranks, dtype=dtype)
+        except Exception as e:
+            err_msg = f"Failed to encode data: {e}"
+            logger.error(err_msg)
+            raise RuntimeError(err_msg) from e
 
     def decode(self, data: Any) -> Any:
         """Returns an error since decoding does not make sense without encoder information, which is not yet supported."""
         raise NotImplementedError("Decoding is not yet supported for FloatRank.")
+    
+    def _check_input_dtype(self, data: Union[int, float, List[int], List[float]]) -> None:
+        """Check if the input data is int or float data.
+
+        Args:
+            data (int or float): a single data point or a list of data points
+        
+        Raises:
+            ValueError: If the input data is not a float
+        """
+        if ((isinstance(data, list) and not all(isinstance(d, (int, float)) for d in data)) 
+        or (not isinstance(data, list) and not isinstance(data, (int, float)))):
+            err_msg = f"Expected input data to be a float, got {type(data).__name__}"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
 
 
 class IntRankEncoder(FloatRankEncoder):
     """Considering an ensemble of integer values, this encoder encodes them into floats from 0 to 1, where 1 is the maximum value and 0 is the minimum value."""
 
-    def encode(self, data: int) -> int:
+    def encode(self, data: int, dtype: torch.dtype = torch.int) -> torch.Tensor:
         """Returns an error since encoding a single integer does not make sense."""
         raise NotImplementedError("Encoding a single integer does not make sense. Use encode_all instead.")
 
-    def encode_all(self, data: list) -> np.array:
+    def encode_all(self, data: list, dtype: torch.dtype = torch.int) -> torch.Tensor:
         """Encodes the data.
         This method takes as input a list of data points, should be mappable to a single output, using min-max scaling.
         """
-        # Convert to array if needed
+        self._check_input_dtype(data)
         if not isinstance(data, list):
             data = [data]
-        data = np.array(data)
-
-        # Get ranks (0 is lowest, n-1 is highest)
-        ranks = np.argsort(np.argsort(data))
-
-        return ranks
+        try:
+            data = np.array(data, dtype=int)
+            # Get ranks (0 is lowest, n-1 is highest)
+            # and normalize to be between 0 and 1
+            ranks = np.argsort(np.argsort(data))
+            return torch.tensor(ranks, dtype=dtype)
+        except Exception as e:
+            err_msg = f"Failed to encode data: {e}"
+            logger.error(err_msg)
+            raise RuntimeError(err_msg) from e
 
     def decode(self, data: Any) -> Any:
         """Returns an error since decoding does not make sense without encoder information, which is not yet supported."""
         raise NotImplementedError("Decoding is not yet supported for IntRank.")
+
+    def _check_input_dtype(self, data: Union[int, List[int]]) -> None:
+        """Check if the input data is int data.
+
+        Args:
+            data (int): a single data point or a list of data points
+        
+        Raises:
+            ValueError: If the input data is not a int
+        """
+        if ((isinstance(data, list) and not all(isinstance(d, int) for d in data)) 
+        or (not isinstance(data, list) and not isinstance(data, int))):
+            err_msg = f"Expected input data to be a int, got {type(data).__name__}"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
