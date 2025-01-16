@@ -1,19 +1,16 @@
-"""
-Test for encoders.
-"""
+"""Test for encoders."""
 
-import numpy as np
-import torch
 import pytest
+import torch
 
 from src.stimulus.data.encoding.encoders import (
-    TextOneHotEncoder, 
-    FloatEncoder, 
-    IntEncoder, 
+    FloatEncoder,
+    FloatRankEncoder,
+    IntEncoder,
+    IntRankEncoder,
     StrClassificationIntEncoder,
     StrClassificationScaledEncoder,
-    FloatRankEncoder,
-    IntRankEncoder
+    TextOneHotEncoder,
 )
 
 
@@ -36,7 +33,7 @@ class TestTextOneHotEncoder:
 
     def test_init_with_non_string_alphabet_raises_value_error(self):
         with pytest.raises(ValueError) as excinfo:
-            TextOneHotEncoder(alphabet=['a', 'c', 'g', 't'])  # Passing a list instead of string
+            TextOneHotEncoder(alphabet=["a", "c", "g", "t"])  # Passing a list instead of string
         assert "Expected a string input for alphabet" in str(excinfo.value)
 
     def test_init_with_string_alphabet(self):
@@ -88,8 +85,9 @@ class TestTextOneHotEncoder:
         assert torch.all(encoded[-1] == 0)
 
     def test_encode_case_sensitivity_true(self, encoder_case_sensitive):
-        """Case-sensitive: 'ACgt' => 'ACgt' means 'A' and 'C' are uppercase in the alphabet, 
-        'g' and 't' are lowercase in the alphabet."""
+        """Case-sensitive: 'ACgt' => 'ACgt' means 'A' and 'C' are uppercase in the alphabet,
+        'g' and 't' are lowercase in the alphabet.
+        """
         seq = "ACgt"
         encoded = encoder_case_sensitive.encode(seq)
         # shape = (len(seq), 4)
@@ -151,15 +149,15 @@ class TestTextOneHotEncoder:
         assert decoded == seq
 
     def test_decode_unknown_characters(self, encoder_default):
-        """ Unknown characters are zero vectors. When decoding, those become empty (ignored),
-            or become None, depending on the transform. In the provided code, handle_unknown='ignore'
-            yields an empty decode for those positions. The example code attempts to fill with '-'
-            or None if needed. 
+        """Unknown characters are zero vectors. When decoding, those become empty (ignored),
+        or become None, depending on the transform. In the provided code, handle_unknown='ignore'
+        yields an empty decode for those positions. The example code attempts to fill with '-'
+        or None if needed.
         """
         seq = "acgtn"
         encoded = encoder_default.encode(seq)
         decoded = encoder_default.decode(encoded)
-        # The code snippet shows it returns an empty string for unknown char, 
+        # The code snippet shows it returns an empty string for unknown char,
         # or might fill with 'None' replaced by '-'.
         # Adjust assertion based on how you've handled unknown characters in your final implementation.
         # If you replaced None with '-', the last character might be '-'.
@@ -176,8 +174,9 @@ class TestTextOneHotEncoder:
         # decode should return a list of strings in this case
         assert isinstance(decoded, list)
         assert len(decoded) == 2
-        assert decoded[0] == "acgt-" # '-' for padding
-        assert decoded[0] == "acgt-" # '-' for unknown character n
+        assert decoded[0] == "acgt-"  # '-' for padding
+        assert decoded[0] == "acgt-"  # '-' for unknown character n
+
 
 class TestFloatEncoder:
     """Test suite for FloatEncoder."""
@@ -207,8 +206,7 @@ class TestFloatEncoder:
         )
 
     def test_encode_all_single_float(self, float_encoder):
-        """
-        Test encode_all when given a single float. 
+        """Test encode_all when given a single float.
         It should be treated as a list of one float internally.
         """
         input_val = 2.71
@@ -246,8 +244,9 @@ class TestFloatEncoder:
         assert decoded[0] == pytest.approx(3.14), "First decoded value does not match."
         assert decoded[1] == pytest.approx(2.71), "Second decoded value does not match."
 
+
 class TestIntEncoder:
-    """ Test suite for IntEncoder. """
+    """Test suite for IntEncoder."""
 
     @staticmethod
     @pytest.fixture
@@ -273,8 +272,7 @@ class TestIntEncoder:
         )
 
     def test_encode_all_single_int(self, int_encoder):
-        """
-        Test encode_all when given a single int. 
+        """Test encode_all when given a single int.
         It should be treated as a list of one int internally.
         """
         input_val = 2
@@ -312,9 +310,6 @@ class TestIntEncoder:
         assert decoded[0] == 3, "First decoded value does not match."
         assert decoded[1] == 4, "Second decoded value does not match."
 
-# ------------------------------------------------------------------------------
-# Tests for StrClassificationIntEncoder and StrClassificationScaledEncoder
-# ------------------------------------------------------------------------------
 
 class TestStrClassificationIntEncoder:
     """Test suite for StrClassificationIntEncoder and StrClassificationScaledEncoder."""
@@ -324,7 +319,7 @@ class TestStrClassificationIntEncoder:
     def str_encoder():
         """Pytest fixture to instantiate StrClassificationIntEncoder."""
         return StrClassificationIntEncoder()
-    
+
     @staticmethod
     @pytest.fixture
     def scaled_encoder():
@@ -333,8 +328,7 @@ class TestStrClassificationIntEncoder:
 
     @pytest.mark.parametrize("fixture", ["str_encoder", "scaled_encoder"])
     def test_encode_raises_not_implemented(self, request, fixture):
-        """
-        Tests that calling encode() with a single string 
+        """Tests that calling encode() with a single string
         raises NotImplementedError as per the docstring.
         """
         encoder = request.getfixturevalue(fixture)
@@ -342,13 +336,15 @@ class TestStrClassificationIntEncoder:
             encoder.encode("example")
         assert "Encoding a single string does not make sense. Use encode_all instead." in str(exc_info.value)
 
-    @pytest.mark.parametrize("fixture,expected_values", [
-        ("str_encoder", [0,1,2]), 
-        ("scaled_encoder", [0,0.5,1])
-    ])
+    @pytest.mark.parametrize(
+        "fixture,expected_values",
+        [
+            ("str_encoder", [0, 1, 2]),
+            ("scaled_encoder", [0, 0.5, 1]),
+        ],
+    )
     def test_encode_all_list_of_strings(self, request, fixture, expected_values):
-        """
-        Tests that passing multiple unique strings returns 
+        """Tests that passing multiple unique strings returns
         a torch tensor of the correct shape and encoded values.
         """
         encoder = request.getfixturevalue(fixture)
@@ -364,7 +360,7 @@ class TestStrClassificationIntEncoder:
         # For example, if it's alphabetical: apple -> 0, banana -> 1, orange -> 2
         # But the exact order may differ depending on LabelEncoder's implementation.
         # We can, however, ensure that the tensor has 3 unique integers in 0..2.
-        # and in the case of scaled encoder we can ensure that the tensor has 3 unique 
+        # and in the case of scaled encoder we can ensure that the tensor has 3 unique
         # floats being 0, 0.5, 1.
         unique_vals = set(output_tensor.tolist())
         assert len(unique_vals) == 3, "There should be 3 unique encodings."
@@ -372,8 +368,7 @@ class TestStrClassificationIntEncoder:
 
     @pytest.mark.parametrize("fixture", ["str_encoder", "scaled_encoder"])
     def test_encode_all_raises_value_error_on_non_string(self, request, fixture):
-        """
-        Tests that encode_all raises ValueError 
+        """Tests that encode_all raises ValueError
         if the input is not a string or list of strings.
         """
         encoder = request.getfixturevalue(fixture)
@@ -384,14 +379,14 @@ class TestStrClassificationIntEncoder:
 
     @pytest.mark.parametrize("fixture", ["str_encoder", "scaled_encoder"])
     def test_decode_raises_not_implemented(self, request, fixture):
-        """
-        Tests that decode() raises NotImplementedError 
+        """Tests that decode() raises NotImplementedError
         since decoding is not supported in this encoder.
         """
         encoder = request.getfixturevalue(fixture)
         with pytest.raises(NotImplementedError) as exc_info:
             encoder.decode(torch.tensor([0]))
         assert "Decoding is not yet supported." in str(exc_info.value)
+
 
 class TestFloatRankEncoder:
     """Test suite for FloatRankEncoder."""
@@ -421,13 +416,16 @@ class TestFloatRankEncoder:
         """Test that encoding a non-float raises a ValueError."""
         with pytest.raises(ValueError) as exc_info:
             float_rank_encoder.encode_all(["not_a_float"])
-        assert "Expected input data to be a float" in str(exc_info.value), "Expected ValueError with specific error message."
+        assert "Expected input data to be a float" in str(exc_info.value), (
+            "Expected ValueError with specific error message."
+        )
 
     def test_decode_raises_not_implemented(self, float_rank_encoder):
         """Test that decoding raises NotImplementedError."""
         with pytest.raises(NotImplementedError) as exc_info:
             float_rank_encoder.decode(torch.tensor([0.0]))
         assert "Decoding is not yet supported for FloatRank." in str(exc_info.value)
+
 
 class TestIntRankEncoder:
     """Test suite for IntRankEncoder."""
@@ -451,19 +449,20 @@ class TestIntRankEncoder:
         assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
         assert output.dtype == torch.int32, "Tensor dtype should be int32."
         assert output.numel() == 3, "Tensor should have exactly three elements."
-        assert torch.allclose(output, torch.tensor([2, 0, 1], dtype=torch.int32)), "Encoded values do not match expected ranks."
+        assert torch.allclose(output, torch.tensor([2, 0, 1], dtype=torch.int32)), (
+            "Encoded values do not match expected ranks."
+        )
 
     def test_encode_all_with_non_int_raises(self, int_rank_encoder):
         """Test that encoding a non-integer raises a ValueError."""
         with pytest.raises(ValueError) as exc_info:
             int_rank_encoder.encode_all(["not_an_int"])
-        assert "Expected input data to be a int" in str(exc_info.value), "Expected ValueError with specific error message."
+        assert "Expected input data to be a int" in str(exc_info.value), (
+            "Expected ValueError with specific error message."
+        )
 
     def test_decode_raises_not_implemented(self, int_rank_encoder):
         """Test that decoding raises NotImplementedError."""
         with pytest.raises(NotImplementedError) as exc_info:
             int_rank_encoder.decode(torch.tensor([0]))
         assert "Decoding is not yet supported for IntRank." in str(exc_info.value)
-
-
-

@@ -3,7 +3,7 @@
 import logging
 import multiprocessing as mp
 from abc import ABC, abstractmethod
-from typing import Any, Union, List
+from typing import Any, List, Union
 
 import numpy as np
 import torch
@@ -101,7 +101,7 @@ class TextOneHotEncoder(AbstractEncoder):
         _sequence_to_array: transforms a sequence into a numpy array
     """
 
-    def __init__(self, alphabet: str = "acgt", case_sensitive: bool = False, padding = False) -> None:
+    def __init__(self, alphabet: str = "acgt", case_sensitive: bool = False, padding: bool = False) -> None:
         """Initialize the TextOneHotEncoder class.
 
         Args:
@@ -114,10 +114,10 @@ class TextOneHotEncoder(AbstractEncoder):
             error_msg = f"Expected a string input for alphabet, got {type(alphabet).__name__}"
             logger.error(error_msg)
             raise ValueError(error_msg)
-        
+
         if not case_sensitive:
             alphabet = alphabet.lower()
-        
+
         self.alphabet = alphabet
         self.case_sensitive = case_sensitive
         self.padding = padding
@@ -149,7 +149,7 @@ class TextOneHotEncoder(AbstractEncoder):
             error_msg = f"Expected string input for sequence, got {type(sequence).__name__}"
             logger.error(error_msg)
             raise ValueError(error_msg)
-        
+
         if not self.case_sensitive:
             sequence = sequence.lower()
 
@@ -187,12 +187,12 @@ class TextOneHotEncoder(AbstractEncoder):
                     [0, 0, 0, 0]])
 
             >>> encoder = TextOneHotEncoder(alphabet="ACgt", case_sensitive=True)
-            >>> encoder.encode('acgt')
+            >>> encoder.encode("acgt")
             tensor([[0, 0, 0, 0],
                     [0, 0, 0, 0],
                     [0, 0, 1, 0],
                     [0, 0, 0, 1]])
-            >>> encoder.encode('ACgt')
+            >>> encoder.encode("ACgt")
             tensor([[1, 0, 0, 0],
                     [0, 1, 0, 0],
                     [0, 0, 1, 0],
@@ -222,7 +222,7 @@ class TextOneHotEncoder(AbstractEncoder):
 
         Examples:
             >>> encoder = TextOneHotEncoder(alphabet="acgt")
-            >>> encoder.encode_all(["acgt","acgtn"])
+            >>> encoder.encode_all(["acgt", "acgtn"])
             tensor([[[1, 0, 0, 0],
                      [0, 1, 0, 0],
                      [0, 0, 1, 0],
@@ -254,22 +254,22 @@ class TextOneHotEncoder(AbstractEncoder):
         else:
             lengths = set([len(d) for d in encoded_data])
             if len(lengths) > 1:
-                error_msg = f"All sequences must have the same length when padding is False."
+                error_msg = "All sequences must have the same length when padding is False."
                 logger.error(error_msg)
                 raise ValueError(error_msg)
-            
+
         return torch.from_numpy(np.array(encoded_data))
 
     def decode(self, data: torch.Tensor) -> Union[str, List[str]]:
         """Decodes one-hot encoded tensor back to sequences.
-        
+
         Args:
             data (torch.Tensor): 2D or 3D tensor of one-hot encoded sequences
                 - 2D shape: (sequence_length, alphabet_size)
                 - 3D shape: (batch_size, sequence_length, alphabet_size)
 
         NOTE that when decoding 3D shape tensor, it assumes all sequences have the same length.
-        
+
         Returns:
             Union[str, List[str]]: Single sequence string or list of sequence strings
 
@@ -277,25 +277,24 @@ class TextOneHotEncoder(AbstractEncoder):
             ValueError: If the input data is not a 2D or 3D tensor
 
         Examples:
-        
+
         """
         if data.dim() == 2:
             # Single sequence
             data_np = data.numpy().reshape(-1, len(self.alphabet))
             decoded = self.encoder.inverse_transform(data_np).flatten()
-            return ''.join([i for i in decoded if i != None])
-        
-        elif data.dim() == 3:
+            return "".join([i for i in decoded if i != None])
+
+        if data.dim() == 3:
             # Multiple sequences
             batch_size, seq_len, _ = data.shape
             data_np = data.reshape(-1, len(self.alphabet)).numpy()
             decoded = self.encoder.inverse_transform(data_np)
             sequences = decoded.reshape(batch_size, seq_len)
-            sequences = np.where(sequences == None, '-', sequences)
-            return [''.join(seq) for seq in sequences]
-        
-        else:
-            raise ValueError(f"Expected 2D or 3D tensor, got {data.dim()}D")
+            sequences = np.where(sequences == None, "-", sequences)
+            return ["".join(seq) for seq in sequences]
+
+        raise ValueError(f"Expected 2D or 3D tensor, got {data.dim()}D")
 
 
 class FloatEncoder(AbstractEncoder):
@@ -315,12 +314,12 @@ class FloatEncoder(AbstractEncoder):
 
         Args:
             data (float): a single data point
-        
+
         Returns:
             encoded_data_point (torch.Tensor): the encoded data point
         """
         self._check_input_dtype(data)
-        return self.encode_all(data) # there is no difference in this case
+        return self.encode_all(data)  # there is no difference in this case
 
     def encode_all(self, data: Union[float, List[float]]) -> torch.Tensor:
         """Encodes the data.
@@ -348,17 +347,18 @@ class FloatEncoder(AbstractEncoder):
         """
         return data.cpu().numpy().tolist()
 
-    def _check_input_dtype(self, data: Union[int, float, List[int], List[float]]) -> None:
+    def _check_input_dtype(self, data: Union[float, List[int], List[float]]) -> None:
         """Check if the input data is int or float data.
 
         Args:
             data (int or float): a single data point or a list of data points
-        
+
         Raises:
             ValueError: If the input data is not a float
         """
-        if ((isinstance(data, list) and not all(isinstance(d, (int, float)) for d in data)) 
-        or (not isinstance(data, list) and not isinstance(data, (int, float)))):
+        if (isinstance(data, list) and not all(isinstance(d, (int, float)) for d in data)) or (
+            not isinstance(data, list) and not isinstance(data, (int, float))
+        ):
             err_msg = f"Expected input data to be a float, got {type(data).__name__}"
             logger.error(err_msg)
             raise ValueError(err_msg)
@@ -380,12 +380,13 @@ class IntEncoder(FloatEncoder):
 
         Args:
             data (int): a single data point or a list of data points
-        
+
         Raises:
             ValueError: If the input data is not a int
         """
-        if ((isinstance(data, list) and not all(isinstance(d, int) for d in data)) 
-        or (not isinstance(data, list) and not isinstance(data, int))):
+        if (isinstance(data, list) and not all(isinstance(d, int) for d in data)) or (
+            not isinstance(data, list) and not isinstance(data, int)
+        ):
             err_msg = f"Expected input data to be a int, got {type(data).__name__}"
             logger.error(err_msg)
             raise ValueError(err_msg)
@@ -405,7 +406,7 @@ class StrClassificationIntEncoder(AbstractEncoder):
 
         Args:
             data (List[str]): a list of strings
-        
+
         Returns:
             encoded_data (torch.tensor): the encoded data
         """
@@ -418,25 +419,25 @@ class StrClassificationIntEncoder(AbstractEncoder):
     def decode(self, data: Any) -> Any:
         """Returns an error since decoding does not make sense without encoder information, which is not yet supported."""
         raise NotImplementedError("Decoding is not yet supported.")
-    
+
     def _check_dtype(self, data: List[str]) -> None:
         """Check if the input data is string data.
 
         Args:
             data (List[str]): a list of strings
-        
+
         Raises:
             ValueError: If the input data is not a string
         """
         if not all(isinstance(d, str) for d in data):
-            err_msg = f"Expected input data to be a list of strings"
+            err_msg = "Expected input data to be a list of strings"
             logger.error(err_msg)
             raise ValueError(err_msg)
 
 
 class StrClassificationScaledEncoder(StrClassificationIntEncoder):
-    """Considering a ensemble of strings, this encoder encodes them into floats from 0 to 1 (essentially scaling the integer encoding).
-    """
+    """Considering a ensemble of strings, this encoder encodes them into floats from 0 to 1 (essentially scaling the integer encoding)."""
+
     def encode_all(self, data: List[str]) -> torch.Tensor:
         """Encodes the data.
         This method takes as input a list of data points, should be mappable to a single output, using LabelEncoder from scikit learn and returning a numpy array.
@@ -450,6 +451,7 @@ class StrClassificationScaledEncoder(StrClassificationIntEncoder):
         """
         encoded_data = super().encode_all(data)
         return encoded_data / max(len(encoded_data) - 1, 1)
+
 
 class FloatRankEncoder(AbstractEncoder):
     """Considering an ensemble of float values, this encoder encodes them into floats from 0 to 1, where 1 is the maximum value and 0 is the minimum value."""
@@ -487,18 +489,19 @@ class FloatRankEncoder(AbstractEncoder):
     def decode(self, data: Any) -> Any:
         """Returns an error since decoding does not make sense without encoder information, which is not yet supported."""
         raise NotImplementedError("Decoding is not yet supported for FloatRank.")
-    
-    def _check_input_dtype(self, data: Union[int, float, List[int], List[float]]) -> None:
+
+    def _check_input_dtype(self, data: Union[float, List[int], List[float]]) -> None:
         """Check if the input data is int or float data.
 
         Args:
             data (int or float): a single data point or a list of data points
-        
+
         Raises:
             ValueError: If the input data is not a float
         """
-        if ((isinstance(data, list) and not all(isinstance(d, (int, float)) for d in data)) 
-        or (not isinstance(data, list) and not isinstance(data, (int, float)))):
+        if (isinstance(data, list) and not all(isinstance(d, (int, float)) for d in data)) or (
+            not isinstance(data, list) and not isinstance(data, (int, float))
+        ):
             err_msg = f"Expected input data to be a float, got {type(data).__name__}"
             logger.error(err_msg)
             raise ValueError(err_msg)
@@ -538,12 +541,13 @@ class IntRankEncoder(FloatRankEncoder):
 
         Args:
             data (int): a single data point or a list of data points
-        
+
         Raises:
             ValueError: If the input data is not a int
         """
-        if ((isinstance(data, list) and not all(isinstance(d, int) for d in data)) 
-        or (not isinstance(data, list) and not isinstance(data, int))):
+        if (isinstance(data, list) and not all(isinstance(d, int) for d in data)) or (
+            not isinstance(data, list) and not isinstance(data, int)
+        ):
             err_msg = f"Expected input data to be a int, got {type(data).__name__}"
             logger.error(err_msg)
             raise ValueError(err_msg)
