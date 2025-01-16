@@ -101,7 +101,22 @@ class DatasetManager:
         """Get the columns that are used for splitting."""
 
         return self.config.split[0].split_input_columns
+    
+    def get_transform_logic(self) -> dict:
+        """Get the transformation logic.
+        
+        Returns a dictionary in the following structure :
+        {
+            "transformation_name": str,
+            "transformations": list[Tuple[str, str, dict]]
+        }
+        """
 
+        transformation_logic = {"transformation_name": self.config.transforms[0].transformation_name, "transformations": []}
+        for column in self.config.transforms[0].columns:
+            for transformation in column.transformations:
+                transformation_logic["transformations"].append((column.column_name, transformation.name, transformation.params))
+        return transformation_logic
 
 class EncodeManager:
     """Manages the encoding of data columns using configured encoders.
