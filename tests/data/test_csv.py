@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 from stimulus.data.csv import DatasetHandler, DatasetManager, EncodeManager, TransformManager, SplitManager
-from stimulus.utils.yaml_data import generate_data_configs, YamlConfigDict
+from stimulus.utils.yaml_data import generate_data_configs, YamlConfigDict, dump_yaml_list_into_files
 from stimulus.data import experiments
 
 # Fixtures
@@ -23,9 +23,14 @@ def base_config(config_path):
         return YamlConfigDict(**yaml.safe_load(f))
 
 @pytest.fixture
-def split_configs(base_config):
+def generate_sub_configs(base_config):
     """Generate all possible configurations from base config"""
     return generate_data_configs(base_config)
+
+@pytest.fixture
+def dump_single_split_config_to_disk(split_configs):
+    config_to_dump = [split_configs[0]]
+    dump_yaml_list_into_files(config_to_dump, "tests/test_data/titanic/", "titanic_sub_config")
 
 
 # Test DatasetHandler Integration
