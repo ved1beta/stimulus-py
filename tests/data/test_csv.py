@@ -33,6 +33,14 @@ def dump_single_split_config_to_disk(split_configs):
     dump_yaml_list_into_files(config_to_dump, "tests/test_data/titanic/", "titanic_sub_config")
     return "tests/test_data/titanic/titanic_sub_config_0.yaml"
 
+@pytest.fixture(scope="session")
+def cleanup_config_files():
+    """Cleanup any generated config files after all tests complete"""
+    yield  # Run all tests first
+    # Delete the config file after tests complete
+    config_path = Path("tests/test_data/titanic/titanic_sub_config_0.yaml")
+    if config_path.exists():
+        config_path.unlink()
 
 # Test DatasetHandler Integration
 @pytest.fixture
