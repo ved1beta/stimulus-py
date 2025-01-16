@@ -436,7 +436,7 @@ class StrClassificationIntEncoder(AbstractEncoder):
 
     def decode(self, data: Any) -> Any:
         """Returns an error since decoding does not make sense without encoder information, which is not yet supported."""
-        raise NotImplementedError("Decoding is not yet supported for StrClassificationInt.")
+        raise NotImplementedError("Decoding is not yet supported.")
     
     def _check_dtype(self, data: List[str]) -> None:
         """Check if the input data is string data.
@@ -454,20 +454,21 @@ class StrClassificationIntEncoder(AbstractEncoder):
 
 
 class StrClassificationScaledEncoder(StrClassificationIntEncoder):
-    """Considering a ensemble of strings, this encoder encodes them into floats from 0 to 1 (essentially scaling the integer encoding)."""
-
-    def encode_all(self, data: list) -> np.array:
+    """Considering a ensemble of strings, this encoder encodes them into floats from 0 to 1 (essentially scaling the integer encoding).
+    """
+    def encode_all(self, data: List[str]) -> torch.Tensor:
         """Encodes the data.
         This method takes as input a list of data points, should be mappable to a single output, using LabelEncoder from scikit learn and returning a numpy array.
         For more info visit : https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.LabelEncoder.html
+
+        Args:
+            data (List[str]): a list of strings
+
+        Returns:
+            encoded_data (torch.Tensor): the encoded data
         """
         encoded_data = super().encode_all(data)
         return encoded_data / (len(np.unique(encoded_data)) - 1)
-
-    def decode(self, data: Any) -> Any:
-        """Returns an error since decoding does not make sense without encoder information, which is not yet supported."""
-        raise NotImplementedError("Decoding is not yet supported for StrClassificationScaled.")
-
 
 class FloatRankEncoder(AbstractEncoder):
     """Considering an ensemble of float values, this encoder encodes them into floats from 0 to 1, where 1 is the maximum value and 0 is the minimum value."""
