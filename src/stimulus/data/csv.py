@@ -97,11 +97,31 @@ class DatasetManager:
             'hello'
         """
         with open(config_path) as file:
-            return yaml_data.YamlConfigDict(**yaml.safe_load(file))
+            return yaml_data.YamlSubConfigDict(**yaml.safe_load(file))
 
     def get_split_columns(self) -> str:
         """Get the columns that are used for splitting."""
         return self.config.split.split_input_columns
+
+    def get_transform_logic(self) -> dict:
+        """Get the transformation logic.
+
+        Returns a dictionary in the following structure :
+        {
+            "transformation_name": str,
+            "transformations": list[Tuple[str, str, dict]]
+        }
+        """
+        transformation_logic = {
+            "transformation_name": self.config.transforms.transformation_name,
+            "transformations": [],
+        }
+        for column in self.config.transforms.columns:
+            for transformation in column.transformations:
+                transformation_logic["transformations"].append(
+                    (column.column_name, transformation.name, transformation.params)
+                )
+        return transformation_logic
 
 
 class EncodeManager:
@@ -296,12 +316,7 @@ class DatasetHandler:
             )
         # get relevant split columns from the dataset_manager
         split_columns = self.dataset_manager.get_split_columns()
-
-        # if split_columns is none, build an empty dictionary
-        if split_columns is None:
-            split_input_data = {}
-        else:
-            split_input_data = self.select_columns(split_columns)
+        split_input_data = self.select_columns(split_columns)
 
         # get the split indices
         train, validation, test = self.split_manager.get_split_indices(split_input_data)
