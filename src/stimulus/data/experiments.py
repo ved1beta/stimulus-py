@@ -121,7 +121,11 @@ class TransformLoader:
             field_name (str): The name of the field to set the data transformer for
             data_transformer (Any): The data transformer to set
         """
-        setattr(self, field_name, {"data_transformation_generators": data_transformer})
+        # check if the field already exists, if it does not, initialize it to an empty dict
+        if not hasattr(self, field_name):
+            setattr(self, field_name, {data_transformer.__class__.__name__: data_transformer})
+        else:
+            self.field_name[data_transformer.__class__.__name__] = data_transformer
 
     def initialize_column_data_transformers_from_config(self, transform_config: yaml_data.YamlTransform) -> None:
         """Build the loader from a config dictionary.
