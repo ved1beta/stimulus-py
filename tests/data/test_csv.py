@@ -35,7 +35,7 @@ def dump_single_split_config_to_disk(generate_sub_configs):
     return "tests/test_data/titanic/titanic_sub_config_0.yaml"
 
 @pytest.fixture(scope="session")
-def cleanup_config_files():
+def cleanup_titanic_config_file():
     """Cleanup any generated config files after all tests complete"""
     yield  # Run all tests first
     # Delete the config file after tests complete
@@ -85,7 +85,7 @@ def test_dataset_manager_organize_transforms(config_path):
     assert len(categories) == 3
     assert all(key in categories for key in ["input", "label", "meta"])
 
-def test_dataset_manager_get_transform_logic(dump_single_split_config_to_disk, cleanup_config_files):
+def test_dataset_manager_get_transform_logic(dump_single_split_config_to_disk, cleanup_titanic_config_file):
     manager = DatasetManager(dump_single_split_config_to_disk)
     transform_logic = manager.get_transform_logic()
     assert transform_logic["transformation_name"] == "noise"
