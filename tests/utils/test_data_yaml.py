@@ -41,7 +41,7 @@ def test_sub_config_validation(load_titanic_yaml_from_file):
     sub_config = generate_data_configs(load_titanic_yaml_from_file)[0]
     YamlSubConfigDict.model_validate(sub_config)
 
-def test_sub_config_dump_to_disk(load_titanic_yaml_from_file):
+def test_sub_config_dump_to_disk(load_titanic_yaml_from_file, cleanup_titanic_config_file):
     sub_config = generate_data_configs(load_titanic_yaml_from_file)[0]
     dump_yaml_list_into_files([sub_config], "tests/test_data/titanic/", "titanic_sub_config")
     
