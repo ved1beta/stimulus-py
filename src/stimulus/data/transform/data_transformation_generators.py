@@ -10,9 +10,9 @@ import numpy as np
 class AbstractDataTransformer(ABC):
     """Abstract class for data transformers.
 
-    Data transformers implement in_place or augmentation transformations. 
+    Data transformers implement in_place or augmentation transformations.
     Whether it is in_place or augmentation is specified in the "add_row" attribute (should be True or False and set in children classes constructor)
-    
+
     Child classes should override the `transform` and `transform_all` methods.
 
     `transform_all` should always return a list
@@ -275,7 +275,7 @@ class GaussianChunk(AbstractAugmentationGenerator):
         if end_position < len(data):
             return data[start_position : start_position + self.chunk_size]
         # Otherwise return the chunk of the sequence from the end of the sequence of size chunk_size
-        return data[-self.chunk_size:]
+        return data[-self.chunk_size :]
 
     def transform_all(self, data: list) -> list:
         """Adds chunks to multiple lists using multiprocessing.

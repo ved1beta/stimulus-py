@@ -1,0 +1,8 @@
+# serializer version: 1
+# name: test_split_yaml[correct_yaml_path-None]
+  list([
+    '455bac9343934e1ff40130ee94d5aa29',
+    '5a8a9dd96d15932d28254bde3949d7ea',
+    'a66d7aa1817e90ecdc81f02591f50289',
+  ])
+# ---

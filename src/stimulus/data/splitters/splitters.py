@@ -64,14 +64,14 @@ class RandomSplit(AbstractSplitter):
 
     def get_split_indexes(
         self,
-        data: pl.DataFrame,
+        data: dict,
     ) -> tuple[list, list, list]:
         """Splits the data indices into train, validation, and test sets.
 
         One can use these lists of indices to parse the data afterwards.
 
         Args:
-            data (pl.DataFrame): The data loaded with polars.
+            data (dict): Dictionary mapping column names to lists of data values.
 
         Returns:
             train (list): The indices for the training set.
@@ -86,8 +86,10 @@ class RandomSplit(AbstractSplitter):
         if round(sum(self.split), 3) < 1.0:
             raise ValueError(f"The sum of the split proportions should be 1. Instead, it is {sum(self.split)}.")
 
-        # compute the length of the data
-        length_of_data = len(data)
+        if not data:
+            raise ValueError("No data provided for splitting")
+        # Get length from first column's data list
+        length_of_data = len(next(iter(data.values())))
 
         # Generate a list of indices and shuffle it
         indices = np.arange(length_of_data)
