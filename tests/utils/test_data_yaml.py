@@ -1,7 +1,19 @@
 import pytest
 import yaml
+from pathlib import Path
 from src.stimulus.utils import yaml_data
-from src.stimulus.utils.yaml_data import YamlConfigDict, YamlTransform, YamlSubConfigDict
+from src.stimulus.utils.yaml_data import YamlConfigDict, YamlTransform, YamlSubConfigDict, dump_yaml_list_into_files, generate_data_configs
+
+@pytest.fixture
+def titanic_csv_path():
+    return "tests/test_data/titanic/titanic_stimulus.csv"
+
+@pytest.fixture
+def load_titanic_yaml_from_file() -> YamlConfigDict:
+    """Fixture that loads a test YAML configuration file."""
+    with open("tests/test_data/titanic/titanic.yaml") as f:
+        yaml_dict = yaml.safe_load(f)
+        return YamlConfigDict(**yaml_dict)
 
 @pytest.fixture
 def load_yaml_from_file() -> YamlConfigDict:
@@ -15,6 +27,19 @@ def load_wrong_type_yaml() -> dict:
     """Fixture that loads a YAML configuration file with wrong typing."""
     with open("tests/test_data/yaml_files/wrong_field_type.yaml") as f:
         return yaml.safe_load(f)
+    
+@pytest.fixture(scope="session")
+def cleanup_titanic_config_file():
+    """Cleanup any generated config files after all tests complete"""
+    yield  # Run all tests first
+    # Delete the config file after tests complete
+    config_path = Path("tests/test_data/titanic/titanic_sub_config_0.yaml")
+    if config_path.exists():
+        config_path.unlink()
+
+def test_sub_config_validation(load_titanic_yaml_from_file):
+    sub_config = generate_data_configs(load_titanic_yaml_from_file)[0]
+    yaml_data.check_yaml_schema(sub_config)
 
 def test_extract_transform_parameters_at_index(load_yaml_from_file):
     """Tests extracting parameters at specific indices from transforms."""
