@@ -29,8 +29,8 @@ def generate_sub_configs(base_config):
     return generate_data_configs(base_config)
 
 @pytest.fixture
-def dump_single_split_config_to_disk(split_configs):
-    config_to_dump = [split_configs[0]]
+def dump_single_split_config_to_disk(generate_sub_configs):
+    config_to_dump = [generate_sub_configs[0]]
     dump_yaml_list_into_files(config_to_dump, "tests/test_data/titanic/", "titanic_sub_config")
     return "tests/test_data/titanic/titanic_sub_config_0.yaml"
 
@@ -84,6 +84,12 @@ def test_dataset_manager_organize_transforms(config_path):
     
     assert len(categories) == 3
     assert all(key in categories for key in ["input", "label", "meta"])
+
+def test_dataset_manager_get_transform_logic(dump_single_split_config_to_disk, cleanup_config_files):
+    manager = DatasetManager(dump_single_split_config_to_disk)
+    transform_logic = manager.get_transform_logic()
+    assert transform_logic["transformation_name"] == "noise"
+    assert len(transform_logic["transformations"]) == 2
 
 # Test EncodeManager
 def test_encode_manager_init():
