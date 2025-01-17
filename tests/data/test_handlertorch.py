@@ -169,7 +169,7 @@ class TorchTestData:
                 "label_shape": {"hola": [2]},
             },
         ),
-    ]
+    ],
 )
 def test_data(request) -> TorchTestData:
     """Parametrized fixture providing test data for all experiment types.
@@ -314,9 +314,9 @@ class TestTorchDataset:
             Raises:
                 AssertionError: If the torch dataset length does not match expected_len.
             """
-            assert len(test_data.torch_dataset) == test_data.expected_len, (
-                f"Dataset length mismatch: " f"got {len(test_data.torch_dataset)}, expected {test_data.expected_len}"
-            )
+            assert (
+                len(test_data.torch_dataset) == test_data.expected_len
+            ), f"Dataset length mismatch: got {len(test_data.torch_dataset)}, expected {test_data.expected_len}"
 
         @pytest.mark.parametrize("category", ["input", "label"])
         def test_is_dictionary_of_tensors(self, test_data, category):
@@ -370,9 +370,9 @@ class TestTorchDataset:
             """
             data_dict = getattr(test_data.torch_dataset, category)
             expected_keys = test_data.expected_input.keys() if category == "input" else test_data.expected_label.keys()
-            assert set(data_dict.keys()) == set(expected_keys), (
-                f"Keys mismatch for {category}: " f"got {set(data_dict.keys())}, expected {set(expected_keys)}"
-            )
+            assert set(data_dict.keys()) == set(
+                expected_keys
+            ), f"Keys mismatch for {category}: got {set(data_dict.keys())}, expected {set(expected_keys)}"
 
         @pytest.mark.parametrize("category", ["input", "label"])
         def test_tensor_shapes(self, test_data, category: str) -> None:
@@ -393,9 +393,9 @@ class TestTorchDataset:
                 expected_shape = (
                     test_data.expected_input_shape[key] if category == "input" else test_data.expected_label_shape[key]
                 )
-                assert tensor.shape == expected_shape, (
-                    f"Shape mismatch for {category}[{key}]: " f"got {tensor.shape}, expected {expected_shape}"
-                )
+                assert (
+                    tensor.shape == expected_shape
+                ), f"Shape mismatch for {category}[{key}]: got {tensor.shape}, expected {expected_shape}"
 
         @pytest.mark.parametrize("category", ["input", "label"])
         def test_tensor_content(self, test_data, category: str) -> None:
@@ -416,9 +416,9 @@ class TestTorchDataset:
                 expected_tensor = (
                     test_data.expected_input[key] if category == "input" else test_data.expected_label[key]
                 )
-                assert torch.equal(tensor, expected_tensor), (
-                    f"Content mismatch for {category}[{key}]: " f"got {tensor}, expected {expected_tensor}"
-                )
+                assert torch.equal(
+                    tensor, expected_tensor
+                ), f"Content mismatch for {category}[{key}]: got {tensor}, expected {expected_tensor}"
 
     class TestTorchDatasetGetItem:
         """Test suite for dataset's __getitem__ functionality.
@@ -507,7 +507,7 @@ class TestTorchDataset:
             expected_keys = set(getattr(test_data, expected_attr).keys())
 
             # verify keys
-            assert keys == expected_keys, f"Keys mismatch for {category}: " f"got {keys}, " f"expected {expected_keys}"
+            assert keys == expected_keys, f"Keys mismatch for {category}: got {keys}, expected {expected_keys}"
 
         @pytest.mark.parametrize("idx", [0, slice(0, 2)])
         @pytest.mark.parametrize(
@@ -555,9 +555,9 @@ class TestTorchDataset:
                 expected_shape = torch.Size(expected_shape)
 
                 # verify shape
-                assert tensor.shape == expected_shape, (
-                    f"Wrong shape for {category}[{key}]: " f"got {tensor.shape}, expected {expected_shape}"
-                )
+                assert (
+                    tensor.shape == expected_shape
+                ), f"Wrong shape for {category}[{key}]: got {tensor.shape}, expected {expected_shape}"
 
         @pytest.mark.parametrize("idx", [0, slice(0, 2)])
         @pytest.mark.parametrize(
@@ -595,9 +595,9 @@ class TestTorchDataset:
             for key, tensor in data.items():
                 expected_tensor = expected_data[key][idx]
 
-                assert torch.equal(tensor, expected_tensor), (
-                    f"Content mismatch for {category}[{key}]: " f"got {tensor}, expected {expected_tensor}"
-                )
+                assert torch.equal(
+                    tensor, expected_tensor
+                ), f"Content mismatch for {category}[{key}]: got {tensor}, expected {expected_tensor}"
 
         @pytest.mark.parametrize("invalid_idx", [5000])
         def test_getitem_invalid_index(self, test_data, invalid_idx: Union[int, slice]) -> None:

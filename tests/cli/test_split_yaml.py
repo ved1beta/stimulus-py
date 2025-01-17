@@ -11,16 +11,19 @@ def correct_yaml_path() -> str:
     """Fixture that returns the path to a correct YAML file."""
     return "tests/test_data/titanic/titanic.yaml"
 
+
 @pytest.fixture
 def wrong_yaml_path() -> str:
     """Fixture that returns the path to a wrong YAML file."""
     return "tests/test_data/yaml_files/wrong_field_type.yaml"
 
+
 # Test cases
 test_cases = [
     ("correct_yaml_path", None),
-    ("wrong_yaml_path", ValueError)
+    ("wrong_yaml_path", ValueError),
 ]
+
 
 # Tests
 @pytest.mark.parametrize("yaml_type, error", test_cases)
