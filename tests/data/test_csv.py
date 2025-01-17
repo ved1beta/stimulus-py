@@ -9,6 +9,7 @@ from stimulus.utils.yaml_data import generate_data_configs, YamlConfigDict, dump
 from stimulus.data import experiments
 
 # Fixtures
+## Data fixtures
 @pytest.fixture
 def titanic_csv_path():
     return "tests/test_data/titanic/titanic_stimulus.csv"
@@ -42,7 +43,7 @@ def cleanup_config_files():
     if config_path.exists():
         config_path.unlink()
 
-# Test DatasetHandler Integration
+## Loader fixtures
 @pytest.fixture
 def encoder_loader(base_config):
     loader = experiments.EncoderLoader()
@@ -137,6 +138,8 @@ def test_split_manager_apply_split(split_loader):
     assert len(split_indices[0]) == 70
     assert len(split_indices[1]) == 15
     assert len(split_indices[2]) == 15
+
+# Test DatasetHandler
 
 def test_dataset_handler_init(config_path, titanic_csv_path, encoder_loader, transform_loader, split_loader):
     handler = DatasetHandler(
