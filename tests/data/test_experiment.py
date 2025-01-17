@@ -6,6 +6,8 @@ from stimulus.data.transform import data_transformation_generators
 from stimulus.data.encoding.encoders import AbstractEncoder
 import stimulus.data.experiments as experiments
 import stimulus.data.splitters as splitters
+import stimulus.utils.yaml_data as yaml_data
+
 @pytest.fixture
 def dna_experiment_config_path():
     """Fixture that provides the path to the DNA experiment config template YAML file.
@@ -19,8 +21,18 @@ def dna_experiment_config_path():
     return "tests/test_data/dna_experiment/dna_experiment_config_template.yaml"
 
 @pytest.fixture
+def dna_experiment_sub_yaml():
+    yaml_configs = yaml_data.generate_data_configs(dna_experiment_config_path)
+    return yaml_configs[0]
+
+
+@pytest.fixture
 def titanic_yaml_path():
     return "tests/test_data/titanic/titanic.yaml"
+
+@pytest.fixture
+def titanic_sub_yaml_path():
+    return "tests/test_data/titanic/titanic_sub_config_0.yaml"
 
 @pytest.fixture
 def TextOneHotEncoder_name_and_params():
@@ -59,13 +71,13 @@ def test_set_encoder_as_attribute(TextOneHotEncoder_name_and_params):
     assert experiment.ciao["encoder"] == encoder
     assert experiment.get_function_encode_all("ciao") == encoder.encode_all
 
-def test_build_experiment_class_encoder_dict(dna_experiment_config_path):
+def test_build_experiment_class_encoder_dict(dna_experiment_sub_yaml):
     """Test the build_experiment_class_encoder_dict method of the AbstractExperiment class.
 
     This test checks if the build_experiment_class_encoder_dict method correctly builds the experiment class from a config dictionary.
     """
     experiment = experiments.EncoderLoader()
-    config = experiment.get_config_from_yaml(dna_experiment_config_path).columns
+    config = dna_experiment_sub_yaml.columns
     experiment.initialize_column_encoders_from_config(config)
     assert hasattr(experiment, "hello")
     assert hasattr(experiment, "bonjour")
@@ -95,14 +107,14 @@ def test_set_data_transformer_as_attribute():
     assert hasattr(experiment, "col1")
     assert experiment.col1["data_transformation_generators"] == transformer
 
-def test_initialize_column_data_transformers_from_config(dna_experiment_config_path):
+def test_initialize_column_data_transformers_from_config(dna_experiment_sub_yaml):
     """Test the initialize_column_data_transformers_from_config method of the TransformLoader class.
 
     This test checks if the initialize_column_data_transformers_from_config method correctly builds 
     the experiment class from a config dictionary.
     """
     experiment = experiments.TransformLoader()
-    config = experiment.get_config_from_yaml(dna_experiment_config_path).transforms
+    config = dna_experiment_sub_yaml.transforms
     experiment.initialize_column_data_transformers_from_config(config)
     
     # Check columns have transformers set
@@ -121,9 +133,9 @@ def test_initialize_column_data_transformers_from_config(dna_experiment_config_p
     # Verify col2 has the expected transformer
     assert any(isinstance(t, data_transformation_generators.GaussianNoise) for t in col2_transformers)
 
-def test_initialize_splitter_from_config(titanic_yaml_path):
+def test_initialize_splitter_from_config(titanic_sub_yaml):
     experiment = experiments.SplitLoader()
-    config = experiment.get_config_from_yaml(titanic_yaml_path)
+    config = titanic_sub_yaml.split
     experiment.initialize_splitter_from_config(config)
     assert hasattr(experiment, "split")
     assert isinstance(experiment.split, splitters.RandomSplit)
