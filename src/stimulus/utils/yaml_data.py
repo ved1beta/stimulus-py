@@ -65,7 +65,8 @@ class YamlTransform(BaseModel):
 class YamlSplit(BaseModel):
     split_method: str
     params: Dict[str, List[float]]  # More specific type for split parameters
-    split_input_columns: Optional[List[str]]
+    split_input_columns: List[str]
+
 
 
 class YamlConfigDict(BaseModel):
@@ -285,29 +286,30 @@ def dump_yaml_list_into_files(
             """Recursively process dictionary to properly handle params fields.
 
             Special handling for:
-            - Empty params fields -> None
-            - Transformation params -> None if empty
+            - Empty params fields -> empty dict (will be represented as {} in YAML)
+            - Transformation params -> empty dict if empty
             - Nested dicts and lists -> recursive processing
             """
             if isinstance(input_dict, dict):
                 processed_dict = {}
                 for key, value in input_dict.items():
-                    if key == "params" and (value is None or value == {}):
-                        processed_dict[key] = None  # Convert empty params to None
+                    if key == "encoder" and isinstance(value, list):
+                        # Ensure each encoder has a params field
+                        processed_dict[key] = []
+                        for encoder in value:
+                            processed_encoder = dict(encoder)
+                            if "params" not in processed_encoder or not processed_encoder["params"]:
+                                processed_encoder["params"] = {}
+                            processed_dict[key].append(processed_encoder)
                     elif key == "transformations" and isinstance(value, list):
-                        # Handle transformation params specially
                         processed_dict[key] = []
                         for transformation in value:
                             processed_transformation = dict(transformation)
-                            if (
-                                "params" not in processed_transformation
-                                or processed_transformation["params"] is None
-                                or processed_transformation["params"] == {}
-                            ):
-                                processed_transformation["params"] = None
+                            if "params" not in processed_transformation or not processed_transformation["params"]:
+                                processed_transformation["params"] = {}
                             processed_dict[key].append(processed_transformation)
                     elif isinstance(value, dict):
-                        processed_dict[key] = fix_params(value)  # Recurse into nested dicts
+                        processed_dict[key] = fix_params(value)
                     elif isinstance(value, list):
                         # Process lists, recursing into dict elements
                         processed_dict[key] = [
@@ -320,7 +322,6 @@ def dump_yaml_list_into_files(
 
         dict_data = fix_params(dict_data)
 
-        # Write the processed data to file with custom formatting
         with open(f"{directory_path}/{base_name}_{i}.yaml", "w") as f:
             yaml.dump(
                 dict_data,
