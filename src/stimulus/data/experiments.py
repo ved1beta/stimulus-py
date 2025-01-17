@@ -78,7 +78,7 @@ class EncoderLoader:
             field_name (str): The name of the field to set the encoder for
             encoder (encoders.AbstractEncoder): The encoder to set
         """
-        setattr(self, field_name, {"encoder": encoder})
+        setattr(self, field_name, encoder)
 
 
 class TransformLoader:
@@ -154,6 +154,17 @@ class TransformLoader:
         # Second pass: set all collected transformers as attributes
         for col_name, transformers in column_transformers.items():
             self.set_data_transformer_as_attribute(col_name, transformers)
+
+    def get_transform_logic(self, field_name: str) -> Any:
+        """Gets the transform logic for a specific field.
+
+        Args:
+            field_name (str): The name of the field to get the transform logic for
+
+        Returns:
+            Any: The transform logic for the specified field
+        """
+        return getattr(self, field_name)["data_transformation_generators"]
 
 
 class SplitLoader:
