@@ -19,7 +19,7 @@ import yaml
 from stimulus.data.encoding import encoders as encoders
 from stimulus.data.splitters import splitters as splitters
 from stimulus.data.transform import data_transformation_generators as data_transformation_generators
-from stimulus.utils.yaml_data import YamlConfigDict
+from stimulus.utils import yaml_data
 
 class AbstractLoader(ABC):
     """Abstract base class for defining loaders."""
@@ -34,7 +34,7 @@ class AbstractLoader(ABC):
             dict: The loaded configuration dictionary
         """
         with open(yaml_path, "r") as file:
-            config = YamlConfigDict(**yaml.safe_load(file))
+            config = yaml_data.YamlSubConfigDict(**yaml.safe_load(file))
         return config
     
 class EncoderLoader(AbstractLoader):
@@ -43,11 +43,11 @@ class EncoderLoader(AbstractLoader):
     def __init__(self, seed: float = None) -> None:
         self.seed = seed
 
-    def initialize_column_encoders_from_config(self, config: YamlConfigDict) -> None:
+    def initialize_column_encoders_from_config(self, config: yaml_data.YamlSubConfigDict) -> None:
         """Build the loader from a config dictionary.
         
         Args:
-            config (YamlConfigDict): Configuration dictionary containing field names (column_name) and their encoder specifications.
+            config (yaml_data.YamlSubConfigDict): Configuration dictionary containing field names (column_name) and their encoder specifications.
         """
         for field in config:
             encoder = self.get_encoder(field.encoder[0].name, field.encoder[0].params)
@@ -138,11 +138,11 @@ class TransformLoader(AbstractLoader):
         """
         setattr(self, field_name, {"data_transformation_generators": data_transformer})
 
-    def initialize_column_data_transformers_from_config(self, config: YamlConfigDict) -> None:
+    def initialize_column_data_transformers_from_config(self, config: yaml_data.YamlSubConfigDict) -> None:
         """Build the loader from a config dictionary.
         
         Args:
-            config (YamlConfigDict): Configuration dictionary containing transforms configurations.
+            config (yaml_data.YamlSubConfigDict): Configuration dictionary containing transforms configurations.
                 Each transform can specify multiple columns and their transformations.
                 The method will organize transformers by column, ensuring each column
                 has all its required transformations.
@@ -231,7 +231,7 @@ class SplitLoader(AbstractLoader):
         """
         setattr(self, "split", splitter)
 
-    def initialize_splitter_from_config(self, config: YamlConfigDict, split_index: int = 0) -> None:
+    def initialize_splitter_from_config(self, config: yaml_data.YamlSubConfigDict, split_index: int = 0) -> None:
         """Build the loader from a config dictionary.
         
         Args:
