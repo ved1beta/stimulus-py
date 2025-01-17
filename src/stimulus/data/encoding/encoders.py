@@ -359,7 +359,7 @@ class NumericEncoder(AbstractEncoder):
             ValueError: If the input data contains a non-integer or non-float data point
         """
         if not all(isinstance(d, (int, float)) for d in data):
-            err_msg = f"Expected input data to be a float or int"
+            err_msg = "Expected input data to be a float or int"
             logger.error(err_msg)
             raise ValueError(err_msg)
 
@@ -369,13 +369,14 @@ class NumericEncoder(AbstractEncoder):
         Args:
             data (float or int): a list of float or integer data points
         """
-        if any(isinstance(d, float) for d in data) and (self.dtype in [torch.int, torch.int8, torch.int16, torch.int32, torch.int64]):
+        if any(isinstance(d, float) for d in data) and (
+            self.dtype in [torch.int, torch.int8, torch.int16, torch.int32, torch.int64]
+        ):
             logger.warning("Encoding float data to torch.int data type.")
 
 
 class StrClassificationEncoder(AbstractEncoder):
-    """
-    A string classification encoder that converts lists of strings into numeric labels using scikit-learn's
+    """A string classification encoder that converts lists of strings into numeric labels using scikit-learn's
     LabelEncoder. When scale is set to True, the labels are scaled to be between 0 and 1.
 
     Attributes:
@@ -403,7 +404,7 @@ class StrClassificationEncoder(AbstractEncoder):
 
     def encode(self, data: str) -> int:
         """Returns an error since encoding a single string does not make sense.
-        
+
         Args:
             data (str): a single string
         """
@@ -429,7 +430,7 @@ class StrClassificationEncoder(AbstractEncoder):
         encoded_data = torch.tensor(encoder.fit_transform(data))
         if self.scale:
             encoded_data = encoded_data / max(len(encoded_data) - 1, 1)
-        
+
         return encoded_data
 
     def decode(self, data: Any) -> Any:

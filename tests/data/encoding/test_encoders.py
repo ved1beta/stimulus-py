@@ -183,7 +183,7 @@ class TestNumericEncoder:
     def float_encoder():
         """Fixture to instantiate the NumericEncoder."""
         return NumericEncoder()
-    
+
     @staticmethod
     @pytest.fixture
     def int_encoder():
@@ -198,7 +198,7 @@ class TestNumericEncoder:
         assert output.dtype == torch.float32, "Tensor dtype should be float32."
         assert output.numel() == 1, "Tensor should have exactly one element."
         assert output.item() == pytest.approx(input_val), "Encoded value does not match the input float."
-    
+
     def test_encode_single_int(self, int_encoder):
         """Test encoding a single int value."""
         input_val = 3
@@ -268,7 +268,7 @@ class TestNumericEncoder:
         assert isinstance(decoded, list), "Decoded output should be a list."
         assert len(decoded) == 1, "Decoded list should have one element."
         assert decoded[0] == pytest.approx(3.14), "Decoded value does not match."
-    
+
     def test_decode_single_int(self, int_encoder):
         """Test decoding a tensor of shape (1)."""
         input_tensor = torch.tensor([3], dtype=torch.int32)
@@ -382,7 +382,7 @@ class TestNumericRankEncoder:
     def rank_encoder():
         """Fixture to instantiate the NumericRankEncoder."""
         return NumericRankEncoder()
-    
+
     @staticmethod
     @pytest.fixture
     def scaled_encoder():
