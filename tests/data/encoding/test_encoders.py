@@ -17,14 +17,14 @@ class TestTextOneHotEncoder:
     @staticmethod
     @pytest.fixture
     def encoder_default():
-        """Provides a default encoder with lowercase alphabet 'acgt' (not case-sensitive)."""
-        return TextOneHotEncoder(alphabet="acgt", case_sensitive=False, padding=True)
+        """Provides a default encoder."""
+        return TextOneHotEncoder(alphabet="acgt", padding=True)
 
     @staticmethod
     @pytest.fixture
-    def encoder_case_sensitive():
-        """Provides an encoder with mixed case alphabet 'ACgt' (case-sensitive)."""
-        return TextOneHotEncoder(alphabet="ACgt", case_sensitive=True, padding=True)
+    def encoder_lowercase():
+        """Provides an encoder with convert_lowercase set to True."""
+        return TextOneHotEncoder(alphabet="ACgt", convert_lowercase=True, padding=True)
 
     # ---- Test for initialization ---- #
 
@@ -36,7 +36,7 @@ class TestTextOneHotEncoder:
     def test_init_with_string_alphabet(self):
         encoder = TextOneHotEncoder(alphabet="acgt")
         assert encoder.alphabet == "acgt"
-        assert encoder.case_sensitive is False
+        assert encoder.convert_lowercase is False
         assert encoder.padding is False
 
     # ---- Tests for _sequence_to_array ---- #
@@ -54,17 +54,15 @@ class TestTextOneHotEncoder:
         # check content
         assert (arr.flatten() == list(seq)).all()
 
-    def test_sequence_to_array_is_case_insensitive(self, encoder_default):
+    def test_sequence_to_array_is_case_sensitive(self, encoder_default):
         seq = "AcGT"
         arr = encoder_default._sequence_to_array(seq)
-        # Since encoder_default is not case sensitive, sequence is lowercased internally.
-        assert (arr.flatten() == list("acgt")).all()
-
-    def test_sequence_to_array_is_case_sensitive(self, encoder_case_sensitive):
-        seq = "AcGT"
-        arr = encoder_case_sensitive._sequence_to_array(seq)
-        # With case_sensitive=True, we do not modify 'AcGT'
         assert (arr.flatten() == list("AcGT")).all()
+
+    def test_sequence_to_array_is_lowercase(self, encoder_lowercase):
+        seq = "AcGT"
+        arr = encoder_lowercase._sequence_to_array(seq)
+        assert (arr.flatten() == list("acgt")).all()
 
     # ---- Tests for encode ---- #
 
@@ -81,25 +79,25 @@ class TestTextOneHotEncoder:
         # the last character 'n' is not in 'acgt', so the last row should be all zeros
         assert torch.all(encoded[-1] == 0)
 
-    def test_encode_case_sensitivity_true(self, encoder_case_sensitive):
+    def test_encode_default(self, encoder_default):
         """Case-sensitive: 'ACgt' => 'ACgt' means 'A' and 'C' are uppercase in the alphabet,
         'g' and 't' are lowercase in the alphabet.
         """
         seq = "ACgt"
-        encoded = encoder_case_sensitive.encode(seq)
+        encoded = encoder_default.encode(seq)
         # shape = (len(seq), 4)
         assert encoded.shape == (4, 4)
         # 'A' should be one-hot at the 0th index, 'C' at the 1st index, 'g' at the 2nd, 't' at the 3rd.
         # The order of categories in OneHotEncoder is typically ['A', 'C', 'g', 't'] given we passed ['A','C','g','t'].
-        assert torch.all(encoded[0] == torch.tensor([1, 0, 0, 0]))  # 'A'
-        assert torch.all(encoded[1] == torch.tensor([0, 1, 0, 0]))  # 'C'
+        assert torch.all(encoded[0] == torch.tensor([0, 0, 0, 0]))  # 'A'
+        assert torch.all(encoded[1] == torch.tensor([0, 0, 0, 0]))  # 'C'
         assert torch.all(encoded[2] == torch.tensor([0, 0, 1, 0]))  # 'g'
         assert torch.all(encoded[3] == torch.tensor([0, 0, 0, 1]))  # 't'
 
-    def test_encode_case_sensitivity_false(self, encoder_default):
-        """Case-insensitive: 'ACGT' => 'acgt' internally."""
-        seq = "ACGT"
-        encoded = encoder_default.encode(seq)
+    def test_encode_lowercase(self, encoder_lowercase):
+        """Case-insensitive: 'ACgt' => 'acgt' internally."""
+        seq = "ACgt"
+        encoded = encoder_lowercase.encode(seq)
         # shape = (4,4)
         assert encoded.shape == (4, 4)
         # The order of categories in OneHotEncoder is typically ['a', 'c', 'g', 't'] for the default encoder.
@@ -127,7 +125,7 @@ class TestTextOneHotEncoder:
         assert torch.all(encoded[1] == encoder_default.encode(seqs[1]))
 
     def test_encode_all_with_padding_false(self):
-        encoder = TextOneHotEncoder(alphabet="acgt", case_sensitive=False, padding=False)
+        encoder = TextOneHotEncoder(alphabet="acgt", padding=False)
         seqs = ["acgt", "acgtn"]  # different lengths
         # should raise ValueError because lengths differ
         with pytest.raises(ValueError) as excinfo:

@@ -89,7 +89,8 @@ class TextOneHotEncoder(AbstractEncoder):
 
     Attributes:
         alphabet (str): the alphabet to one hot encode the data with.
-        case_sensitive (bool): whether the encoder is case sensitive or not. Default = False
+        convert_lowercase (bool): whether the encoder would convert the sequence (and alphabet) to lowercase
+          or not. Default = False
         padding (bool): whether to pad the sequences with zero or not. Default = False
         encoder (OneHotEncoder): preprocessing.OneHotEncoder object initialized with self.alphabet
 
@@ -101,7 +102,7 @@ class TextOneHotEncoder(AbstractEncoder):
         _sequence_to_array: transforms a sequence into a numpy array
     """
 
-    def __init__(self, alphabet: str = "acgt", case_sensitive: bool = False, padding: bool = False) -> None:
+    def __init__(self, alphabet: str = "acgt", convert_lowercase: bool = False, padding: bool = False) -> None:
         """Initialize the TextOneHotEncoder class.
 
         Args:
@@ -115,11 +116,11 @@ class TextOneHotEncoder(AbstractEncoder):
             logger.error(error_msg)
             raise ValueError(error_msg)
 
-        if not case_sensitive:
+        if convert_lowercase:
             alphabet = alphabet.lower()
 
         self.alphabet = alphabet
-        self.case_sensitive = case_sensitive
+        self.convert_lowercase = convert_lowercase
         self.padding = padding
 
         self.encoder = preprocessing.OneHotEncoder(
@@ -150,7 +151,7 @@ class TextOneHotEncoder(AbstractEncoder):
             logger.error(error_msg)
             raise ValueError(error_msg)
 
-        if not self.case_sensitive:
+        if self.convert_lowercase:
             sequence = sequence.lower()
 
         sequence_array = np.array(list(sequence))
@@ -186,7 +187,7 @@ class TextOneHotEncoder(AbstractEncoder):
                     [0, 0, 0, 1],
                     [0, 0, 0, 0]])
 
-            >>> encoder = TextOneHotEncoder(alphabet="ACgt", case_sensitive=True)
+            >>> encoder = TextOneHotEncoder(alphabet="ACgt")
             >>> encoder.encode("acgt")
             tensor([[0, 0, 0, 0],
                     [0, 0, 0, 0],
