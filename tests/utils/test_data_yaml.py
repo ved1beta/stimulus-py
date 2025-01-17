@@ -39,7 +39,17 @@ def cleanup_titanic_config_file():
 
 def test_sub_config_validation(load_titanic_yaml_from_file):
     sub_config = generate_data_configs(load_titanic_yaml_from_file)[0]
-    yaml_data.check_yaml_schema(sub_config)
+    YamlSubConfigDict.model_validate(sub_config)
+
+def test_sub_config_dump_to_disk(load_titanic_yaml_from_file):
+    sub_config = generate_data_configs(load_titanic_yaml_from_file)[0]
+    dump_yaml_list_into_files([sub_config], "tests/test_data/titanic/", "titanic_sub_config")
+    
+    # load the file back in 
+    with open("tests/test_data/titanic/titanic_sub_config_0.yaml", "r") as f:
+        yaml_dict = yaml.safe_load(f)
+        sub_config_loaded = YamlSubConfigDict(**yaml_dict)
+        YamlSubConfigDict.model_validate(sub_config_loaded)
 
 def test_extract_transform_parameters_at_index(load_yaml_from_file):
     """Tests extracting parameters at specific indices from transforms."""
