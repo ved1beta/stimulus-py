@@ -58,11 +58,11 @@ transforms:
               std: [0.1, 0.2, 0.1, 0.2]
 
 split:
-  - split_method: random_split
+  - split_method: RandomSplit
     split_input_columns: ["hello"]
     params:
       split: [0.6, 0.2, 0.2]
-  - split_method: random_split
+  - split_method: RandomSplit
     split_input_columns: ["bonjour"]
     params:
       split: [0.7, 0.15, 0.15]

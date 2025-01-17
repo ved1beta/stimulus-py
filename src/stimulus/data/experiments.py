@@ -136,7 +136,7 @@ class TransformLoader():
         column_transformers = defaultdict(list)
         
         # First pass: collect all transformations by column
-        for column in transform_config:
+        for column in transform_config.columns:
             col_name = column.column_name
             
             # Process each transformation for this column
