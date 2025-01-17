@@ -20,36 +20,20 @@ from stimulus.data.encoding import encoders as encoders
 from stimulus.data.splitters import splitters as splitters
 from stimulus.data.transform import data_transformation_generators as data_transformation_generators
 from stimulus.utils import yaml_data
-
-class AbstractLoader(ABC):
-    """Abstract base class for defining loaders."""
-
-    def get_config_from_yaml(self, yaml_path: str) -> dict:
-        """Loads experiment configuration from a YAML file.
-        
-        Args:
-            yaml_path (str): Path to the YAML config file
-
-        Returns:
-            dict: The loaded configuration dictionary
-        """
-        with open(yaml_path, "r") as file:
-            config = yaml_data.YamlSubConfigDict(**yaml.safe_load(file))
-        return config
     
-class EncoderLoader(AbstractLoader):
+class EncoderLoader():
     """Class for loading encoders from a config file."""
 
     def __init__(self, seed: float = None) -> None:
         self.seed = seed
 
-    def initialize_column_encoders_from_config(self, config: yaml_data.YamlSubConfigDict) -> None:
+    def initialize_column_encoders_from_config(self, column_config: yaml_data.YamlColumns) -> None:
         """Build the loader from a config dictionary.
         
         Args:
             config (yaml_data.YamlSubConfigDict): Configuration dictionary containing field names (column_name) and their encoder specifications.
         """
-        for field in config:
+        for field in column_config:
             encoder = self.get_encoder(field.encoder[0].name, field.encoder[0].params)
             self.set_encoder_as_attribute(field.column_name, encoder)
 
@@ -99,7 +83,7 @@ class EncoderLoader(AbstractLoader):
         """
         setattr(self, field_name, {"encoder": encoder})
 
-class TransformLoader(AbstractLoader):
+class TransformLoader():
     """Class for loading transformations from a config file."""
 
     def __init__(self, seed: float = None) -> None:
@@ -138,7 +122,7 @@ class TransformLoader(AbstractLoader):
         """
         setattr(self, field_name, {"data_transformation_generators": data_transformer})
 
-    def initialize_column_data_transformers_from_config(self, config: yaml_data.YamlSubConfigDict) -> None:
+    def initialize_column_data_transformers_from_config(self, transform_config: yaml_data.YamlTransform) -> None:
         """Build the loader from a config dictionary.
         
         Args:
@@ -152,28 +136,27 @@ class TransformLoader(AbstractLoader):
         column_transformers = defaultdict(list)
         
         # First pass: collect all transformations by column
-        for transform_group in config:
-            for column in transform_group.columns:
-                col_name = column.column_name
+        for column in transform_config:
+            col_name = column.column_name
+            
+            # Process each transformation for this column
+            for transform_spec in column.transformations:
+                # Create transformer instance
+                transformer = self.get_data_transformer(transform_spec.name)
                 
-                # Process each transformation for this column
-                for transform_spec in column.transformations:
-                    # Create transformer instance
-                    transformer = self.get_data_transformer(transform_spec.name)
-                    
-                    # Get transformer class for comparison
-                    transformer_type = type(transformer)
-                    
-                    # Add transformer if its type isn't already present
-                    if not any(isinstance(existing, transformer_type) 
-                             for existing in column_transformers[col_name]):
-                        column_transformers[col_name].append(transformer)
+                # Get transformer class for comparison
+                transformer_type = type(transformer)
+                
+                # Add transformer if its type isn't already present
+                if not any(isinstance(existing, transformer_type) 
+                            for existing in column_transformers[col_name]):
+                    column_transformers[col_name].append(transformer)
         
         # Second pass: set all collected transformers as attributes
         for col_name, transformers in column_transformers.items():
             self.set_data_transformer_as_attribute(col_name, transformers)
     
-class SplitLoader(AbstractLoader):
+class SplitLoader():
     """Class for loading splitters from a config file."""
 
     def __init__(self, seed: float = None) -> None:
@@ -231,11 +214,11 @@ class SplitLoader(AbstractLoader):
         """
         setattr(self, "split", splitter)
 
-    def initialize_splitter_from_config(self, config: yaml_data.YamlSubConfigDict, split_index: int = 0) -> None:
+    def initialize_splitter_from_config(self, split_config: yaml_data.YamlSplit) -> None:
         """Build the loader from a config dictionary.
         
         Args:
             config (dict): Configuration dictionary containing split configurations.
         """
-        splitter = self.get_splitter(config.split[split_index].split_method, config.split[split_index].params)
+        splitter = self.get_splitter(split_config.split_method, split_config.params)
         self.set_splitter_as_attribute(splitter)
