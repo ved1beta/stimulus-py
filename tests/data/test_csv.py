@@ -45,31 +45,31 @@ def cleanup_titanic_config_file():
 
 ## Loader fixtures
 @pytest.fixture
-def encoder_loader(base_config):
+def encoder_loader(dump_single_split_config_to_disk):
     loader = experiments.EncoderLoader()
     loader.initialize_column_encoders_from_config(base_config.columns)
     return loader
 
 @pytest.fixture
-def transform_loader(base_config):
+def transform_loader(dump_single_split_config_to_disk):
     loader = experiments.TransformLoader()
     loader.initialize_column_data_transformers_from_config(base_config.transforms)
     return loader
 
 @pytest.fixture
-def split_loader(base_config):
+def split_loader(dump_single_split_config_to_disk):
     loader = experiments.SplitLoader()
     loader.initialize_splitter_from_config(base_config)
     return loader
 
 # Test DatasetManager
-def test_dataset_manager_init(config_path):
-    manager = DatasetManager(config_path)
+def test_dataset_manager_init(dump_single_split_config_to_disk):
+    manager = DatasetManager(dump_single_split_config_to_disk)
     assert hasattr(manager, "config")
     assert hasattr(manager, "column_categories")
 
-def test_dataset_manager_organize_columns(config_path):
-    manager = DatasetManager(config_path)
+def test_dataset_manager_organize_columns(dump_single_split_config_to_disk):
+    manager = DatasetManager(dump_single_split_config_to_disk)
     categories = manager.categorize_columns_by_type()
     
     assert "pclass" in categories["input"]
@@ -78,14 +78,14 @@ def test_dataset_manager_organize_columns(config_path):
     assert "survived" in categories["label"]
     assert "passenger_id" in categories["meta"]
 
-def test_dataset_manager_organize_transforms(config_path):
-    manager = DatasetManager(config_path)
+def test_dataset_manager_organize_transforms(dump_single_split_config_to_disk):
+    manager = DatasetManager(dump_single_split_config_to_disk)
     categories = manager.categorize_columns_by_type()
     
     assert len(categories) == 3
     assert all(key in categories for key in ["input", "label", "meta"])
 
-def test_dataset_manager_get_transform_logic(dump_single_split_config_to_disk, cleanup_titanic_config_file):
+def test_dataset_manager_get_transform_logic(dump_single_split_config_to_disk):
     manager = DatasetManager(dump_single_split_config_to_disk)
     transform_logic = manager.get_transform_logic()
     assert transform_logic["transformation_name"] == "noise"

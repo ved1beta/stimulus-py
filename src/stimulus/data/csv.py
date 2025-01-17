@@ -95,12 +95,12 @@ class DatasetManager:
             'hello'
         """
         with open(config_path, "r") as file:
-            return yaml_data.YamlConfigDict(**yaml.safe_load(file))
+            return yaml_data.YamlSubConfigDict(**yaml.safe_load(file))
 
     def get_split_columns(self) -> str:
         """Get the columns that are used for splitting."""
 
-        return self.config.split[0].split_input_columns
+        return self.config.split.split_input_columns
     
     def get_transform_logic(self) -> dict:
         """Get the transformation logic.
@@ -112,8 +112,8 @@ class DatasetManager:
         }
         """
 
-        transformation_logic = {"transformation_name": self.config.transforms[0].transformation_name, "transformations": []}
-        for column in self.config.transforms[0].columns:
+        transformation_logic = {"transformation_name": self.config.transforms.transformation_name, "transformations": []}
+        for column in self.config.transforms.columns:
             for transformation in column.transformations:
                 transformation_logic["transformations"].append((column.column_name, transformation.name, transformation.params))
         return transformation_logic
