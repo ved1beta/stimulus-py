@@ -4,12 +4,9 @@ import pytest
 import torch
 
 from src.stimulus.data.encoding.encoders import (
-    FloatEncoder,
-    FloatRankEncoder,
-    IntEncoder,
-    IntRankEncoder,
-    StrClassificationIntEncoder,
-    StrClassificationScaledEncoder,
+    NumericEncoder,
+    NumericRankEncoder,
+    StrClassificationEncoder,
     TextOneHotEncoder,
 )
 
@@ -178,14 +175,20 @@ class TestTextOneHotEncoder:
         assert decoded[0] == "acgt-"  # '-' for unknown character n
 
 
-class TestFloatEncoder:
-    """Test suite for FloatEncoder."""
+class TestNumericEncoder:
+    """Test suite for NumericEncoder."""
 
     @staticmethod
     @pytest.fixture
     def float_encoder():
-        """Fixture to instantiate the FloatEncoder."""
-        return FloatEncoder()
+        """Fixture to instantiate the NumericEncoder."""
+        return NumericEncoder()
+    
+    @staticmethod
+    @pytest.fixture
+    def int_encoder():
+        """Fixture to instantiate the NumericEncoder with integer dtype."""
+        return NumericEncoder(dtype=torch.int32)
 
     def test_encode_single_float(self, float_encoder):
         """Test encoding a single float value."""
@@ -194,14 +197,24 @@ class TestFloatEncoder:
         assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
         assert output.dtype == torch.float32, "Tensor dtype should be float32."
         assert output.numel() == 1, "Tensor should have exactly one element."
-        # Using pytest.approx for floating-point comparison
         assert output.item() == pytest.approx(input_val), "Encoded value does not match the input float."
+    
+    def test_encode_single_int(self, int_encoder):
+        """Test encoding a single int value."""
+        input_val = 3
+        output = int_encoder.encode(input_val)
+        assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
+        assert output.dtype == torch.int32, "Tensor dtype should be int32."
+        assert output.numel() == 1, "Tensor should have exactly one element."
+        assert output.item() == input_val
 
-    def test_encode_non_float_raises(self, float_encoder):
+    @pytest.mark.parametrize("fixture_name", ["float_encoder", "int_encoder"])
+    def test_encode_non_numeric_raises(self, request, fixture_name):
         """Test that encoding a non-float raises a ValueError."""
+        numeric_encoder = request.getfixturevalue(fixture_name)
         with pytest.raises(ValueError) as exc_info:
-            float_encoder.encode("not_a_float")
-        assert "Expected input data to be a float, got str" in str(exc_info.value), (
+            numeric_encoder.encode("not_numeric")
+        assert "Expected input data to be a float or int" in str(exc_info.value), (
             "Expected ValueError with specific error message."
         )
 
@@ -216,61 +229,6 @@ class TestFloatEncoder:
         assert output.numel() == 1, "Tensor should have exactly one element."
         assert output.item() == pytest.approx(input_val), "Encoded value does not match the input."
 
-    def test_encode_all_multi_float(self, float_encoder):
-        """Test encode_all with a list of floats."""
-        input_vals = [3.14, 4.56]
-        output = float_encoder.encode_all(input_vals)
-        assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
-        assert output.dtype == torch.float32, "Tensor dtype should be float32."
-        assert output.numel() == 2, "Tensor should have exactly one element."
-        assert output[0].item() == pytest.approx(3.14), "First element does not match."
-        assert output[1].item() == pytest.approx(4.56), "Second element does not match."
-
-    def test_decode_single_float(self, float_encoder):
-        """Test decoding a tensor of shape (1)."""
-        input_tensor = torch.tensor([3.14], dtype=torch.float32)
-        decoded = float_encoder.decode(input_tensor)
-        # decode returns data.numpy().tolist()
-        assert isinstance(decoded, list), "Decoded output should be a list."
-        assert len(decoded) == 1, "Decoded list should have one element."
-        assert decoded[0] == pytest.approx(3.14), "Decoded value does not match."
-
-    def test_decode_multi_float(self, float_encoder):
-        """Test decoding a tensor of shape (n)."""
-        input_tensor = torch.tensor([3.14, 2.71], dtype=torch.float32)
-        decoded = float_encoder.decode(input_tensor)
-        assert isinstance(decoded, list), "Decoded output should be a list."
-        assert len(decoded) == 2, "Decoded list should have two elements."
-        assert decoded[0] == pytest.approx(3.14), "First decoded value does not match."
-        assert decoded[1] == pytest.approx(2.71), "Second decoded value does not match."
-
-
-class TestIntEncoder:
-    """Test suite for IntEncoder."""
-
-    @staticmethod
-    @pytest.fixture
-    def int_encoder():
-        """Fixture to instantiate the IntEncoder."""
-        return IntEncoder()
-
-    def test_encode_single_int(self, int_encoder):
-        """Test encoding a single int value."""
-        input_val = 3
-        output = int_encoder.encode(input_val)
-        assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
-        assert output.dtype == torch.int32, "Tensor dtype should be int32."
-        assert output.numel() == 1, "Tensor should have exactly one element."
-        assert output.item() == input_val
-
-    def test_encode_non_int_raises(self, int_encoder):
-        """Test that encoding a non-int raises a RuntimeError."""
-        with pytest.raises(ValueError) as exc_info:
-            int_encoder.encode("not_a_int")
-        assert "Expected input data to be a int, got str" in str(exc_info.value), (
-            "Expected ValueError with specific error message."
-        )
-
     def test_encode_all_single_int(self, int_encoder):
         """Test encode_all when given a single int.
         It should be treated as a list of one int internally.
@@ -282,6 +240,16 @@ class TestIntEncoder:
         assert output.numel() == 1, "Tensor should have exactly one element."
         assert output.item() == input_val
 
+    def test_encode_all_multi_float(self, float_encoder):
+        """Test encode_all with a list of floats."""
+        input_vals = [3.14, 4.56]
+        output = float_encoder.encode_all(input_vals)
+        assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
+        assert output.dtype == torch.float32, "Tensor dtype should be float32."
+        assert output.numel() == 2, "Tensor should have exactly one element."
+        assert output[0].item() == pytest.approx(3.14), "First element does not match."
+        assert output[1].item() == pytest.approx(4.56), "Second element does not match."
+
     def test_encode_all_multi_int(self, int_encoder):
         """Test encode_all with a list of integers."""
         input_vals = [3, 4]
@@ -292,6 +260,15 @@ class TestIntEncoder:
         assert output[0].item() == 3, "First element does not match."
         assert output[1].item() == 4, "Second element does not match."
 
+    def test_decode_single_float(self, float_encoder):
+        """Test decoding a tensor of shape (1)."""
+        input_tensor = torch.tensor([3.14], dtype=torch.float32)
+        decoded = float_encoder.decode(input_tensor)
+        # decode returns data.numpy().tolist()
+        assert isinstance(decoded, list), "Decoded output should be a list."
+        assert len(decoded) == 1, "Decoded list should have one element."
+        assert decoded[0] == pytest.approx(3.14), "Decoded value does not match."
+    
     def test_decode_single_int(self, int_encoder):
         """Test decoding a tensor of shape (1)."""
         input_tensor = torch.tensor([3], dtype=torch.int32)
@@ -300,6 +277,15 @@ class TestIntEncoder:
         assert isinstance(decoded, list), "Decoded output should be a list."
         assert len(decoded) == 1, "Decoded list should have one element."
         assert decoded[0] == 3, "Decoded value does not match."
+
+    def test_decode_multi_float(self, float_encoder):
+        """Test decoding a tensor of shape (n)."""
+        input_tensor = torch.tensor([3.14, 2.71], dtype=torch.float32)
+        decoded = float_encoder.decode(input_tensor)
+        assert isinstance(decoded, list), "Decoded output should be a list."
+        assert len(decoded) == 2, "Decoded list should have two elements."
+        assert decoded[0] == pytest.approx(3.14), "First decoded value does not match."
+        assert decoded[1] == pytest.approx(2.71), "Second decoded value does not match."
 
     def test_decode_multi_int(self, int_encoder):
         """Test decoding a tensor of shape (n)."""
@@ -311,20 +297,20 @@ class TestIntEncoder:
         assert decoded[1] == 4, "Second decoded value does not match."
 
 
-class TestStrClassificationIntEncoder:
+class TestStrClassificationEncoder:
     """Test suite for StrClassificationIntEncoder and StrClassificationScaledEncoder."""
 
     @staticmethod
     @pytest.fixture
     def str_encoder():
-        """Pytest fixture to instantiate StrClassificationIntEncoder."""
-        return StrClassificationIntEncoder()
+        """Pytest fixture to instantiate StrClassificationEncoder."""
+        return StrClassificationEncoder()
 
     @staticmethod
     @pytest.fixture
     def scaled_encoder():
-        """Pytest fixture to instantiate StrClassificationScaledEncoder."""
-        return StrClassificationScaledEncoder()
+        """Pytest fixture to instantiate StrClassificationEncoder with scale set to True"""
+        return StrClassificationEncoder(scale=True)
 
     @pytest.mark.parametrize("fixture", ["str_encoder", "scaled_encoder"])
     def test_encode_raises_not_implemented(self, request, fixture):
@@ -385,84 +371,66 @@ class TestStrClassificationIntEncoder:
         encoder = request.getfixturevalue(fixture)
         with pytest.raises(NotImplementedError) as exc_info:
             encoder.decode(torch.tensor([0]))
-        assert "Decoding is not yet supported." in str(exc_info.value)
+        assert "Decoding is not yet supported for StrClassification." in str(exc_info.value)
 
 
-class TestFloatRankEncoder:
-    """Test suite for FloatRankEncoder."""
+class TestNumericRankEncoder:
+    """Test suite for NumericRankEncoder."""
 
     @staticmethod
     @pytest.fixture
-    def float_rank_encoder():
-        """Fixture to instantiate the FloatRankEncoder."""
-        return FloatRankEncoder()
+    def rank_encoder():
+        """Fixture to instantiate the NumericRankEncoder."""
+        return NumericRankEncoder()
+    
+    @staticmethod
+    @pytest.fixture
+    def scaled_encoder():
+        """Fixture to instantiate the NumericRankEncoder with scale set to True."""
+        return NumericRankEncoder(scale=True)
 
-    def test_encode_raises_not_implemented(self, float_rank_encoder):
+    @pytest.mark.parametrize("fixture", ["rank_encoder", "scaled_encoder"])
+    def test_encode_raises_not_implemented(self, request, fixture):
         """Test that encoding a single float raises NotImplementedError."""
+        encoder = request.getfixturevalue(fixture)
         with pytest.raises(NotImplementedError) as exc_info:
-            float_rank_encoder.encode(3.14)
+            encoder.encode(3.14)
         assert "Encoding a single float does not make sense. Use encode_all instead." in str(exc_info.value)
 
-    def test_encode_all_with_valid_floats(self, float_rank_encoder):
+    def test_encode_all_with_valid_rank(self, rank_encoder):
         """Test encoding a list of float values."""
         input_vals = [3.14, 2.71, 1.41]
-        output = float_rank_encoder.encode_all(input_vals)
+        output = rank_encoder.encode_all(input_vals)
         assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
-        assert output.dtype == torch.float32, "Tensor dtype should be float32."
         assert output.numel() == 3, "Tensor should have exactly three elements."
-        assert torch.allclose(output, torch.tensor([1.0, 0.5, 0.0])), "Encoded values do not match expected ranks."
+        assert output[0] == 2, "First encoded value does not match."
+        assert output[1] == 1, "Second encoded value does not match."
+        assert output[2] == 0, "Third encoded value does not match."
 
-    def test_encode_all_with_non_float_raises(self, float_rank_encoder):
+    def test_encode_all_with_valid_scaled_rank(self, scaled_encoder):
+        """Test encoding a list of float values."""
+        input_vals = [3.14, 2.71, 1.41]
+        output = scaled_encoder.encode_all(input_vals)
+        assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
+        assert output.numel() == 3, "Tensor should have exactly three elements."
+        assert output[0] == pytest.approx(1), "First encoded value does not match."
+        assert output[1] == pytest.approx(0.5), "Second encoded value does not match."
+        assert output[2] == pytest.approx(0), "Third encoded value does not match."
+
+    @pytest.mark.parametrize("fixture", ["rank_encoder", "scaled_encoder"])
+    def test_encode_all_with_non_numeric_raises(self, request, fixture):
         """Test that encoding a non-float raises a ValueError."""
+        encoder = request.getfixturevalue(fixture)
         with pytest.raises(ValueError) as exc_info:
-            float_rank_encoder.encode_all(["not_a_float"])
-        assert "Expected input data to be a float" in str(exc_info.value), (
+            encoder.encode_all(["not_numeric"])
+        assert "Expected input data to be a float or int" in str(exc_info.value), (
             "Expected ValueError with specific error message."
         )
 
-    def test_decode_raises_not_implemented(self, float_rank_encoder):
+    @pytest.mark.parametrize("fixture", ["rank_encoder", "scaled_encoder"])
+    def test_decode_raises_not_implemented(self, request, fixture):
         """Test that decoding raises NotImplementedError."""
+        encoder = request.getfixturevalue(fixture)
         with pytest.raises(NotImplementedError) as exc_info:
-            float_rank_encoder.decode(torch.tensor([0.0]))
-        assert "Decoding is not yet supported for FloatRank." in str(exc_info.value)
-
-
-class TestIntRankEncoder:
-    """Test suite for IntRankEncoder."""
-
-    @staticmethod
-    @pytest.fixture
-    def int_rank_encoder():
-        """Fixture to instantiate the IntRankEncoder."""
-        return IntRankEncoder()
-
-    def test_encode_raises_not_implemented(self, int_rank_encoder):
-        """Test that encoding a single integer raises NotImplementedError."""
-        with pytest.raises(NotImplementedError) as exc_info:
-            int_rank_encoder.encode(3)
-        assert "Encoding a single integer does not make sense. Use encode_all instead." in str(exc_info.value)
-
-    def test_encode_all_with_valid_integers(self, int_rank_encoder):
-        """Test encoding a list of integer values."""
-        input_vals = [3, 1, 2]
-        output = int_rank_encoder.encode_all(input_vals)
-        assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
-        assert output.dtype == torch.int32, "Tensor dtype should be int32."
-        assert output.numel() == 3, "Tensor should have exactly three elements."
-        assert torch.allclose(output, torch.tensor([2, 0, 1], dtype=torch.int32)), (
-            "Encoded values do not match expected ranks."
-        )
-
-    def test_encode_all_with_non_int_raises(self, int_rank_encoder):
-        """Test that encoding a non-integer raises a ValueError."""
-        with pytest.raises(ValueError) as exc_info:
-            int_rank_encoder.encode_all(["not_an_int"])
-        assert "Expected input data to be a int" in str(exc_info.value), (
-            "Expected ValueError with specific error message."
-        )
-
-    def test_decode_raises_not_implemented(self, int_rank_encoder):
-        """Test that decoding raises NotImplementedError."""
-        with pytest.raises(NotImplementedError) as exc_info:
-            int_rank_encoder.decode(torch.tensor([0]))
-        assert "Decoding is not yet supported for IntRank." in str(exc_info.value)
+            encoder.decode(torch.tensor([0.0]))
+        assert "Decoding is not yet supported for NumericRank." in str(exc_info.value)
