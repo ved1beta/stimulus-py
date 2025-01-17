@@ -142,7 +142,7 @@ class TransformLoader():
             # Process each transformation for this column
             for transform_spec in column.transformations:
                 # Create transformer instance
-                transformer = self.get_data_transformer(transform_spec.name)
+                transformer = self.get_data_transformer(transform_spec.name, transform_spec.params)
                 
                 # Get transformer class for comparison
                 transformer_type = type(transformer)
