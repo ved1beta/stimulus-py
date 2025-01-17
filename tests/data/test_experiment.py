@@ -46,6 +46,7 @@ def TextOneHotEncoder_name_and_params():
     return "TextOneHotEncoder", {"alphabet": "acgt"}
 
 
+
 def test_get_encoder(TextOneHotEncoder_name_and_params):
     """Test the get_encoder method of the AbstractExperiment class.
 

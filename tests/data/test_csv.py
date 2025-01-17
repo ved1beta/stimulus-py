@@ -103,7 +103,6 @@ def test_dataset_manager_get_transform_logic(dump_single_split_config_to_disk):
     assert transform_logic["transformation_name"] == "noise"
     assert len(transform_logic["transformations"]) == 2
 
-
 # Test EncodeManager
 def test_encode_manager_init():
     encoder_loader = experiments.EncoderLoader()
@@ -166,7 +165,6 @@ def test_split_manager_apply_split(split_loader):
     assert len(split_indices[1]) == 15
     assert len(split_indices[2]) == 15
 
-
 # Test DatasetHandler
 
 
@@ -184,7 +182,6 @@ def test_dataset_handler_init(
     assert isinstance(handler.encoder_manager, EncodeManager)
     assert isinstance(handler.transform_manager, TransformManager)
     assert isinstance(handler.split_manager, SplitManager)
-
 
 def test_dataset_hanlder_apply_split(
     dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader

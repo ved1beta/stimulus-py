@@ -68,6 +68,7 @@ class YamlSplit(BaseModel):
     split_input_columns: List[str]
 
 
+
 class YamlConfigDict(BaseModel):
     global_params: YamlGlobalParams
     columns: List[YamlColumns]
@@ -321,7 +322,6 @@ def dump_yaml_list_into_files(
 
         dict_data = fix_params(dict_data)
 
-        # Write to file
         with open(f"{directory_path}/{base_name}_{i}.yaml", "w") as f:
             yaml.dump(
                 dict_data,
