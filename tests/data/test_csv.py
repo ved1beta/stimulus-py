@@ -5,7 +5,7 @@ import yaml
 
 from stimulus.data import experiments
 from stimulus.data.csv import DatasetHandler, DatasetManager, EncodeManager, SplitManager, TransformManager
-from stimulus.utils.yaml_data import YamlConfigDict, dump_yaml_list_into_files, generate_data_configs
+from stimulus.utils.yaml_data import YamlConfigDict, dump_yaml_list_into_files, generate_data_configs, YamlTransform, YamlTransformColumns, YamlTransformColumnsTransformation
 
 
 # Fixtures
@@ -139,10 +139,18 @@ def test_transform_manager_initialize_transforms():
     assert hasattr(manager, "transform_loader")
 
 
-def test_transform_manager_apply_transforms():
+def test_transform_manager_transform_column():
     transform_loader = experiments.TransformLoader()
+    dummy_config = YamlTransform(
+        transformation_name="GaussianNoise",
+        columns=[YamlTransformColumns(column_name="test_col", transformations=[YamlTransformColumnsTransformation(name="GaussianNoise", params={"std": 0.1})])],
+    )
+    transform_loader.initialize_column_data_transformers_from_config(dummy_config)
     manager = TransformManager(transform_loader)
-    assert hasattr(manager, "transform_loader")
+    data = [1, 2, 3]
+    transformed, added_row = manager.transform_column("test_col", "GaussianNoise", data)
+    assert len(transformed) == len(data)
+    assert added_row is False
 
 
 # Test SplitManager
