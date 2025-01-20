@@ -132,32 +132,37 @@ class TransformLoader:
 
         Args:
             config (yaml_data.YamlSubConfigDict): Configuration dictionary containing transforms configurations.
-                Each transform can specify multiple columns and their transformations.
-                The method will organize transformers by column, ensuring each column
-                has all its required transformations.
-        """
-        # Use defaultdict to automatically initialize empty lists
-        column_transformers = defaultdict(list)
 
-        # First pass: collect all transformations by column
+        Example:
+            Given a YAML config like:
+            ```yaml
+            transforms:
+              transformation_name: noise
+              columns:
+                - column_name: age
+                  transformations:
+                    - name: GaussianNoise
+                      params:
+                        std: 0.1
+                - column_name: fare
+                  transformations:
+                    - name: GaussianNoise
+                      params:
+                        std: 0.1
+            ```
+
+            The loader will:
+            1. Iterate through each column (age, fare)
+            2. For each transformation in the column:
+               - Get the transformer (GaussianNoise) with its params (std=0.1)
+               - Set it as an attribute on the loader using the column name as key
+        """
         for column in transform_config.columns:
             col_name = column.column_name
-
-            # Process each transformation for this column
             for transform_spec in column.transformations:
-                # Create transformer instance
                 transformer = self.get_data_transformer(transform_spec.name, transform_spec.params)
+                self.set_data_transformer_as_attribute(col_name, transformer)
 
-                # Get transformer class for comparison
-                transformer_type = type(transformer)
-
-                # Add transformer if its type isn't already present
-                if not any(isinstance(existing, transformer_type) for existing in column_transformers[col_name]):
-                    column_transformers[col_name].append(transformer)
-
-        # Second pass: set all collected transformers as attributes
-        for col_name, transformers in column_transformers.items():
-            self.set_data_transformer_as_attribute(col_name, transformers)
 
 class SplitLoader:
     """Class for loading splitters from a config file."""
