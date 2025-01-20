@@ -43,7 +43,7 @@ class EncoderLoader:
         Returns:
             Any: The encode_all function for the specified field
         """
-        return getattr(self, field_name)["encoder"].encode_all
+        return getattr(self, field_name).encode_all
 
     def get_encoder(self, encoder_name: str, encoder_params: dict = None) -> Any:
         """Gets an encoder object from the encoders module and initializes it with the given parametersß.
