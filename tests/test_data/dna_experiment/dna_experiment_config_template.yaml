@@ -22,7 +22,7 @@ columns:
     column_type : "label"
     data_type : int
     encoder:
-      - name: IntEncoder
+      - name: NumericEncoder
         params:
 
 transforms:

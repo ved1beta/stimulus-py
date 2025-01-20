@@ -6,63 +6,63 @@ columns:
     column_type: "meta"
     data_type: "int"
     encoder:
-      - name: IntEncoder
+      - name: NumericEncoder
         params:
 
   - column_name: "survived"
     column_type: "label" 
     data_type: "int"
     encoder:
-      - name: IntEncoder
+      - name: NumericEncoder
         params:
 
   - column_name: "pclass" 
     column_type: "input"
     data_type: "int"
     encoder:
-      - name: IntEncoder
+      - name: NumericEncoder
         params:
 
   - column_name: "sex"
     column_type: "input"
     data_type: "str"
     encoder:
-      - name: StrClassificationIntEncoder
+      - name: StrClassificationEncoder
         params:
 
   - column_name: "age"
     column_type: "input"
     data_type: "float"
     encoder:
-      - name: FloatRankEncoder
+      - name: NumericEncoder
         params:
 
   - column_name: "sibsp"
     column_type: "input"
     data_type: "int"
     encoder:
-      - name: IntEncoder
+      - name: NumericEncoder
         params:
 
   - column_name: "parch"
     column_type: "input"
     data_type: "int"
     encoder:
-      - name: IntEncoder
+      - name: NumericEncoder
         params:
 
   - column_name: "fare"
     column_type: "input"
     data_type: "float"
     encoder:
-      - name: FloatRankEncoder
+      - name: NumericEncoder
         params:
 
   - column_name: "embarked"
     column_type: "input"
     data_type: "str"
     encoder:
-      - name: StrClassificationIntEncoder
+      - name: StrClassificationEncoder
         params:
 
 transforms:
