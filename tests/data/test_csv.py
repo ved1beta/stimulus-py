@@ -118,7 +118,7 @@ def test_encode_manager_initialize_encoders():
 
 def test_encode_manager_encode_numeric():
     encoder_loader = experiments.EncoderLoader()
-    intencoder = encoder_loader.get_encoder("IntEncoder")
+    intencoder = encoder_loader.get_encoder("NumericEncoder")
     encoder_loader.set_encoder_as_attribute("test_col", intencoder)
     manager = EncodeManager(encoder_loader)
     data = [1, 2, 3]
