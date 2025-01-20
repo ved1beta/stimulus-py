@@ -207,6 +207,22 @@ class TransformManager:
     ) -> None:
         self.transform_loader = transform_loader
 
+    def transform_column(self, column_name: str, transform_name: str, column_data: list) -> Tuple[list, bool]:
+        """
+        Transform a column of data using the specified transformation.
+
+        Args:
+            column_name (str): The name of the column to transform.
+            transform_name (str): The name of the transformation to use.
+            column_data (list): The data to transform.
+
+        Returns:
+            list: The transformed data.
+            bool: Whether the transformation added new rows to the data.
+        """
+        transformer = self.transform_loader.__getattribute__(column_name)[transform_name]
+        return transformer.transform_all(column_data), transformer.add_row
+
 
 class SplitManager:
     """Class for managing the splitting."""
