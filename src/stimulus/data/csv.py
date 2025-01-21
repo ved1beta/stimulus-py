@@ -391,6 +391,19 @@ class DatasetHandler:
         encoded_label = self.encoder_manager.encode_columns(label_data) if label_data else {}
 
         return encoded_input, encoded_label, meta_data
+    
+    def shuffle_labels(self, seed: float = None) -> None:
+        """Shuffles the labels in the data."""
+        # set the np seed
+        np.random.seed(seed)
+
+        label_keys = self.dataset_manager.get_label_columns()['label']
+        for key in label_keys:
+            self.data = self.data.with_columns(pl.Series(key, np.random.permutation(list(self.data[key]))))
+
+    def save(self, path: str) -> None:
+        """Saves the data to a csv file."""
+        self.data.write_csv(path)
 
 
 class CsvHandler:
@@ -399,47 +412,6 @@ class CsvHandler:
     def __init__(self, experiment: Any, csv_path: str) -> None:
         self.experiment = experiment
         self.csv_path = csv_path
-
-
-class CsvProcessing(CsvHandler):
-    """Class to load the input csv data and add noise accordingly."""
-
-    def __init__(self, experiment: Any, csv_path: str) -> None:
-        super().__init__(experiment, csv_path)
-        self.data = self.load_csv()
-
-    def transform(self, transformations: list) -> None:
-        """Transforms the data using the specified configuration."""
-        for dictionary in transformations:
-            key = dictionary["column_name"]
-            data_type = key.split(":")[2]
-            data_transformer = dictionary["name"]
-            transformer = self.experiment.get_data_transformer(data_type, data_transformer)
-
-            # transform the data
-            new_data = transformer.transform_all(list(self.data[key]), **dictionary["params"])
-
-            # if the transformation creates new rows (eg. data augmentation), then add the new rows to the original data
-            # otherwise just get the transformation of the data
-            if transformer.add_row:
-                new_rows = self.data.with_columns(pl.Series(key, new_data))
-                self.data = self.data.vstack(new_rows)
-            else:
-                self.data = self.data.with_columns(pl.Series(key, new_data))
-
-    def shuffle_labels(self, seed: float = None) -> None:
-        """Shuffles the labels in the data."""
-        # set the np seed
-        np.random.seed(seed)
-
-        label_keys = self.get_keys_based_on_name_category_dtype(category="label")
-        for key in label_keys:
-            self.data = self.data.with_columns(pl.Series(key, np.random.permutation(list(self.data[key]))))
-
-    def save(self, path: str) -> None:
-        """Saves the data to a csv file."""
-        self.data.write_csv(path)
-
 
 class CsvLoader(CsvHandler):
     """Class for loading the csv data, and then encode the information.
