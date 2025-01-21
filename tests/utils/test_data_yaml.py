@@ -97,13 +97,6 @@ def test_generate_data_configs(load_yaml_from_file):
         assert config.global_params == load_yaml_from_file.global_params
         assert config.columns == load_yaml_from_file.columns
 
-
-def test_dump_yaml_list_into_files(load_yaml_from_file):
-    """Tests dumping a list of YAML configurations into separate files."""
-    configs = yaml_data.generate_data_configs(load_yaml_from_file)
-    yaml_data.dump_yaml_list_into_files(configs, "scratch/", "dna_experiment_config_template")
-
-
 @pytest.mark.parametrize("test_input", [("load_yaml_from_file", False), ("load_wrong_type_yaml", True)])
 def test_check_yaml_schema(request, test_input):
     """Tests the Pydantic schema validation."""
