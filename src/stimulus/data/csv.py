@@ -258,6 +258,7 @@ class DatasetHandler:
         split_loader: experiments.SplitLoader,
         config_path: str,
         csv_path: str,
+        split: Union[int, None] = None,
     ) -> None:
         """Initialize the DatasetHandler with required loaders and config.
 
@@ -267,12 +268,16 @@ class DatasetHandler:
             split_loader (experiments.SplitLoader): Loader for getting dataset split configurations.
             config_path (str): Path to the dataset configuration file.
             csv_path (str): Path to the CSV data file.
+            split (int): The split to load, 0 is train, 1 is validation, 2 is test.
         """
         self.encoder_manager = EncodeManager(encoder_loader)
         self.transform_manager = TransformManager(transform_loader)
         self.split_manager = SplitManager(split_loader)
         self.dataset_manager = DatasetManager(config_path)
-        self.data = self.load_csv(csv_path)
+        if split is not None:
+            self.data = self.load_csv_per_split(csv_path, split)
+        else:
+            self.data = self.load_csv(csv_path)
         self.columns = self.read_csv_header(csv_path)
 
     def read_csv_header(self, csv_path: str) -> list:
@@ -405,6 +410,21 @@ class DatasetHandler:
         """Saves the data to a csv file."""
         self.data.write_csv(path)
 
+    def load_csv_per_split(self, csv_path: str, split: int) -> pl.DataFrame:
+        """Load the part of csv file that has the specified split value.
+        Split is a number that for 0 is train, 1 is validation, 2 is test.
+        This is accessed through the column with category `split`. Example column name could be `split:split:int`.
+
+        NOTE that the aim of having this function is that depending on the training, validation and test scenarios,
+        we are gonna load only the relevant data for it.
+        """
+        if "split" not in self.columns:
+            raise ValueError("The category split is not present in the csv file")
+        if split not in [0, 1, 2]:
+            raise ValueError(f"The split value should be 0, 1 or 2. The specified split value is {split}")
+        colname = "split"
+        return pl.scan_csv(csv_path).filter(pl.col(colname) == split).collect()
+
 
 class CsvHandler:
     """Meta class for handling CSV files."""
@@ -440,26 +460,6 @@ class CsvLoader(CsvHandler):
 
         # parse csv and split into categories
         self.input, self.label, self.meta = self.parse_csv_to_input_label_meta(prefered_load_method)
-
-    def load_csv_per_split(self, split: int) -> pl.DataFrame:
-        """Load the part of csv file that has the specified split value.
-        Split is a number that for 0 is train, 1 is validation, 2 is test.
-        This is accessed through the column with category `split`. Example column name could be `split:split:int`.
-
-        NOTE that the aim of having this function is that depending on the training, validation and test scenarios,
-        we are gonna load only the relevant data for it.
-        """
-        if "split" not in self.categories:
-            raise ValueError("The category split is not present in the csv file")
-        if split not in [0, 1, 2]:
-            raise ValueError(f"The split value should be 0, 1 or 2. The specified split value is {split}")
-        colname = self.get_keys_based_on_name_category_dtype("split")
-        if len(colname) > 1:
-            raise ValueError(
-                f"The split category should have only one column, the specified csv file has {len(colname)} columns",
-            )
-        colname = colname[0]
-        return pl.scan_csv(self.csv_path).filter(pl.col(colname) == split).collect()
 
     def parse_csv_to_input_label_meta(self, load_method: Any) -> Tuple[dict, dict, dict]:
         """This function reads the csv file into a dictionary,
