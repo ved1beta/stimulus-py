@@ -347,6 +347,16 @@ class DatasetHandler:
         if "split" not in self.columns:
             self.columns.append("split")
 
+    def apply_transformation_group(self) -> None:
+        """Apply the transformation group to the data."""
+        for column_name, transform_name, params in self.dataset_manager.get_transform_logic()["transformations"]:
+            transformed_data, add_row = self.transform_manager.transform_column(column_name, transform_name, self.data[column_name])
+            if add_row:
+                original_data = self.data.clone()
+                self.data = pl.concat([original_data, original_data.with_columns(pl.Series(column_name, transformed_data))])
+            else:
+                self.data = self.data.with_columns(pl.Series(column_name, transformed_data))
+
     def get_all_items(self) -> tuple[dict, dict, dict]:
         """Get the full dataset as three separate dictionaries for inputs, labels and metadata.
 
