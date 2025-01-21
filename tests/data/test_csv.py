@@ -221,3 +221,32 @@ def test_dataset_handler_get_dataset(dump_single_split_config_to_disk, titanic_c
 
     dataset = handler.get_all_items()
     assert isinstance(dataset, tuple)
+
+
+def test_dataset_handler_apply_transformation_group(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader):
+    handler = DatasetHandler(
+        config_path=dump_single_split_config_to_disk,
+        encoder_loader=encoder_loader,
+        transform_loader=transform_loader,
+        split_loader=split_loader,
+        csv_path=titanic_csv_path,
+    )
+
+    handler_control = DatasetHandler(
+        config_path=dump_single_split_config_to_disk,
+        encoder_loader=encoder_loader,
+        transform_loader=transform_loader,
+        split_loader=split_loader,
+        csv_path=titanic_csv_path,
+    )
+
+    handler.apply_transformation_group()
+
+    assert handler.data["age"].to_list() != handler_control.data["age"].to_list()
+    assert handler.data["fare"].to_list() != handler_control.data["fare"].to_list()
+    assert handler.data["parch"].to_list() == handler_control.data["parch"].to_list()
+    assert handler.data["sibsp"].to_list() == handler_control.data["sibsp"].to_list()
+    assert handler.data["pclass"].to_list() == handler_control.data["pclass"].to_list()
+    assert handler.data["embarked"].to_list() == handler_control.data["embarked"].to_list()
+    assert handler.data["sex"].to_list() == handler_control.data["sex"].to_list()
+
