@@ -1,13 +1,25 @@
-"""This file contains the parser class for parsing an input CSV file which is the STIMULUS data format.
+"""This module provides classes for handling CSV data files in the STIMULUS format.
 
-The file contains a header column row where column names are formated as is :
-name:category:type
+The module contains three main classes:
+- DatasetHandler: Base class for loading and managing CSV data
+- DatasetProcessor: Class for preprocessing data with transformations and splits 
+- DatasetLoader: Class for loading processed data for model training
 
-name is straightforward, it is the name of the column
-category corresponds to any of those three values : input, meta, or label. Input is the input of the deep learning model, label is the output (what needs to be predicted) and meta corresponds to metadata not used during training (could be used for splitting).
-type corresponds to the data type of the columns, as specified in the types module.
+The data format consists of:
+1. A CSV file containing the raw data
+2. A YAML configuration file that defines:
+   - Column names and their roles (input/label/meta)
+   - Data types and encoders for each column
+   - Transformations to apply (noise, augmentation, etc.)
+   - Split configuration for train/val/test sets
 
-The parser is a class that takes as input a CSV file and a experiment class that defines data types to be used, noising procedures, splitting etc.
+The data handling pipeline consists of:
+1. Loading raw CSV data according to the YAML config
+2. Applying configured transformations 
+3. Splitting into train/val/test sets based on config
+4. Encoding data for model training using specified encoders
+
+See titanic.yaml in tests/test_data/titanic/ for an example configuration file format.
 """
 
 from typing import Any, Tuple, Union
