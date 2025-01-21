@@ -253,9 +253,6 @@ class DatasetHandler:
 
     def __init__(
         self,
-        encoder_loader: experiments.EncoderLoader,
-        transform_loader: experiments.TransformLoader,
-        split_loader: experiments.SplitLoader,
         config_path: str,
         csv_path: str,
         split: Union[int, None] = None,
@@ -270,9 +267,6 @@ class DatasetHandler:
             csv_path (str): Path to the CSV data file.
             split (int): The split to load, 0 is train, 1 is validation, 2 is test.
         """
-        self.encoder_manager = EncodeManager(encoder_loader)
-        self.transform_manager = TransformManager(transform_loader)
-        self.split_manager = SplitManager(split_loader)
         self.dataset_manager = DatasetManager(config_path)
         if split is not None:
             self.data = self.load_csv_per_split(csv_path, split)
@@ -321,7 +315,7 @@ class DatasetHandler:
         df = self.data.select(columns)
         return {col: df[col].to_list() for col in columns}
 
-    def add_split(self, force=False) -> None:
+    def add_split(self, split_manager: SplitManager, force=False) -> None:
         """Add a column specifying the train, validation, test splits of the data.
         An error exception is raised if the split column is already present in the csv file. This behaviour can be overriden by setting force=True.
 
@@ -329,7 +323,7 @@ class DatasetHandler:
             config (dict) : the dictionary containing  the following keys:
                             "name" (str)        : the split_function name, as defined in the splitters class and experiment.
                             "parameters" (dict) : the split_function specific optional parameters, passed here as a dict with keys named as in the split function definition.
-            force (bool) : If True, the split column will be added even if it is already present in the csv file.
+            force (bool) : If True, the split column present in the csv file will be overwritten.
         """
         if ("split" in self.columns) and (not force):
             raise ValueError(
@@ -340,7 +334,7 @@ class DatasetHandler:
         split_input_data = self.select_columns(split_columns)
 
         # get the split indices
-        train, validation, test = self.split_manager.get_split_indices(split_input_data)
+        train, validation, test = split_manager.get_split_indices(split_input_data)
 
         # add the split column to the data
         split_column = np.full(len(self.data), -1).astype(int)
@@ -352,17 +346,17 @@ class DatasetHandler:
         if "split" not in self.columns:
             self.columns.append("split")
 
-    def apply_transformation_group(self) -> None:
+    def apply_transformation_group(self, transform_manager: TransformManager) -> None:
         """Apply the transformation group to the data."""
         for column_name, transform_name, params in self.dataset_manager.get_transform_logic()["transformations"]:
-            transformed_data, add_row = self.transform_manager.transform_column(column_name, transform_name, self.data[column_name])
+            transformed_data, add_row = transform_manager.transform_column(column_name, transform_name, self.data[column_name])
             if add_row:
                 new_rows = self.data.with_columns(pl.Series(column_name, transformed_data))
                 self.data = pl.vstack(self.data, new_rows)
             else:
                 self.data = self.data.with_columns(pl.Series(column_name, transformed_data))
 
-    def get_all_items(self) -> tuple[dict, dict, dict]:
+    def get_all_items(self, encoder_manager: EncodeManager) -> tuple[dict, dict, dict]:
         """Get the full dataset as three separate dictionaries for inputs, labels and metadata.
 
         Returns:
@@ -392,8 +386,8 @@ class DatasetHandler:
         meta_data = self.select_columns(meta_cols) if meta_cols else {}
 
         # Encode input and label data
-        encoded_input = self.encoder_manager.encode_columns(input_data) if input_data else {}
-        encoded_label = self.encoder_manager.encode_columns(label_data) if label_data else {}
+        encoded_input = encoder_manager.encode_columns(input_data) if input_data else {}
+        encoded_label = encoder_manager.encode_columns(label_data) if label_data else {}
 
         return encoded_input, encoded_label, meta_data
     

@@ -174,73 +174,53 @@ def test_split_manager_apply_split(split_loader):
     assert len(split_indices[2]) == 15
 
 # Test DatasetHandler
-
-
 def test_dataset_handler_init(
     dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader
 ):
     handler = DatasetHandler(
         config_path=dump_single_split_config_to_disk,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader,
-        split_loader=split_loader,
         csv_path=titanic_csv_path,
     )
 
-    assert isinstance(handler.encoder_manager, EncodeManager)
-    assert isinstance(handler.transform_manager, TransformManager)
-    assert isinstance(handler.split_manager, SplitManager)
+    assert isinstance(handler.dataset_manager, DatasetManager)
+    assert handler.data is not None
+    assert handler.columns is not None
 
 def test_dataset_hanlder_apply_split(
     dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader
 ):
     handler = DatasetHandler(
         config_path=dump_single_split_config_to_disk,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader,
-        split_loader=split_loader,
         csv_path=titanic_csv_path,
     )
-    handler.add_split()
+    handler.add_split(split_manager=SplitManager(split_loader))
     assert "split" in handler.columns
     assert "split" in handler.data.columns
     assert len(handler.data["split"]) == 712
 
 
 def test_dataset_handler_get_dataset(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader):
-    transform_loader = experiments.TransformLoader()
-    split_loader = experiments.SplitLoader()
-
     handler = DatasetHandler(
         config_path=dump_single_split_config_to_disk,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader,
-        split_loader=split_loader,
         csv_path=titanic_csv_path,
     )
 
-    dataset = handler.get_all_items()
+    dataset = handler.get_all_items(encoder_manager=EncodeManager(encoder_loader))
     assert isinstance(dataset, tuple)
 
 
 def test_dataset_handler_apply_transformation_group(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader):
     handler = DatasetHandler(
         config_path=dump_single_split_config_to_disk,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader,
-        split_loader=split_loader,
         csv_path=titanic_csv_path,
     )
 
     handler_control = DatasetHandler(
         config_path=dump_single_split_config_to_disk,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader,
-        split_loader=split_loader,
         csv_path=titanic_csv_path,
     )
 
-    handler.apply_transformation_group()
+    handler.apply_transformation_group(transform_manager=TransformManager(transform_loader))
 
     assert handler.data["age"].to_list() != handler_control.data["age"].to_list()
     assert handler.data["fare"].to_list() != handler_control.data["fare"].to_list()
