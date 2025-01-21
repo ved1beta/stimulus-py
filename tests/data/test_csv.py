@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 from stimulus.data import experiments
-from stimulus.data.csv import DatasetHandler, DatasetManager, EncodeManager, SplitManager, TransformManager
+from stimulus.data.csv import DatasetProcessor, DatasetLoader, DatasetManager, EncodeManager, SplitManager, TransformManager
 from stimulus.utils.yaml_data import YamlConfigDict, dump_yaml_list_into_files, generate_data_configs, YamlTransform, YamlTransformColumns, YamlTransformColumnsTransformation
 
 
@@ -173,60 +173,77 @@ def test_split_manager_apply_split(split_loader):
     assert len(split_indices[1]) == 15
     assert len(split_indices[2]) == 15
 
-# Test DatasetHandler
-def test_dataset_handler_init(
-    dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader
+# Test DatasetProcessor
+def test_dataset_processor_init(
+    dump_single_split_config_to_disk, titanic_csv_path
 ):
-    handler = DatasetHandler(
+    processor = DatasetProcessor(
         config_path=dump_single_split_config_to_disk,
         csv_path=titanic_csv_path,
     )
 
-    assert isinstance(handler.dataset_manager, DatasetManager)
-    assert handler.data is not None
-    assert handler.columns is not None
+    assert isinstance(processor.dataset_manager, DatasetManager)
+    assert processor.columns is not None
 
-def test_dataset_hanlder_apply_split(
-    dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader
+def test_dataset_processor_apply_split(
+    dump_single_split_config_to_disk, titanic_csv_path, split_loader
 ):
-    handler = DatasetHandler(
+    processor = DatasetProcessor(
         config_path=dump_single_split_config_to_disk,
         csv_path=titanic_csv_path,
     )
-    handler.add_split(split_manager=SplitManager(split_loader))
-    assert "split" in handler.columns
-    assert "split" in handler.data.columns
-    assert len(handler.data["split"]) == 712
+    processor.data = processor.load_csv(titanic_csv_path)
+    processor.add_split(split_manager=SplitManager(split_loader))
+    assert "split" in processor.columns
+    assert "split" in processor.data.columns
+    assert len(processor.data["split"]) == 712
 
-
-def test_dataset_handler_get_dataset(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader):
-    handler = DatasetHandler(
+def test_dataset_processor_apply_transformation_group(
+    dump_single_split_config_to_disk, titanic_csv_path, transform_loader
+):
+    processor = DatasetProcessor(
         config_path=dump_single_split_config_to_disk,
         csv_path=titanic_csv_path,
     )
+    processor.data = processor.load_csv(titanic_csv_path)
 
-    dataset = handler.get_all_items(encoder_manager=EncodeManager(encoder_loader))
+    processor_control = DatasetProcessor(
+        config_path=dump_single_split_config_to_disk,
+        csv_path=titanic_csv_path,
+    )
+    processor_control.data = processor_control.load_csv(titanic_csv_path)
+
+    processor.apply_transformation_group(transform_manager=TransformManager(transform_loader))
+
+    assert processor.data["age"].to_list() != processor_control.data["age"].to_list()
+    assert processor.data["fare"].to_list() != processor_control.data["fare"].to_list()
+    assert processor.data["parch"].to_list() == processor_control.data["parch"].to_list()
+    assert processor.data["sibsp"].to_list() == processor_control.data["sibsp"].to_list()
+    assert processor.data["pclass"].to_list() == processor_control.data["pclass"].to_list()
+    assert processor.data["embarked"].to_list() == processor_control.data["embarked"].to_list()
+    assert processor.data["sex"].to_list() == processor_control.data["sex"].to_list()
+
+# Test DatasetLoader
+def test_dataset_loader_init(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader):
+    loader = DatasetLoader(
+        config_path=dump_single_split_config_to_disk,
+        csv_path=titanic_csv_path,
+        encoder_loader=encoder_loader
+    )
+
+    assert isinstance(loader.dataset_manager, DatasetManager)
+    assert loader.data is not None
+    assert loader.columns is not None
+    assert hasattr(loader, "encoder_manager")
+
+def test_dataset_loader_get_dataset(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader):
+    loader = DatasetLoader(
+        config_path=dump_single_split_config_to_disk,
+        csv_path=titanic_csv_path,
+        encoder_loader=encoder_loader
+    )
+
+    dataset = loader.get_all_items()
     assert isinstance(dataset, tuple)
-
-
-def test_dataset_handler_apply_transformation_group(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader):
-    handler = DatasetHandler(
-        config_path=dump_single_split_config_to_disk,
-        csv_path=titanic_csv_path,
-    )
-
-    handler_control = DatasetHandler(
-        config_path=dump_single_split_config_to_disk,
-        csv_path=titanic_csv_path,
-    )
-
-    handler.apply_transformation_group(transform_manager=TransformManager(transform_loader))
-
-    assert handler.data["age"].to_list() != handler_control.data["age"].to_list()
-    assert handler.data["fare"].to_list() != handler_control.data["fare"].to_list()
-    assert handler.data["parch"].to_list() == handler_control.data["parch"].to_list()
-    assert handler.data["sibsp"].to_list() == handler_control.data["sibsp"].to_list()
-    assert handler.data["pclass"].to_list() == handler_control.data["pclass"].to_list()
-    assert handler.data["embarked"].to_list() == handler_control.data["embarked"].to_list()
-    assert handler.data["sex"].to_list() == handler_control.data["sex"].to_list()
+    assert len(dataset) == 3  # input_data, label_data, meta_data
 

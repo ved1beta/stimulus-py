@@ -199,7 +199,7 @@ class EncodeManager:
     
     def encode_dataframe(self, dataframe: pl.DataFrame) -> dict[str, torch.Tensor]:
         """Encode the dataframe using the encoders."""
-        return {col: self.encode_column(col, dataframe[col]) for col in dataframe.columns}
+        return {col: self.encode_column(col, dataframe[col].to_list()) for col in dataframe.columns}
 
 
 class TransformManager:
@@ -302,16 +302,7 @@ class DatasetHandler:
         """
         df = self.data.select(columns)
         return {col: df[col].to_list() for col in columns}
-
-    def save(self, path: str) -> None:
-        """Saves the data to a csv file."""
-        self.data.write_csv(path)
-
-class DatasetProcessor(DatasetHandler):
-    """Class for loading dataset, applying transformations and splitting."""
-    def __init__(self, config_path: str, csv_path: str) -> None:
-        super().__init__(config_path, csv_path)
-
+    
     def load_csv(self, csv_path: str) -> pl.DataFrame:
         """Load the CSV file into a polars DataFrame.
 
@@ -322,6 +313,15 @@ class DatasetProcessor(DatasetHandler):
             pl.DataFrame: Polars DataFrame containing the loaded CSV data.
         """
         return pl.read_csv(csv_path)
+
+    def save(self, path: str) -> None:
+        """Saves the data to a csv file."""
+        self.data.write_csv(path)
+
+class DatasetProcessor(DatasetHandler):
+    """Class for loading dataset, applying transformations and splitting."""
+    def __init__(self, config_path: str, csv_path: str) -> None:
+        super().__init__(config_path, csv_path)
     
     def add_split(self, split_manager: SplitManager, force=False) -> None:
         """Add a column specifying the train, validation, test splits of the data.
@@ -377,8 +377,8 @@ class DatasetLoader(DatasetHandler):
     """Class for loading dataset and passing it to the deep learning model."""
 
     def __init__(self, config_path: str, csv_path: str, encoder_loader: experiments.EncoderLoader, split: Union[int, None] = None) -> None:
-        super().__init__(config_path, csv_path, split)
-        self.encoder_loader = encoder_loader
+        super().__init__(config_path, csv_path)
+        self.encoder_manager = EncodeManager(encoder_loader)
         self.data = self.load_csv_per_split(csv_path, split) if split is not None else self.load_csv(csv_path)
 
 
@@ -401,9 +401,9 @@ class DatasetLoader(DatasetHandler):
             >>> print(meta_dict.keys())
             dict_keys(['passenger_id'])
         """
-        input_columns, label_columns, meta_columns = self.dataset_manager.get_input_label_meta_columns()
-        input_data = self.encoder_loader.encode_dataframe(self.data[input_columns])
-        label_data = self.encoder_loader.encode_dataframe(self.data[label_columns])
+        input_columns, label_columns, meta_columns = self.dataset_manager.column_categories["input"], self.dataset_manager.column_categories["label"], self.dataset_manager.column_categories["meta"]
+        input_data = self.encoder_manager.encode_dataframe(self.data[input_columns])
+        label_data = self.encoder_manager.encode_dataframe(self.data[label_columns])
         meta_data = {key: self.data[key].to_list() for key in meta_columns}
         return input_data, label_data, meta_data
     
@@ -437,8 +437,8 @@ class DatasetLoader(DatasetHandler):
         """
 
         data_at_index = self.data.row(idx)
-        input_columns, label_columns, meta_columns = self.dataset_manager.get_input_label_meta_columns()
-        input_data = self.encoder_loader.encode_dataframe(data_at_index[input_columns])
-        label_data = self.encoder_loader.encode_dataframe(data_at_index[label_columns])
+        input_columns, label_columns, meta_columns = self.dataset_manager.column_categories["input"], self.dataset_manager.column_categories["label"], self.dataset_manager.column_categories["meta"]
+        input_data = self.encoder_manager.encode_dataframe(data_at_index[input_columns])
+        label_data = self.encoder_manager.encode_dataframe(data_at_index[label_columns])
         meta_data = {key: data_at_index[key] for key in meta_columns}
         return input_data, label_data, meta_data
