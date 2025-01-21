@@ -196,6 +196,10 @@ class EncodeManager:
             torch.Size([2, 4, 4])  # 2 sequences, length 4, one-hot encoded
         """
         return {col: self.encode_column(col, values) for col, values in column_data.items()}
+    
+    def encode_dataframe(self, dataframe: pl.DataFrame) -> dict[str, torch.Tensor]:
+        """Encode the dataframe using the encoders."""
+        return {col: self.encode_column(col, dataframe[col]) for col in dataframe.columns}
 
 
 class TransformManager:
@@ -255,7 +259,6 @@ class DatasetHandler:
         self,
         config_path: str,
         csv_path: str,
-        split: Union[int, None] = None,
     ) -> None:
         """Initialize the DatasetHandler with required loaders and config.
 
@@ -268,10 +271,6 @@ class DatasetHandler:
             split (int): The split to load, 0 is train, 1 is validation, 2 is test.
         """
         self.dataset_manager = DatasetManager(config_path)
-        if split is not None:
-            self.data = self.load_csv_per_split(csv_path, split)
-        else:
-            self.data = self.load_csv(csv_path)
         self.columns = self.read_csv_header(csv_path)
 
     def read_csv_header(self, csv_path: str) -> list:
@@ -286,17 +285,6 @@ class DatasetHandler:
         with open(csv_path) as f:
             header = f.readline().strip().split(",")
         return header
-
-    def load_csv(self, csv_path: str) -> pl.DataFrame:
-        """Load the CSV file into a polars DataFrame.
-
-        Args:
-            csv_path (str): Path to the CSV file to load.
-
-        Returns:
-            pl.DataFrame: Polars DataFrame containing the loaded CSV data.
-        """
-        return pl.read_csv(csv_path)
 
     def select_columns(self, columns: list) -> dict:
         """Select specific columns from the DataFrame and return as a dictionary.
@@ -315,6 +303,26 @@ class DatasetHandler:
         df = self.data.select(columns)
         return {col: df[col].to_list() for col in columns}
 
+    def save(self, path: str) -> None:
+        """Saves the data to a csv file."""
+        self.data.write_csv(path)
+
+class DatasetProcessor(DatasetHandler):
+    """Class for loading dataset, applying transformations and splitting."""
+    def __init__(self, config_path: str, csv_path: str) -> None:
+        super().__init__(config_path, csv_path)
+
+    def load_csv(self, csv_path: str) -> pl.DataFrame:
+        """Load the CSV file into a polars DataFrame.
+
+        Args:
+            csv_path (str): Path to the CSV file to load.
+
+        Returns:
+            pl.DataFrame: Polars DataFrame containing the loaded CSV data.
+        """
+        return pl.read_csv(csv_path)
+    
     def add_split(self, split_manager: SplitManager, force=False) -> None:
         """Add a column specifying the train, validation, test splits of the data.
         An error exception is raised if the split column is already present in the csv file. This behaviour can be overriden by setting force=True.
@@ -356,7 +364,25 @@ class DatasetHandler:
             else:
                 self.data = self.data.with_columns(pl.Series(column_name, transformed_data))
 
-    def get_all_items(self, encoder_manager: EncodeManager) -> tuple[dict, dict, dict]:
+    def shuffle_labels(self, seed: float = None) -> None:
+        """Shuffles the labels in the data."""
+        # set the np seed
+        np.random.seed(seed)
+
+        label_keys = self.dataset_manager.get_label_columns()['label']
+        for key in label_keys:
+            self.data = self.data.with_columns(pl.Series(key, np.random.permutation(list(self.data[key]))))
+    
+class DatasetLoader(DatasetHandler):
+    """Class for loading dataset and passing it to the deep learning model."""
+
+    def __init__(self, config_path: str, csv_path: str, encoder_loader: experiments.EncoderLoader, split: Union[int, None] = None) -> None:
+        super().__init__(config_path, csv_path, split)
+        self.encoder_loader = encoder_loader
+        self.data = self.load_csv_per_split(csv_path, split) if split is not None else self.load_csv(csv_path)
+
+
+    def get_all_items(self) -> tuple[dict, dict, dict]:
         """Get the full dataset as three separate dictionaries for inputs, labels and metadata.
 
         Returns:
@@ -375,35 +401,16 @@ class DatasetHandler:
             >>> print(meta_dict.keys())
             dict_keys(['passenger_id'])
         """
-        # Get columns for each category from dataset manager
-        input_cols = self.dataset_manager.column_categories["input"]
-        label_cols = self.dataset_manager.column_categories["label"]
-        meta_cols = self.dataset_manager.column_categories["meta"]
-
-        # Select and organize data by category
-        input_data = self.select_columns(input_cols) if input_cols else {}
-        label_data = self.select_columns(label_cols) if label_cols else {}
-        meta_data = self.select_columns(meta_cols) if meta_cols else {}
-
-        # Encode input and label data
-        encoded_input = encoder_manager.encode_columns(input_data) if input_data else {}
-        encoded_label = encoder_manager.encode_columns(label_data) if label_data else {}
-
-        return encoded_input, encoded_label, meta_data
+        input_columns, label_columns, meta_columns = self.dataset_manager.get_input_label_meta_columns()
+        input_data = self.encoder_loader.encode_dataframe(self.data[input_columns])
+        label_data = self.encoder_loader.encode_dataframe(self.data[label_columns])
+        meta_data = {key: self.data[key].to_list() for key in meta_columns}
+        return input_data, label_data, meta_data
     
-    def shuffle_labels(self, seed: float = None) -> None:
-        """Shuffles the labels in the data."""
-        # set the np seed
-        np.random.seed(seed)
-
-        label_keys = self.dataset_manager.get_label_columns()['label']
-        for key in label_keys:
-            self.data = self.data.with_columns(pl.Series(key, np.random.permutation(list(self.data[key]))))
-
-    def save(self, path: str) -> None:
-        """Saves the data to a csv file."""
-        self.data.write_csv(path)
-
+    def get_all_items_and_length(self) -> tuple[dict, dict, dict, int]:
+        """Get the full dataset as three separate dictionaries for inputs, labels and metadata, and the length of the data."""
+        return self.get_all_items(), len(self)
+    
     def load_csv_per_split(self, csv_path: str, split: int) -> pl.DataFrame:
         """Load the part of csv file that has the specified split value.
         Split is a number that for 0 is train, 1 is validation, 2 is test.
@@ -416,140 +423,22 @@ class DatasetHandler:
             raise ValueError("The category split is not present in the csv file")
         if split not in [0, 1, 2]:
             raise ValueError(f"The split value should be 0, 1 or 2. The specified split value is {split}")
-        colname = "split"
-        return pl.scan_csv(csv_path).filter(pl.col(colname) == split).collect()
-
-
-class CsvHandler:
-    """Meta class for handling CSV files."""
-
-    def __init__(self, experiment: Any, csv_path: str) -> None:
-        self.experiment = experiment
-        self.csv_path = csv_path
-
-class CsvLoader(CsvHandler):
-    """Class for loading the csv data, and then encode the information.
-
-    It will parse the CSV file into four dictionaries, one for each category [input, label, meta].
-    So each dictionary will have the keys in the form name:type, and the values will be the column values.
-    Afterwards, one can get one or many items from the data, encoded.
-    """
-
-    def __init__(self, experiment: Any, csv_path: str, split: Union[int, None] = None) -> None:
-        """Initialize the class by parsing and splitting the csv data into the corresponding categories.
-
-        Args:
-            experiment (class) : The experiment class to perform
-            csv_path (str) : The path to the csv file
-            split (int) : The split to load, 0 is train, 1 is validation, 2 is test.
-        """
-        super().__init__(experiment, csv_path)
-
-        # we need a different parsing function in case we have the split argument or not
-        # NOTE using partial we can define the default split value, without the need to pass it as an argument all the time through the class
-        if split is not None:
-            prefered_load_method = partial(self.load_csv_per_split, split=split)
-        else:
-            prefered_load_method = self.load_csv
-
-        # parse csv and split into categories
-        self.input, self.label, self.meta = self.parse_csv_to_input_label_meta(prefered_load_method)
-
-    def parse_csv_to_input_label_meta(self, load_method: Any) -> Tuple[dict, dict, dict]:
-        """This function reads the csv file into a dictionary,
-        and then parses each key with the form name:category:type
-        into three dictionaries, one for each category [input, label, meta].
-        The keys of each new dictionary are in this form name:type.
-        """
-        # read csv file into a dictionary of lists
-        # the keys of the dictionary are the column names and the values are the column values
-        data = load_method().to_dict(as_series=False)
-
-        # parse the dictionary into three dictionaries, one for each category [input, label, meta]
-        input_data, label_data, split_data, meta_data = {}, {}, {}, {}
-        for key in data:
-            name, category, data_type = key.split(":")
-            if category.lower() == "input":
-                input_data[f"{name}:{data_type}"] = data[key]
-            elif category.lower() == "label":
-                label_data[f"{name}:{data_type}"] = data[key]
-            elif category.lower() == "meta":
-                meta_data[f"{name}"] = data[key]
-        return input_data, label_data, meta_data
-
-    def get_and_encode(self, dictionary: dict, idx: Any = None) -> dict:
-        """It gets the data at a given index, and encodes it according to the data_type.
-
-        `dictionary`:
-            The keys of the dictionaries are always in the form `name:type`.
-            `type` should always match the name of the initialized data_types in the Experiment class. So if there is a `dna` data_type in the Experiment class, then the input key should be `name:dna`
-        `idx`:
-            The index of the data to be returned, it can be a single index, a list of indexes or a slice
-            If None, then it encodes for all the data, not only the given index or indexes.
-
-        The return value is a dictionary containing numpy array of the encoded data at the given index.
-        """
-        output = {}
-        for key in dictionary:  # processing each column
-            # get the name and data_type
-            name = key.split(":")[0]
-            data_type = key.split(":")[1]
-
-            # get the data at the given index
-            # if the data is not a list, it is converted to a list
-            # otherwise it breaks Float().encode_all(data) because it expects a list
-            data = dictionary[key] if idx is None else dictionary[key][idx]
-
-            if not isinstance(data, list):
-                data = [data]
-
-            # check if 'data_type' is in the experiment class attributes
-            if not hasattr(self.experiment, data_type.lower()):
-                raise ValueError(
-                    "The data type",
-                    data_type,
-                    "is not in the experiment class attributes. the column name is",
-                    key,
-                    "the available attributes are",
-                    self.experiment.__dict__,
-                )
-
-            # encode the data at given index
-            # For that, it first retrieves the data object and then calls the encode_all method to encode the data
-            output[name] = self.experiment.get_function_encode_all(data_type)(data)
-
-        return output
-
-    def get_all_items(self) -> Tuple[dict, dict, dict]:
-        """Returns all the items in the csv file, encoded.
-        TODO in the future we can optimize this for big datasets (ie. using batches, etc).
-        """
-        return self.get_and_encode(self.input), self.get_and_encode(self.label), self.meta
-
-    def get_all_items_and_length(self) -> Tuple[dict, dict, dict, int]:
-        """Returns all the items in the csv file, encoded, and the length of the data."""
-        return self.get_and_encode(self.input), self.get_and_encode(self.label), self.meta, len(self)
+        return pl.scan_csv(csv_path).filter(pl.col("split") == split).collect()
 
     def __len__(self) -> int:
         """Returns the length of the first list in input, assumes that all are the same length"""
-        return len(list(self.input.values())[0])
-
+        return len(self.data)
+    
     def __getitem__(self, idx: Any) -> dict:
         """It gets the data at a given index, and encodes the input and label, leaving meta as it is.
 
         `idx`:
             The index of the data to be returned, it can be a single index, a list of indexes or a slice
         """
-        # encode input and labels for given index
-        x = self.get_and_encode(self.input, idx)
-        y = self.get_and_encode(self.label, idx)
 
-        # get the meta data at the given index for each key
-        meta = {}
-        for key in self.meta:
-            data = self.meta[key][idx]
-            if not isinstance(data, np.ndarray):
-                data = np.array(data)
-            meta[key] = data
-
-        return x, y, meta
+        data_at_index = self.data.row(idx)
+        input_columns, label_columns, meta_columns = self.dataset_manager.get_input_label_meta_columns()
+        input_data = self.encoder_loader.encode_dataframe(data_at_index[input_columns])
+        label_data = self.encoder_loader.encode_dataframe(data_at_index[label_columns])
+        meta_data = {key: data_at_index[key] for key in meta_columns}
+        return input_data, label_data, meta_data
