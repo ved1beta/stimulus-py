@@ -1,0 +1,39 @@
+global_params:
+  seed: 0
+
+columns:
+  - column_name: hello
+    column_type: input
+    data_type: str
+    encoder:
+      - name: TextOneHotEncoder
+        params:
+          alphabet: acgt
+  - column_name: bonjour
+    column_type: input
+    data_type: str
+    encoder:
+      - name: TextOneHotEncoder
+        params:
+          alphabet: acgt
+  - column_name: ciao
+    column_type: label
+    data_type: int
+    encoder:
+      - name: NumericEncoder
+        params: {}
+
+transforms:
+  transformation_name: A
+  columns:
+    - column_name: col1
+      transformations:
+        - name: ReverseComplement
+          params: {}
+
+split:
+  split_method: RandomSplit
+  params:
+    split: [0.6, 0.2, 0.2]
+  split_input_columns: [hello]
+
