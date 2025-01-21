@@ -352,8 +352,8 @@ class DatasetHandler:
         for column_name, transform_name, params in self.dataset_manager.get_transform_logic()["transformations"]:
             transformed_data, add_row = self.transform_manager.transform_column(column_name, transform_name, self.data[column_name])
             if add_row:
-                original_data = self.data.clone()
-                self.data = pl.concat([original_data, original_data.with_columns(pl.Series(column_name, transformed_data))])
+                new_rows = self.data.with_columns(pl.Series(column_name, transformed_data))
+                self.data = pl.vstack(self.data, new_rows)
             else:
                 self.data = self.data.with_columns(pl.Series(column_name, transformed_data))
 
