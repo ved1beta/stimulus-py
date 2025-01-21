@@ -8,7 +8,7 @@ import src.stimulus.utils.yaml_data as yaml_data
 
 @pytest.fixture()
 def titanic_config_path():
-    return os.path.abspath("tests/test_data/titanic/titanic_sub_config_0.yaml")
+    return os.path.abspath("tests/test_data/titanic/titanic_sub_config.yaml")
 
 @pytest.fixture()
 def titanic_csv_path():

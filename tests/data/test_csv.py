@@ -53,16 +53,6 @@ def dump_single_split_config_to_disk(generate_sub_configs):
     return "tests/test_data/titanic/titanic_sub_config_0.yaml"
 
 
-@pytest.fixture(scope="session")
-def cleanup_titanic_config_file():
-    """Cleanup any generated config files after all tests complete"""
-    yield  # Run all tests first
-    # Delete the config file after tests complete
-    config_path = Path("tests/test_data/titanic/titanic_sub_config_0.yaml")
-    if config_path.exists():
-        config_path.unlink()
-
-
 ## Loader fixtures
 @pytest.fixture
 def encoder_loader(generate_sub_configs):
