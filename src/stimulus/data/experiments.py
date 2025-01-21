@@ -9,7 +9,6 @@ Loaders are built from an input config YAML file which format is described in th
 """
 
 import inspect
-from collections import defaultdict
 from typing import Any
 
 from stimulus.data.encoding import encoders as encoders
@@ -60,7 +59,7 @@ class EncoderLoader:
         except AttributeError:
             print(f"Encoder '{encoder_name}' not found in the encoders module.")
             print(
-                f"Available encoders: {[name for name, obj in encoders.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}"
+                f"Available encoders: {[name for name, obj in encoders.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}",
             )
             raise
 
@@ -101,7 +100,7 @@ class TransformLoader:
         except AttributeError:
             print(f"Transformer '{transformation_name}' not found in the transformers module.")
             print(
-                f"Available transformers: {[name for name, obj in data_transformation_generators.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}"
+                f"Available transformers: {[name for name, obj in data_transformation_generators.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}",
             )
             raise
 
@@ -110,7 +109,7 @@ class TransformLoader:
                 return getattr(data_transformation_generators, transformation_name)()
             print(f"Transformer '{transformation_name}' has incorrect parameters: {transformation_params}")
             print(
-                f"Expected parameters for '{transformation_name}': {inspect.signature(getattr(data_transformation_generators, transformation_name))}"
+                f"Expected parameters for '{transformation_name}': {inspect.signature(getattr(data_transformation_generators, transformation_name))}",
             )
             raise
 

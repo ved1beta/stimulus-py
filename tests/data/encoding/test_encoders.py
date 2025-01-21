@@ -212,9 +212,9 @@ class TestNumericEncoder:
         numeric_encoder = request.getfixturevalue(fixture_name)
         with pytest.raises(ValueError) as exc_info:
             numeric_encoder.encode("not_numeric")
-        assert "Expected input data to be a float or int" in str(exc_info.value), (
-            "Expected ValueError with specific error message."
-        )
+        assert "Expected input data to be a float or int" in str(
+            exc_info.value
+        ), "Expected ValueError with specific error message."
 
     def test_encode_all_single_float(self, float_encoder):
         """Test encode_all when given a single float.
@@ -421,9 +421,9 @@ class TestNumericRankEncoder:
         encoder = request.getfixturevalue(fixture)
         with pytest.raises(ValueError) as exc_info:
             encoder.encode_all(["not_numeric"])
-        assert "Expected input data to be a float or int" in str(exc_info.value), (
-            "Expected ValueError with specific error message."
-        )
+        assert "Expected input data to be a float or int" in str(
+            exc_info.value
+        ), "Expected ValueError with specific error message."
 
     @pytest.mark.parametrize("fixture", ["rank_encoder", "scaled_encoder"])
     def test_decode_raises_not_implemented(self, request, fixture):

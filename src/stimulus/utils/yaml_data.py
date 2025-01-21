@@ -56,7 +56,7 @@ class YamlTransform(BaseModel):
         all_list_lengths.discard(1)  # Remove length 1 as it's always valid
         if len(all_list_lengths) > 1:  # Multiple different lengths found, since sets do not allow duplicates
             raise ValueError(
-                "All parameter lists across columns must either contain one element or have the same length"
+                "All parameter lists across columns must either contain one element or have the same length",
             )
 
         return columns
@@ -66,7 +66,6 @@ class YamlSplit(BaseModel):
     split_method: str
     params: Dict[str, List[float]]  # More specific type for split parameters
     split_input_columns: List[str]
-
 
 
 class YamlConfigDict(BaseModel):
@@ -207,7 +206,7 @@ def generate_data_configs(yaml_config: YamlConfigDict) -> list[YamlSubConfigDict
                     columns=yaml_config.columns,
                     transforms=transform,
                     split=split,
-                )
+                ),
             )
     return sub_configs
 

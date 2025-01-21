@@ -240,7 +240,7 @@ class TextOneHotEncoder(AbstractEncoder):
         if isinstance(data, str):
             encoded_data = self.encode(data)
             return torch.stack([encoded_data])
-        elif isinstance(data, list):
+        if isinstance(data, list):
             # TODO instead maybe we can run encode_multiprocess when data size is larger than a certain threshold.
             encoded_data = self.encode_multiprocess(data)
         else:

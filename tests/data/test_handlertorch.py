@@ -371,7 +371,7 @@ class TestTorchDataset:
             data_dict = getattr(test_data.torch_dataset, category)
             expected_keys = test_data.expected_input.keys() if category == "input" else test_data.expected_label.keys()
             assert set(data_dict.keys()) == set(
-                expected_keys
+                expected_keys,
             ), f"Keys mismatch for {category}: got {set(data_dict.keys())}, expected {set(expected_keys)}"
 
         @pytest.mark.parametrize("category", ["input", "label"])
@@ -417,7 +417,8 @@ class TestTorchDataset:
                     test_data.expected_input[key] if category == "input" else test_data.expected_label[key]
                 )
                 assert torch.equal(
-                    tensor, expected_tensor
+                    tensor,
+                    expected_tensor,
                 ), f"Content mismatch for {category}[{key}]: got {tensor}, expected {expected_tensor}"
 
     class TestTorchDatasetGetItem:
@@ -596,7 +597,8 @@ class TestTorchDataset:
                 expected_tensor = expected_data[key][idx]
 
                 assert torch.equal(
-                    tensor, expected_tensor
+                    tensor,
+                    expected_tensor,
                 ), f"Content mismatch for {category}[{key}]: got {tensor}, expected {expected_tensor}"
 
         @pytest.mark.parametrize("invalid_idx", [5000])
