@@ -47,10 +47,8 @@ def generate_sub_configs(base_config):
 
 
 @pytest.fixture
-def dump_single_split_config_to_disk(generate_sub_configs):
-    config_to_dump = [generate_sub_configs[0]]
-    dump_yaml_list_into_files(config_to_dump, "tests/test_data/titanic/", "titanic_sub_config")
-    return "tests/test_data/titanic/titanic_sub_config_0.yaml"
+def dump_single_split_config_to_disk():
+    return "tests/test_data/titanic/titanic_sub_config.yaml"
 
 
 ## Loader fixtures
