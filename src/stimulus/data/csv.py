@@ -452,10 +452,18 @@ class DatasetLoader(DatasetHandler):
     def __getitem__(self, idx: Any) -> dict:
         """It gets the data at a given index, and encodes the input and label, leaving meta as it is.
 
-        `idx`:
-            The index of the data to be returned, it can be a single index, a list of indexes or a slice
+        Args:
+            idx: The index of the data to be returned, it can be a single index, a list of indexes or a slice
         """
-        data_at_index = self.data.row(idx)
+        # Handle different index types
+        if isinstance(idx, slice):
+            data_at_index = self.data.slice(idx.start or 0, idx.stop or len(self.data))
+        elif isinstance(idx, int):
+            # Convert single row to DataFrame to maintain consistent interface
+            data_at_index = self.data.slice(idx, idx + 1)
+        else:
+            data_at_index = self.data[idx]
+
         input_columns, label_columns, meta_columns = (
             self.dataset_manager.column_categories["input"],
             self.dataset_manager.column_categories["label"],
@@ -463,5 +471,5 @@ class DatasetLoader(DatasetHandler):
         )
         input_data = self.encoder_manager.encode_dataframe(data_at_index[input_columns])
         label_data = self.encoder_manager.encode_dataframe(data_at_index[label_columns])
-        meta_data = {key: data_at_index[key] for key in meta_columns}
+        meta_data = {key: data_at_index[key].to_list() for key in meta_columns}
         return input_data, label_data, meta_data

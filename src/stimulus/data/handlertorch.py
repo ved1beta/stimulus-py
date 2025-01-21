@@ -14,12 +14,12 @@ import src.stimulus.data.experiments as experiments
 class TorchDataset(Dataset):
     """Class for creating a torch dataset"""
 
-    def __init__(self, csvpath: str, experiment: Any, split: Tuple[None, int] = None) -> None:
+    def __init__(self, config_path: str, csv_path: str, encoder_loader: experiments.EncoderLoader, split: Tuple[None, int] = None) -> None:
 
-        encoder_loader = experiments.EncoderLoader(experiment)
         self.loader = csv.DatasetLoader(
+            config_path=config_path,
+            csv_path=csv_path,
             encoder_loader=encoder_loader,
-            csvpath=csvpath,
             split=split,
         )
 
@@ -28,5 +28,5 @@ class TorchDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Tuple[dict, dict, dict]:
         return (
-            self.loader(idx)
+            self.loader[idx]
         )
