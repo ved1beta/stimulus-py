@@ -8,17 +8,20 @@ from pydantic import BaseModel, ValidationError, field_validator
 
 class YamlGlobalParams(BaseModel):
     """Model for global parameters in YAML configuration."""
+
     seed: int
 
 
 class YamlColumnsEncoder(BaseModel):
     """Model for column encoder configuration."""
+
     name: str
     params: Optional[dict[str, Union[str, list]]]  # Allow both string and list values
 
 
 class YamlColumns(BaseModel):
     """Model for column configuration."""
+
     column_name: str
     column_type: str
     data_type: str
@@ -27,18 +30,21 @@ class YamlColumns(BaseModel):
 
 class YamlTransformColumnsTransformation(BaseModel):
     """Model for column transformation configuration."""
+
     name: str
     params: Optional[dict[str, Union[list, float]]]  # Allow both list and float values
 
 
 class YamlTransformColumns(BaseModel):
     """Model for transform columns configuration."""
+
     column_name: str
     transformations: list[YamlTransformColumnsTransformation]
 
 
 class YamlTransform(BaseModel):
     """Model for transform configuration."""
+
     transformation_name: str
     columns: list[YamlTransformColumns]
 
@@ -84,6 +90,7 @@ class YamlTransform(BaseModel):
 
 class YamlSplit(BaseModel):
     """Model for split configuration."""
+
     split_method: str
     params: dict[str, list[float]]  # More specific type for split parameters
     split_input_columns: list[str]
@@ -91,6 +98,7 @@ class YamlSplit(BaseModel):
 
 class YamlConfigDict(BaseModel):
     """Model for main YAML configuration."""
+
     global_params: YamlGlobalParams
     columns: list[YamlColumns]
     transforms: list[YamlTransform]
@@ -99,6 +107,7 @@ class YamlConfigDict(BaseModel):
 
 class YamlSubConfigDict(BaseModel):
     """Model for sub-configuration generated from main config."""
+
     global_params: YamlGlobalParams
     columns: list[YamlColumns]
     transforms: YamlTransform
@@ -107,6 +116,7 @@ class YamlSubConfigDict(BaseModel):
 
 class YamlSchema(BaseModel):
     """Model for validating YAML schema."""
+
     yaml_conf: YamlConfigDict
 
 
@@ -302,8 +312,7 @@ def dump_yaml_list_into_files(
                         processed_dict[key] = fix_params(value)
                     elif isinstance(value, list):
                         processed_dict[key] = [
-                            fix_params(list_item) if isinstance(list_item, dict) else list_item
-                            for list_item in value
+                            fix_params(list_item) if isinstance(list_item, dict) else list_item for list_item in value
                         ]
                     else:
                         processed_dict[key] = value

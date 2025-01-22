@@ -51,14 +51,16 @@ class TestTextOneHotEncoder:
     # ---- Tests for _sequence_to_array ---- #
 
     def test_sequence_to_array_with_non_string_input(
-        self, encoder_default: TextOneHotEncoder,
+        self,
+        encoder_default: TextOneHotEncoder,
     ) -> None:
         """Test _sequence_to_array with non-string input raises TypeError."""
         with pytest.raises(TypeError, match="Expected string input for sequence"):
             encoder_default._sequence_to_array(1234)
 
     def test_sequence_to_array_returns_correct_shape(
-        self, encoder_default: TextOneHotEncoder,
+        self,
+        encoder_default: TextOneHotEncoder,
     ) -> None:
         """Test _sequence_to_array returns array of correct shape."""
         seq = "acgt"
@@ -240,7 +242,9 @@ class TestNumericEncoder:
 
     @pytest.mark.parametrize("fixture_name", ["float_encoder", "int_encoder"])
     def test_encode_non_numeric_raises(
-        self, request: pytest.FixtureRequest, fixture_name: str,
+        self,
+        request: pytest.FixtureRequest,
+        fixture_name: str,
     ) -> None:
         """Test that encoding a non-float raises a ValueError."""
         numeric_encoder = request.getfixturevalue(fixture_name)
@@ -331,6 +335,7 @@ class TestNumericEncoder:
         assert decoded[0] == 3, "First decoded value does not match."
         assert decoded[1] == 4, "Second decoded value does not match."
 
+
 class TestStrClassificationEncoder:
     """Test suite for StrClassificationIntEncoder and StrClassificationScaledEncoder."""
 
@@ -356,7 +361,9 @@ class TestStrClassificationEncoder:
 
     @pytest.mark.parametrize("fixture", ["str_encoder", "scaled_encoder"])
     def test_encode_raises_not_implemented(
-        self, request: pytest.FixtureRequest, fixture: str,
+        self,
+        request: pytest.FixtureRequest,
+        fixture: str,
     ) -> None:
         """Test that encoding a single string raises NotImplementedError.
 
@@ -395,7 +402,9 @@ class TestStrClassificationEncoder:
 
     @pytest.mark.parametrize("fixture", ["str_encoder", "scaled_encoder"])
     def test_encode_all_raises_value_error_on_non_string(
-        self, request: pytest.FixtureRequest, fixture: str,
+        self,
+        request: pytest.FixtureRequest,
+        fixture: str,
     ) -> None:
         """Tests that encode_all raises ValueError.
 
@@ -409,7 +418,9 @@ class TestStrClassificationEncoder:
 
     @pytest.mark.parametrize("fixture", ["str_encoder", "scaled_encoder"])
     def test_decode_raises_not_implemented(
-        self, request: pytest.FixtureRequest, fixture: str,
+        self,
+        request: pytest.FixtureRequest,
+        fixture: str,
     ) -> None:
         """Tests that decode() raises NotImplementedError.
 
@@ -446,7 +457,9 @@ class TestNumericRankEncoder:
 
     @pytest.mark.parametrize("fixture", ["rank_encoder", "scaled_encoder"])
     def test_encode_raises_not_implemented(
-        self, request: pytest.FixtureRequest, fixture: str,
+        self,
+        request: pytest.FixtureRequest,
+        fixture: str,
     ) -> None:
         """Test that encoding a single float raises NotImplementedError.
 
@@ -487,7 +500,9 @@ class TestNumericRankEncoder:
 
     @pytest.mark.parametrize("fixture", ["rank_encoder", "scaled_encoder"])
     def test_encode_all_with_non_numeric_raises(
-        self, request: pytest.FixtureRequest, fixture: str,
+        self,
+        request: pytest.FixtureRequest,
+        fixture: str,
     ) -> None:
         """Test that encoding a non-float raises a ValueError.
 
@@ -501,7 +516,9 @@ class TestNumericRankEncoder:
 
     @pytest.mark.parametrize("fixture", ["rank_encoder", "scaled_encoder"])
     def test_decode_raises_not_implemented(
-        self, request: pytest.FixtureRequest, fixture: str,
+        self,
+        request: pytest.FixtureRequest,
+        fixture: str,
     ) -> None:
         """Test that decoding raises NotImplementedError.
 
