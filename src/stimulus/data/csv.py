@@ -273,15 +273,11 @@ class DatasetHandler:
         config_path: str,
         csv_path: str,
     ) -> None:
-        """Initialize the DatasetHandler with required loaders and config.
+        """Initialize the DatasetHandler with required config.
 
         Args:
-            encoder_loader (experiments.EncoderLoader): Loader for getting column encoders.
-            transform_loader (experiments.TransformLoader): Loader for getting data transformations.
-            split_loader (experiments.SplitLoader): Loader for getting dataset split configurations.
             config_path (str): Path to the dataset configuration file.
             csv_path (str): Path to the CSV data file.
-            split (int): The split to load, 0 is train, 1 is validation, 2 is test.
         """
         self.dataset_manager = DatasetManager(config_path)
         self.columns = self.read_csv_header(csv_path)
@@ -344,10 +340,8 @@ class DatasetProcessor(DatasetHandler):
         An error exception is raised if the split column is already present in the csv file. This behaviour can be overriden by setting force=True.
 
         Args:
-            config (dict) : the dictionary containing  the following keys:
-                            "name" (str)        : the split_function name, as defined in the splitters class and experiment.
-                            "parameters" (dict) : the split_function specific optional parameters, passed here as a dict with keys named as in the split function definition.
-            force (bool) : If True, the split column present in the csv file will be overwritten.
+            split_manager (SplitManager): Manager for handling dataset splitting
+            force (bool): If True, the split column present in the csv file will be overwritten.
         """
         if ("split" in self.columns) and (not force):
             raise ValueError(

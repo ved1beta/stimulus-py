@@ -272,9 +272,6 @@ class GaussianChunk(AbstractAugmentationGenerator):
 
         Args:
             data (str): the sequence to be transformed
-            chunk_size (int): the size of the chunk
-            seed (float): the seed for reproducibility
-            std (float): the standard deviation of the gaussian distribution
 
         Returns:
             transformed_data (str): the chunk of the sequence
@@ -312,9 +309,6 @@ class GaussianChunk(AbstractAugmentationGenerator):
 
         Args:
             data (list): the sequences to be transformed
-            chunk_size (int): the size of the chunk
-            seed (float): the seed for reproducibility
-            std (float): the standard deviation of the gaussian distribution
 
         Returns:
             transformed_data (list): the transformed sequences

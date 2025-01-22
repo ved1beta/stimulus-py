@@ -36,7 +36,7 @@ class AbstractEncoder(ABC):
             data (any): a single data point
 
         Returns:
-            encoded_data_point (any): Òthe encoded data point
+            encoded_data_point (any): the encoded data point
         """
         raise NotImplementedError
 
@@ -89,9 +89,8 @@ class TextOneHotEncoder(AbstractEncoder):
 
     Attributes:
         alphabet (str): the alphabet to one hot encode the data with.
-        convert_lowercase (bool): whether the encoder would convert the sequence (and alphabet) to lowercase
-          or not. Default = False
-        padding (bool): whether to pad the sequences with zero or not. Default = False
+        convert_lowercase (bool): whether to convert the sequence and alphabet to lowercase. Default is False.
+        padding (bool): whether to pad the sequences with zeros. Default is False.
         encoder (OneHotEncoder): preprocessing.OneHotEncoder object initialized with self.alphabet
 
     Methods:
@@ -302,7 +301,11 @@ class TextOneHotEncoder(AbstractEncoder):
 
 
 class NumericEncoder(AbstractEncoder):
-    """Encoder for float/int data."""
+    """Encoder for float/int data.
+
+    Attributes:
+        dtype (torch.dtype): The data type of the encoded data. Default = torch.float32 (32-bit floating point)
+    """
 
     def __init__(self, dtype: torch.dtype = torch.float32) -> None:
         """Initialize the NumericEncoder class.
@@ -387,7 +390,7 @@ class StrClassificationEncoder(AbstractEncoder):
     When scale is set to True, the labels are scaled to be between 0 and 1.
 
     Attributes:
-        None
+        scale (bool): Whether to scale the labels to be between 0 and 1. Default = False
 
     Methods:
         encode(data: str) -> int:
@@ -471,7 +474,6 @@ class NumericRankEncoder(AbstractEncoder):
         encode_all: encodes a list of data points into a torch.tensor
         decode: decodes a single data point
         _check_input_dtype: checks if the input data is int or float data
-        _warn_float_is_converted_to_int: warns if float data is encoded into
     """
 
     def __init__(self, *, scale: bool = False) -> None:
@@ -494,7 +496,6 @@ class NumericRankEncoder(AbstractEncoder):
 
         Args:
             data (Union[List[float], List[int]]): a list of numeric values
-            scale (bool): whether to scale the ranks to be between 0 and 1. Default = False
 
         Returns:
             encoded_data (torch.Tensor): the encoded data
