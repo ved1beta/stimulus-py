@@ -1,0 +1,10 @@
+# serializer version: 1
+# name: test_split_csv[csv_path_no_split-yaml_path-False-None]
+  '1181dc120be24ceb54a6026d18d5e87c'
+# ---
+# name: test_split_csv[csv_path_no_split-yaml_path-True-None]
+  '1181dc120be24ceb54a6026d18d5e87c'
+# ---
+# name: test_split_csv[csv_path_with_split-yaml_path-True-None]
+  'f5f903e92470dec26f00b25f92a017cd'
+# ---
