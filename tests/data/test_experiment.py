@@ -141,10 +141,7 @@ def test_initialize_column_data_transformers_from_config(
 
     assert hasattr(experiment, "col1")
     column_transformers = experiment.col1
-    assert any(
-        isinstance(t, data_transformation_generators.ReverseComplement)
-        for t in column_transformers.values()
-    )
+    assert any(isinstance(t, data_transformation_generators.ReverseComplement) for t in column_transformers.values())
 
 
 def test_initialize_splitter_from_config(

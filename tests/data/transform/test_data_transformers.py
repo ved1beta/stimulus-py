@@ -13,6 +13,7 @@ from src.stimulus.data.transform.data_transformation_generators import (
     ReverseComplement,
     UniformTextMasker,
 )
+from stimulus.utils.yaml_data import dump_yaml_list_into_files, generate_data_configs
 
 
 class DataTransformerTest:
@@ -199,7 +200,7 @@ class TestGaussianChunk:
         """Test that the transform fails if chunk size is greater than the length of the input string."""
         test_data = request.getfixturevalue(test_data_name)
         transformer = GaussianChunk(chunk_size=100)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Input data length must be greater than chunk size"):
             transformer.transform(test_data.single_input)
 
 
@@ -226,11 +227,10 @@ class TestReverseComplement:
 
 
 @pytest.fixture
-def titanic_config_path(base_config):
+def titanic_config_path(base_config: dict) -> str:
     """Ensure the config file exists and return its path."""
     config_path = "tests/test_data/titanic/titanic_sub_config_0.yaml"
 
-    # Generate the sub configs if file doesn't exist
     if not os.path.exists(config_path):
         configs = generate_data_configs(base_config)
         dump_yaml_list_into_files([configs[0]], "tests/test_data/titanic/", "titanic_sub_config")
