@@ -3,6 +3,7 @@
 import random
 from collections.abc import Callable
 from copy import deepcopy
+from typing import Any
 
 import yaml
 from ray import tune
@@ -25,7 +26,7 @@ class YamlRayConfigLoader:
             self.config = yaml.safe_load(f)
             self.config = self.convert_config_to_ray(self.config)
 
-    def raytune_space_selector(self, mode: Callable, space: list) -> Callable:
+    def raytune_space_selector(self, mode: Callable, space: list) -> dict[str, Any]:
         """Convert space parameters to Ray Tune format based on the mode.
 
         Args:
@@ -46,7 +47,7 @@ class YamlRayConfigLoader:
 
         raise NotImplementedError(f"Mode {mode.__name__} not implemented yet")
 
-    def raytune_sample_from(self, mode: Callable, param: dict) -> Callable:
+    def raytune_sample_from(self, mode: Callable, param: dict) -> dict[str, Any]:
         """Apply tune.sample_from to a given custom sampling function.
 
         Args:
@@ -64,7 +65,7 @@ class YamlRayConfigLoader:
 
         raise NotImplementedError(f"Function {param['function']} not implemented yet")
 
-    def convert_raytune(self, param: dict) -> dict:
+    def convert_raytune(self, param: dict) -> dict[str, Any]:
         """Convert parameter configuration to Ray Tune format.
 
         Args:
@@ -130,7 +131,7 @@ class YamlRayConfigLoader:
         return self.config
 
     @staticmethod
-    def sampint(sample_space: list, n_space: list) -> list:
+    def sampint(sample_space: list, n_space: list) -> list[int]:
         """Return a list of n random samples from the sample_space.
 
         This function is useful for sampling different numbers of layers,
@@ -148,7 +149,7 @@ class YamlRayConfigLoader:
             This is acceptable for hyperparameter sampling but should not be
             used for security-critical purposes (S311 fails when linting).
         """
-        sample_space = range(sample_space[0], sample_space[1] + 1)
-        n_space = range(n_space[0], n_space[1] + 1)
-        n = random.choice(tuple(n_space))  # noqa: S311
-        return random.sample(tuple(sample_space), n)
+        sample_space_list = list(range(sample_space[0], sample_space[1] + 1))
+        n_space_list = list(range(n_space[0], n_space[1] + 1))
+        n = random.choice(n_space_list)  # noqa: S311
+        return random.sample(sample_space_list, n)

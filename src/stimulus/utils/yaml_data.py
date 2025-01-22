@@ -16,7 +16,7 @@ class YamlColumnsEncoder(BaseModel):
     """Model for column encoder configuration."""
 
     name: str
-    params: Optional[dict[str, Union[str, list]]]  # Allow both string and list values
+    params: Optional[dict[str, Union[str, list[Any]]]]  # Allow both string and list values
 
 
 class YamlColumns(BaseModel):
@@ -32,7 +32,7 @@ class YamlTransformColumnsTransformation(BaseModel):
     """Model for column transformation configuration."""
 
     name: str
-    params: Optional[dict[str, Union[list, float]]]  # Allow both list and float values
+    params: Optional[dict[str, Union[list[Any], float]]]  # Allow both list and float values
 
 
 class YamlTransformColumns(BaseModel):
@@ -60,7 +60,7 @@ class YamlTransform(BaseModel):
             The validated columns list
         """
         # Get all parameter list lengths across all columns and transformations
-        all_list_lengths = set()
+        all_list_lengths: set[int] = set()
 
         for column in columns:
             for transformation in column.transformations:
@@ -251,8 +251,8 @@ def dump_yaml_list_into_files(
     base_name: str,
 ) -> None:
     """Dumps a list of YAML configurations into separate files with custom formatting."""
-    # Disable YAML aliases to prevent reference-style output
-    yaml.Dumper.ignore_aliases = lambda *args: True
+    # Create a new class attribute rather than assigning to the method
+    # Remove this line since we'll add ignore_aliases to CustomDumper instead
 
     def represent_none(dumper: yaml.Dumper, _: Any) -> yaml.Node:
         """Custom representer to format None values as empty strings in YAML output."""
@@ -272,15 +272,22 @@ def dump_yaml_list_into_files(
     class CustomDumper(yaml.Dumper):
         """Custom YAML dumper that adds extra formatting controls."""
 
-        def write_line_break(self, data: Any = None) -> None:
-            """Add extra newline after root-level elements."""
-            super().write_line_break(data)
-            if len(self.indents) <= 1:  # At root level
-                super().write_line_break(data)
+        def ignore_aliases(self, _data: Any) -> bool:
+            """Ignore aliases in the YAML output."""
+            return True
 
-        def increase_indent(self, *, flow: bool = False, indentless: bool = False) -> bool:
+        def write_line_break(self, _data: Any = None) -> None:
+            """Add extra newline after root-level elements."""
+            super().write_line_break(_data)
+            if len(self.indents) <= 1:  # At root level
+                super().write_line_break(_data)
+
+        def increase_indent(self, *, flow: bool = False, indentless: bool = False) -> None:  # type: ignore[override]
             """Ensure consistent indentation by preventing indentless sequences."""
-            return super().increase_indent(flow=flow, indentless=indentless)
+            return super().increase_indent(
+                flow=flow,
+                indentless=indentless,
+            )  # Force indentless to False for better formatting
 
     # Register the custom representers with our dumper
     yaml.add_representer(type(None), represent_none, Dumper=CustomDumper)
@@ -292,7 +299,7 @@ def dump_yaml_list_into_files(
         def fix_params(input_dict: dict[str, Any]) -> dict[str, Any]:
             """Recursively process dictionary to properly handle params fields."""
             if isinstance(input_dict, dict):
-                processed_dict = {}
+                processed_dict: dict[str, Any] = {}
                 for key, value in input_dict.items():
                     if key == "encoder" and isinstance(value, list):
                         processed_dict[key] = []
@@ -333,14 +340,14 @@ def dump_yaml_list_into_files(
             )
 
 
-def check_yaml_schema(config_yaml: str) -> str:
+def check_yaml_schema(config_yaml: YamlConfigDict) -> str:
     """Validate YAML configuration fields have correct types.
 
     If the children field is specific to a parent, the children fields class is hosted in the parent fields class.
     If any field in not the right type, the function prints an error message explaining the problem and exits the python code.
 
     Args:
-        config_yaml (dict): The dict containing the fields of the yaml configuration file
+        config_yaml: The YamlConfigDict containing the fields of the yaml configuration file
 
     Returns:
         str: Empty string if validation succeeds

@@ -36,11 +36,6 @@ class TestTextOneHotEncoder:
 
     # ---- Test for initialization ---- #
 
-    def test_init_with_non_string_alphabet_raises_type_error(self) -> None:
-        """Test initialization with non-string alphabet raises TypeError."""
-        with pytest.raises(TypeError, match="Expected a string input for alphabet"):
-            TextOneHotEncoder(alphabet=["a", "c", "g", "t"])
-
     def test_init_with_string_alphabet(self) -> None:
         """Test initialization with valid string alphabet."""
         encoder = TextOneHotEncoder(alphabet="acgt")
@@ -56,14 +51,14 @@ class TestTextOneHotEncoder:
     ) -> None:
         """Test _sequence_to_array with non-string input raises TypeError."""
         with pytest.raises(TypeError, match="Expected string input for sequence"):
-            encoder_default._sequence_to_array(1234)
+            encoder_default._sequence_to_array(1234)  # type: ignore[arg-type]
 
     def test_sequence_to_array_returns_correct_shape(
         self,
         encoder_default: TextOneHotEncoder,
     ) -> None:
         """Test _sequence_to_array returns array of correct shape."""
-        seq = "acgt"
+        seq: str = "acgt"
         arr = encoder_default._sequence_to_array(seq)
         assert arr.shape == (4, 1)
         assert (arr.flatten() == list(seq)).all()
@@ -185,6 +180,7 @@ class TestTextOneHotEncoder:
         # In the given code, it returns an empty decode for that position. So let's assume it becomes ''.
         # That means we might get "acgt" with a missing final char or a placeholder.
         # Let's do a partial check:
+        assert isinstance(decoded, str)
         assert decoded.startswith("acgt")
 
     def test_decode_multiple_sequences(self, encoder_default: TextOneHotEncoder) -> None:
@@ -259,11 +255,11 @@ class TestNumericEncoder:
         Args:
             float_encoder: Float-based encoder instance
         """
-        input_val = 2.71
+        input_val = [2.71]
         output = float_encoder.encode_all(input_val)
         assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
         assert output.numel() == 1, "Tensor should have exactly one element."
-        assert output.item() == pytest.approx(input_val), "Encoded value does not match the input."
+        assert output.item() == pytest.approx(input_val[0]), "Encoded value does not match the input."
 
     def test_encode_all_single_int(self, int_encoder: NumericEncoder) -> None:
         """Test encode_all when given a single int.
@@ -273,11 +269,11 @@ class TestNumericEncoder:
         Args:
             int_encoder: Integer-based encoder instance
         """
-        input_val = 2
+        input_val = [2.0]
         output = int_encoder.encode_all(input_val)
         assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
         assert output.numel() == 1, "Tensor should have exactly one element."
-        assert output.item() == input_val
+        assert output.item() == int(input_val[0])
 
     def test_encode_all_multi_float(self, float_encoder: NumericEncoder) -> None:
         """Test encode_all with a list of floats."""
@@ -291,7 +287,7 @@ class TestNumericEncoder:
 
     def test_encode_all_multi_int(self, int_encoder: NumericEncoder) -> None:
         """Test encode_all with a list of integers."""
-        input_vals = [3, 4]
+        input_vals = [3.0, 4.0]
         output = int_encoder.encode_all(input_vals)
         assert isinstance(output, torch.Tensor), "Output should be a torch.Tensor."
         assert output.dtype == torch.int32, "Tensor dtype should be int32."

@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 import torch
+from numpy.typing import NDArray
 from scipy.stats import spearmanr
 from sklearn.metrics import (
     average_precision_score,
@@ -41,7 +42,7 @@ class Performance:
     metrics.
     """
 
-    def __init__(self, labels: Any, predictions: Any, metric: str = "rocauc") -> float:
+    def __init__(self, labels: Any, predictions: Any, metric: str = "rocauc") -> None:
         """Initialize Performance class with labels, predictions and metric type.
 
         Args:
@@ -49,39 +50,43 @@ class Performance:
             predictions: Model predictions
             metric: Type of metric to compute (default: "rocauc")
         """
-        labels = self.data2array(labels)
-        predictions = self.data2array(predictions)
-        labels, predictions = self.handle_multiclass(labels, predictions)
-        if labels.shape != predictions.shape:
+        labels_arr = self.data2array(labels)
+        predictions_arr = self.data2array(predictions)
+        labels_arr, predictions_arr = self.handle_multiclass(labels_arr, predictions_arr)
+        if labels_arr.shape != predictions_arr.shape:
             raise ValueError(
-                f"The labels have shape {labels.shape} whereas predictions have shape {predictions.shape}.",
+                f"The labels have shape {labels_arr.shape} whereas predictions have shape {predictions_arr.shape}.",
             )
         function = getattr(self, metric)
-        self.val = function(labels, predictions)
+        self.val = function(labels_arr, predictions_arr)
 
-    def data2array(self, data: Any) -> np.array:
+    def data2array(self, data: Any) -> NDArray[np.float64]:
         """Convert input data to numpy array.
 
         Args:
             data: Input data in various formats
 
         Returns:
-            np.array: Converted numpy array
+            NDArray[np.float64]: Converted numpy array
 
         Raises:
             ValueError: If input data type is not supported
         """
         if isinstance(data, list):
-            return np.array(data)
+            return np.array(data, dtype=np.float64)
         if isinstance(data, np.ndarray):
-            return data
+            return data.astype(np.float64)
         if isinstance(data, torch.Tensor):
-            return data.detach().cpu().numpy()
+            return data.detach().cpu().numpy().astype(np.float64)
         if isinstance(data, (int, float)):
-            return np.array([data])
+            return np.array([data], dtype=np.float64)
         raise ValueError(f"The data must be a list, np.array, torch.Tensor, int or float. Instead it is {type(data)}")
 
-    def handle_multiclass(self, labels: np.array, predictions: np.array) -> tuple[np.array, np.array]:
+    def handle_multiclass(
+        self,
+        labels: NDArray[np.float64],
+        predictions: NDArray[np.float64],
+    ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         """Handle the case of multiclass classification.
 
         TODO currently only two class predictions are handled. Needs to handle the other scenarios.
@@ -98,34 +103,34 @@ class Performance:
         # other scenarios not implemented yet
         raise ValueError(f"Labels have shape {labels.shape} and predictions have shape {predictions.shape}.")
 
-    def rocauc(self, labels: np.array, predictions: np.array) -> float:
+    def rocauc(self, labels: NDArray[np.float64], predictions: NDArray[np.float64]) -> float:
         """Compute ROC AUC score."""
-        return roc_auc_score(labels, predictions)
+        return float(roc_auc_score(labels, predictions))
 
-    def prauc(self, labels: np.array, predictions: np.array) -> float:
+    def prauc(self, labels: NDArray[np.float64], predictions: NDArray[np.float64]) -> float:
         """Compute PR AUC score."""
-        return average_precision_score(labels, predictions)
+        return float(average_precision_score(labels, predictions))
 
-    def mcc(self, labels: np.array, predictions: np.array) -> float:
+    def mcc(self, labels: NDArray[np.float64], predictions: NDArray[np.float64]) -> float:
         """Compute Matthews Correlation Coefficient."""
-        predictions = np.array([1 if p > BINARY_THRESHOLD else 0 for p in predictions])
-        return matthews_corrcoef(labels, predictions)
+        predictions_binary = np.array([1 if p > BINARY_THRESHOLD else 0 for p in predictions])
+        return float(matthews_corrcoef(labels, predictions_binary))
 
-    def f1score(self, labels: np.array, predictions: np.array) -> float:
+    def f1score(self, labels: NDArray[np.float64], predictions: NDArray[np.float64]) -> float:
         """Compute F1 score."""
-        predictions = np.array([1 if p > BINARY_THRESHOLD else 0 for p in predictions])
-        return f1_score(labels, predictions)
+        predictions_binary = np.array([1 if p > BINARY_THRESHOLD else 0 for p in predictions])
+        return float(f1_score(labels, predictions_binary))
 
-    def precision(self, labels: np.array, predictions: np.array) -> float:
+    def precision(self, labels: NDArray[np.float64], predictions: NDArray[np.float64]) -> float:
         """Compute precision score."""
-        predictions = np.array([1 if p > BINARY_THRESHOLD else 0 for p in predictions])
-        return precision_score(labels, predictions)
+        predictions_binary = np.array([1 if p > BINARY_THRESHOLD else 0 for p in predictions])
+        return float(precision_score(labels, predictions_binary))
 
-    def recall(self, labels: np.array, predictions: np.array) -> float:
+    def recall(self, labels: NDArray[np.float64], predictions: NDArray[np.float64]) -> float:
         """Compute recall score."""
-        predictions = np.array([1 if p > BINARY_THRESHOLD else 0 for p in predictions])
-        return recall_score(labels, predictions)
+        predictions_binary = np.array([1 if p > BINARY_THRESHOLD else 0 for p in predictions])
+        return float(recall_score(labels, predictions_binary))
 
-    def spearmanr(self, labels: np.array, predictions: np.array) -> float:
+    def spearmanr(self, labels: NDArray[np.float64], predictions: NDArray[np.float64]) -> float:
         """Compute Spearman correlation coefficient."""
-        return spearmanr(labels, predictions)[0]
+        return float(spearmanr(labels, predictions)[0])

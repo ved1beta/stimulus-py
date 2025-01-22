@@ -4,6 +4,7 @@ from typing import Callable, Optional
 
 import torch
 from torch import nn
+from torch.optim import Optimizer
 
 
 class ModelSimple(torch.nn.Module):
@@ -23,7 +24,7 @@ class ModelSimple(torch.nn.Module):
         self.pool = nn.MaxPool1d(pool_size, pool_size)
         self.linear = nn.Linear(49, 1)
 
-    def forward(self, hello: torch.Tensor) -> dict:
+    def forward(self, hello: torch.Tensor) -> dict[str, torch.Tensor]:
         """Forward pass of the model.
 
         It should return the output as a dictionary, with the same keys as `y`.
@@ -32,7 +33,7 @@ class ModelSimple(torch.nn.Module):
         x = self.conv1(x)
         x = self.pool(x)
         x = self.linear(x)
-        return x.squeeze()
+        return {"output": x.squeeze()}
 
     def compute_loss(self, output: torch.Tensor, hola: torch.Tensor, loss_fn: Callable) -> torch.Tensor:
         """Compute the loss.
@@ -45,12 +46,12 @@ class ModelSimple(torch.nn.Module):
 
     def batch(
         self,
-        x: dict,
-        y: dict,
-        loss_fn1: Callable,
-        loss_fn2: Callable,
-        optimizer: Optional[Callable] = None,
-    ) -> tuple[torch.Tensor, dict]:
+        x: dict[str, torch.Tensor],
+        y: dict[str, torch.Tensor],
+        loss_fn1: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+        loss_fn2: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+        optimizer: Optional[Optimizer] = None,
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """Perform one batch step.
 
         `x` is a dictionary with the input tensors.
@@ -63,7 +64,7 @@ class ModelSimple(torch.nn.Module):
         TODO currently only returning loss1, but we could potentially summarize loss1 and loss2 in some way.
         However, note that both loss1 and loss2 are participating in the backward propagation, one after another.
         """
-        output = self(**x)
+        output = self(**x)["output"]
         loss1 = self.compute_loss(output, **y, loss_fn=loss_fn1)
         loss2 = self.compute_loss(output, **y, loss_fn=loss_fn2)
 

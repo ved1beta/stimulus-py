@@ -140,8 +140,8 @@ def main(
     data_path: str,
     output: str,
     *,
-    return_labels: bool,
-    split: int | None,
+    return_labels: bool = False,
+    split: int | None = None,
 ) -> None:
     """Run model prediction pipeline.
 
@@ -171,7 +171,8 @@ def main(
         shuffle=False,
     )
 
-    out = PredictWrapper(model, dataloader).predict(return_labels=return_labels)
+    predictor = PredictWrapper(model, dataloader)
+    out = predictor.predict(return_labels=return_labels)
     y_pred, y_true = out if return_labels else (out, {})
 
     y_pred = {k: v.tolist() for k, v in y_pred.items()}

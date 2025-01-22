@@ -15,7 +15,7 @@ class TorchDataset(Dataset):
         config_path: str,
         csv_path: str,
         encoder_loader: experiments.EncoderLoader,
-        split: Optional[tuple[None, int]] = None,
+        split: Optional[int] = None,
     ) -> None:
         """Initialize the TorchDataset.
 

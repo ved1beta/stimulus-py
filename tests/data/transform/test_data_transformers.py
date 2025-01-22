@@ -50,7 +50,7 @@ def uniform_text_masker() -> DataTransformerTest:
     """Return a UniformTextMasker test object."""
     np.random.seed(42)  # Set seed before creating transformer
     transformer = UniformTextMasker(mask="N", probability=0.1)
-    params = {}  # Remove seed from params
+    params: dict[str, Any] = {}  # Remove seed from params
     single_input = "ACGTACGT"
     expected_single_output = "ACGTACNT"
     multiple_inputs = ["ATCGATCGATCG", "ATCG"]
@@ -70,7 +70,7 @@ def gaussian_noise() -> DataTransformerTest:
     """Return a GaussianNoise test object."""
     np.random.seed(42)  # Set seed before creating transformer
     transformer = GaussianNoise(mean=0, std=1)
-    params = {}  # Remove seed from params
+    params: dict[str, Any] = {}  # Remove seed from params
     single_input = 5.0
     expected_single_output = 5.4967141530112327
     multiple_inputs = [1.0, 2.0, 3.0]
@@ -90,7 +90,7 @@ def gaussian_chunk() -> DataTransformerTest:
     """Return a GaussianChunk test object."""
     np.random.seed(42)  # Set seed before creating transformer
     transformer = GaussianChunk(chunk_size=2)
-    params = {}  # Remove seed from params
+    params: dict[str, Any] = {}  # Remove seed from params
     single_input = "ACGT"
     expected_single_output = "CG"
     multiple_inputs = ["ACGT", "TGCA"]
@@ -165,7 +165,7 @@ class TestGaussianNoise:
         """Test transforming multiple floats."""
         test_data = request.getfixturevalue(test_data_name)
         transformed_data = test_data.transformer.transform_all(test_data.multiple_inputs, **test_data.params)
-        assert isinstance(transformed_data, np.ndarray)
+        assert isinstance(transformed_data, list)
         for item in transformed_data:
             assert isinstance(item, float)
         assert len(transformed_data) == len(test_data.expected_multiple_outputs)

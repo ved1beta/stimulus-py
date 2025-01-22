@@ -138,7 +138,8 @@ class TransformLoader:
         if not hasattr(self, field_name):
             setattr(self, field_name, {data_transformer.__class__.__name__: data_transformer})
         else:
-            self.field_name[data_transformer.__class__.__name__] = data_transformer
+            field_value = getattr(self, field_name)
+            field_value[data_transformer.__class__.__name__] = data_transformer
 
     def initialize_column_data_transformers_from_config(self, transform_config: yaml_data.YamlTransform) -> None:
         """Build the loader from a config dictionary.

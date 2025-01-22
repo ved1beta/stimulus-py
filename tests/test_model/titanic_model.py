@@ -4,6 +4,7 @@ from typing import Callable, Optional
 
 import torch
 from torch import nn
+from torch.optim import Optimizer
 
 
 class ModelTitanic(torch.nn.Module):
@@ -43,7 +44,7 @@ class ModelTitanic(torch.nn.Module):
         parch: torch.Tensor,
         fare: torch.Tensor,
         embarked: torch.Tensor,
-    ) -> dict:
+    ) -> torch.Tensor:
         """Forward pass of the model.
 
         It should return the output as a dictionary, with the same keys as `y`.
@@ -68,11 +69,11 @@ class ModelTitanic(torch.nn.Module):
 
     def batch(
         self,
-        x: dict,
-        y: dict,
+        x: dict[str, torch.Tensor],
+        y: dict[str, torch.Tensor],
         loss_fn: Callable,
-        optimizer: Optional[Callable] = None,
-    ) -> tuple[torch.Tensor, dict]:
+        optimizer: Optional[Optimizer] = None,
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """Perform one batch step.
 
         `x` is a dictionary with the input tensors.
