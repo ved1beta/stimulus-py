@@ -1,10 +1,10 @@
 """Test suite for the data transformation generators."""
 
+import os
 from typing import Any
 
 import numpy as np
 import pytest
-import os
 
 from src.stimulus.data.transform.data_transformation_generators import (
     AbstractDataTransformer,
@@ -141,10 +141,7 @@ class TestUniformTextMasker:
     def test_transform_multiple(self, request: Any, test_data_name: str) -> None:
         """Test masking multiple strings."""
         test_data = request.getfixturevalue(test_data_name)
-        transformed_data = [
-            test_data.transformer.transform(x, **test_data.params) 
-            for x in test_data.multiple_inputs
-        ]
+        transformed_data = [test_data.transformer.transform(x, **test_data.params) for x in test_data.multiple_inputs]
         assert isinstance(transformed_data, list)
         for item in transformed_data:
             assert isinstance(item, str)
@@ -190,10 +187,7 @@ class TestGaussianChunk:
     def test_transform_multiple(self, request: Any, test_data_name: str) -> None:
         """Test transforming multiple strings."""
         test_data = request.getfixturevalue(test_data_name)
-        transformed_data = [
-            test_data.transformer.transform(x) 
-            for x in test_data.multiple_inputs
-        ]
+        transformed_data = [test_data.transformer.transform(x) for x in test_data.multiple_inputs]
         assert isinstance(transformed_data, list)
         for item in transformed_data:
             assert isinstance(item, str)
@@ -231,14 +225,14 @@ class TestReverseComplement:
         assert transformed_data == test_data.expected_multiple_outputs
 
 
-@pytest.fixture()
+@pytest.fixture
 def titanic_config_path(base_config):
     """Ensure the config file exists and return its path."""
     config_path = "tests/test_data/titanic/titanic_sub_config_0.yaml"
-    
+
     # Generate the sub configs if file doesn't exist
     if not os.path.exists(config_path):
         configs = generate_data_configs(base_config)
         dump_yaml_list_into_files([configs[0]], "tests/test_data/titanic/", "titanic_sub_config")
-    
+
     return os.path.abspath(config_path)

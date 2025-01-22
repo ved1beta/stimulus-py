@@ -213,7 +213,7 @@ class TestNumericEncoder:
         with pytest.raises(ValueError) as exc_info:
             numeric_encoder.encode("not_numeric")
         assert "Expected input data to be a float or int" in str(
-            exc_info.value
+            exc_info.value,
         ), "Expected ValueError with specific error message."
 
     def test_encode_all_single_float(self, float_encoder):
@@ -422,7 +422,7 @@ class TestNumericRankEncoder:
         with pytest.raises(ValueError) as exc_info:
             encoder.encode_all(["not_numeric"])
         assert "Expected input data to be a float or int" in str(
-            exc_info.value
+            exc_info.value,
         ), "Expected ValueError with specific error message."
 
     @pytest.mark.parametrize("fixture", ["rank_encoder", "scaled_encoder"])

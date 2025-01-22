@@ -2,7 +2,7 @@
 
 The module contains three main classes:
 - DatasetHandler: Base class for loading and managing CSV data
-- DatasetProcessor: Class for preprocessing data with transformations and splits 
+- DatasetProcessor: Class for preprocessing data with transformations and splits
 - DatasetLoader: Class for loading processed data for model training
 
 The data format consists of:
@@ -15,7 +15,7 @@ The data format consists of:
 
 The data handling pipeline consists of:
 1. Loading raw CSV data according to the YAML config
-2. Applying configured transformations 
+2. Applying configured transformations
 3. Splitting into train/val/test sets based on config
 4. Encoding data for model training using specified encoders
 
@@ -370,7 +370,9 @@ class DatasetProcessor(DatasetHandler):
         """Apply the transformation group to the data."""
         for column_name, transform_name, params in self.dataset_manager.get_transform_logic()["transformations"]:
             transformed_data, add_row = transform_manager.transform_column(
-                column_name, transform_name, self.data[column_name]
+                column_name,
+                transform_name,
+                self.data[column_name],
             )
             if add_row:
                 new_rows = self.data.with_columns(pl.Series(column_name, transformed_data))
@@ -392,7 +394,11 @@ class DatasetLoader(DatasetHandler):
     """Class for loading dataset and passing it to the deep learning model."""
 
     def __init__(
-        self, config_path: str, csv_path: str, encoder_loader: experiments.EncoderLoader, split: Union[int, None] = None
+        self,
+        config_path: str,
+        csv_path: str,
+        encoder_loader: experiments.EncoderLoader,
+        split: Union[int, None] = None,
     ) -> None:
         super().__init__(config_path, csv_path)
         self.encoder_manager = EncodeManager(encoder_loader)

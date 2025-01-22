@@ -1,4 +1,3 @@
-
 import pytest
 import yaml
 
@@ -94,6 +93,7 @@ def test_generate_data_configs(load_yaml_from_file):
         assert isinstance(config, YamlSubConfigDict)
         assert config.global_params == load_yaml_from_file.global_params
         assert config.columns == load_yaml_from_file.columns
+
 
 @pytest.mark.parametrize("test_input", [("load_yaml_from_file", False), ("load_wrong_type_yaml", True)])
 def test_check_yaml_schema(request, test_input):

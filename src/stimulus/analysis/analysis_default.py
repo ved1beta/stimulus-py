@@ -230,12 +230,12 @@ class AnalysisRobustness(Analysis):
 
     def get_performance_table(self, names: list, model_list: dict, data_list: list) -> pd.DataFrame:
         """Compute the performance metrics of each model on each dataset.
-        
+
         Args:
             names: List of names that identifies each model.
             model_list: Dictionary of models in same order as data_list.
             data_list: List of datasets used for training.
-            
+
         Returns:
             DataFrame containing performance metrics.
         """
@@ -312,10 +312,10 @@ class AnalysisRobustness(Analysis):
         plt.show()
 
     def plot_delta_performance(
-        self, 
-        metric: str, 
-        df: pd.DataFrame, 
-        figsize: tuple = (10, 10), 
+        self,
+        metric: str,
+        df: pd.DataFrame,
+        figsize: tuple = (10, 10),
         output: str | None = None,
     ) -> None:
         """Plot the delta performance of each model on each dataset."""

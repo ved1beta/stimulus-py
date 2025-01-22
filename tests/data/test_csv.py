@@ -1,4 +1,3 @@
-
 import pytest
 import yaml
 
@@ -148,7 +147,7 @@ def test_transform_manager_transform_column():
             YamlTransformColumns(
                 column_name="test_col",
                 transformations=[YamlTransformColumnsTransformation(name="GaussianNoise", params={"std": 0.1})],
-            )
+            ),
         ],
     )
     transform_loader.initialize_column_data_transformers_from_config(dummy_config)
