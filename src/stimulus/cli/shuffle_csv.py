@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""CLI module for shuffling CSV data files."""
 
 import argparse
 import json
@@ -8,9 +9,13 @@ from stimulus.data.csv import CsvProcessing
 from stimulus.utils.launch_utils import get_experiment
 
 
-def get_args():
-    """Get the arguments when using from the commandline"""
-    parser = argparse.ArgumentParser(description="TODO fill this description")
+def get_args() -> argparse.Namespace:
+    """Get the arguments when using from the commandline.
+
+    Returns:
+        Parsed command line arguments.
+    """
+    parser = argparse.ArgumentParser(description="Shuffle rows in a CSV data file.")
     parser.add_argument(
         "-c",
         "--csv",
@@ -36,12 +41,16 @@ def get_args():
         help="The output file path to write the noised csv",
     )
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
-def main(data_csv, config_json, out_path):
-    """This scripts shuffles the data and then splits it acording to the default split method, most likely RandomSplit.
+def main(data_csv: str, config_json: str, out_path: str) -> None:
+    """Shuffle the data and split it according to the default split method.
+
+    Args:
+        data_csv: Path to input CSV file.
+        config_json: Path to config JSON file.
+        out_path: Path to output shuffled CSV.
 
     TODO major changes when this is going to select a given shuffle method and integration with split.
     """
@@ -71,7 +80,8 @@ def main(data_csv, config_json, out_path):
     csv_obj.save(out_path)
 
 
-def run():
+def run() -> None:
+    """Run the CSV shuffling script."""
     args = get_args()
     main(args.csv, args.json, args.output)
 
