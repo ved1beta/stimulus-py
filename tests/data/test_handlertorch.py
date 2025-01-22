@@ -3,7 +3,6 @@ import os
 import yaml
 import src.stimulus.data.handlertorch as handlertorch
 import src.stimulus.data.experiments as experiments
-import src.stimulus.data.csv as csv
 import src.stimulus.utils.yaml_data as yaml_data
 
 @pytest.fixture()

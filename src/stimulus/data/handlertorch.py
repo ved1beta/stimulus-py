@@ -1,10 +1,7 @@
 """This file provides the class API for handling the data in pytorch using the Dataset and Dataloader classes"""
 
-from typing import Any, Literal, Tuple, Union
+from typing import Tuple
 
-import numpy as np
-import torch
-from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 
 import src.stimulus.data.csv as csv

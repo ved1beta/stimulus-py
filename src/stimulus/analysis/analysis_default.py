@@ -1,7 +1,9 @@
+"""Default analysis module for stimulus package."""
+
 import math
 from typing import Any, Tuple
 
-import matplotlib
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -18,14 +20,22 @@ class Analysis:
     """
 
     @staticmethod
-    def get_grid_shape(n: int) -> Tuple[int, int]:
+    def get_grid_shape(n: int) -> tuple[int, int]:
         """Calculates rows and columns for a rectangle layout (flexible)."""
         rows = int(math.ceil(math.sqrt(n)))  # Round up the square root for rows
         cols = int(math.ceil(n / rows))  # Calculate columns based on rows
         return rows, cols
 
     @staticmethod
-    def heatmap(data, row_labels, col_labels, ax=None, cbar_kw=None, cbarlabel="", **kwargs):
+    def heatmap(
+        data: np.ndarray,
+        row_labels: list[str],
+        col_labels: list[str],
+        ax: Any | None = None,
+        cbar_kw: dict | None = None,
+        cbarlabel: str = "",
+        **kwargs: Any,
+    ) -> tuple[Any, Any]:
         """Create a heatmap from a numpy array and two lists of labels.
 
         Parameters
@@ -80,7 +90,14 @@ class Analysis:
         return im, cbar
 
     @staticmethod
-    def annotate_heatmap(im, data=None, valfmt="{x:.2f}", textcolors=("black", "white"), threshold=None, **textkw):
+    def annotate_heatmap(
+        im: Any,
+        data: np.ndarray | None = None,
+        valfmt: str = "{x:.2f}",
+        textcolors: tuple[str, str] = ("black", "white"),
+        threshold: float | None = None,
+        **textkw: Any,
+    ) -> list[Any]:
         """A function to annotate a heatmap.
 
         Parameters
@@ -108,19 +125,16 @@ class Analysis:
             data = im.get_array()
 
         # Normalize the threshold to the images color range.
-        if threshold is not None:
-            threshold = im.norm(threshold)
-        else:
-            threshold = im.norm(data.max()) / 2.0
+        threshold = im.norm(threshold) if threshold is not None else im.norm(data.max()) / 2.0
 
         # Set default alignment to center, but allow it to be
         # overwritten by textkw.
-        kw = dict(horizontalalignment="center", verticalalignment="center")
+        kw = {"horizontalalignment": "center", "verticalalignment": "center"}
         kw.update(textkw)
 
         # Get the formatter in case a string is supplied
         if isinstance(valfmt, str):
-            valfmt = matplotlib.ticker.StrMethodFormatter(valfmt)
+            valfmt = mpl.ticker.StrMethodFormatter(valfmt)
 
         # Loop over the data and create a `Text` for each "pixel".
         # Change the text's color depending on the data.
@@ -146,7 +160,12 @@ class AnalysisPerformanceTune(Analysis):
         super().__init__()
         self.results = pd.read_csv(results_path)
 
-    def plot_metric_vs_iteration(self, metrics: list, figsize: tuple = (10, 10), output: str = None):
+    def plot_metric_vs_iteration(
+        self,
+        metrics: list,
+        figsize: tuple = (10, 10),
+        output: str | None = None
+    ) -> None:
         # create figure
         rows, cols = self.get_grid_shape(len(metrics))
         fig, axs = plt.subplots(rows, cols, figsize=figsize)

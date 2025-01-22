@@ -1,4 +1,3 @@
-from pathlib import Path
 
 import pytest
 import yaml
@@ -17,7 +16,6 @@ from stimulus.utils.yaml_data import (
     YamlTransform,
     YamlTransformColumns,
     YamlTransformColumnsTransformation,
-    dump_yaml_list_into_files,
     generate_data_configs,
 )
 

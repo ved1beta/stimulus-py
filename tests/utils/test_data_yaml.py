@@ -1,4 +1,3 @@
-from pathlib import Path
 
 import pytest
 import yaml
@@ -7,7 +6,6 @@ from src.stimulus.utils import yaml_data
 from src.stimulus.utils.yaml_data import (
     YamlConfigDict,
     YamlSubConfigDict,
-    dump_yaml_list_into_files,
     generate_data_configs,
 )
 
