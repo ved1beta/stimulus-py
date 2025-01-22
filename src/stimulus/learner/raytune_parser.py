@@ -1,3 +1,5 @@
+"""Ray Tune results parser for extracting and saving best model configurations and weights."""
+
 import json
 import os
 
@@ -7,14 +9,15 @@ from safetensors.torch import save_file as safe_save_file
 
 
 class TuneParser:
-    def __init__(self, results):
+    """Parser class for Ray Tune results to extract best configurations and model weights."""
+
+    def __init__(self, results: object) -> None:
         """`results` is the output of ray.tune."""
         self.results = results
 
     def get_best_config(self) -> dict:
         """Get the best config from the results."""
-        config = self.results.get_best_result().config
-        return config
+        return self.results.get_best_result().config
 
     def save_best_config(self, output: str) -> None:
         """Save the best config to a file.
@@ -26,8 +29,15 @@ class TuneParser:
         with open(output, "w") as f:
             json.dump(config, f, indent=4)
 
-    def fix_config_values(self, config):
-        """Correct config values."""
+    def fix_config_values(self, config: dict) -> dict:
+        """Correct config values.
+
+        Args:
+            config: Configuration dictionary to fix
+
+        Returns:
+            Fixed configuration dictionary
+        """
         # fix the model and experiment values to avoid problems with serialization
         # TODO this is a quick fix to avoid the problem with serializing class objects. maybe there is a better way.
         config["model"] = config["model"].__name__
