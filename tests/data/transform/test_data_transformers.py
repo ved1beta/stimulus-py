@@ -200,7 +200,7 @@ class TestGaussianChunk:
         """Test that the transform fails if chunk size is greater than the length of the input string."""
         test_data = request.getfixturevalue(test_data_name)
         transformer = GaussianChunk(chunk_size=100)
-        with pytest.raises(ValueError, match="Input data length must be greater than chunk size"):
+        with pytest.raises(ValueError, match="The input data is shorter than the chunk size"):
             transformer.transform(test_data.single_input)
 
 

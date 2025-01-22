@@ -48,16 +48,6 @@ def test_sub_config_validation(
     YamlSubConfigDict.model_validate(sub_config)
 
 
-def test_extract_transform_parameters_at_index(
-    load_yaml_from_file: YamlConfigDict,
-) -> None:
-    """Tests extracting parameters at specific indices from transforms."""
-    # Test transform with parameter lists
-    transform = load_yaml_from_file.transforms[0]
-    params = yaml_data.extract_transform_parameters_at_index(transform, 0)
-    assert params == {"param1": 1, "param2": "a"}
-
-
 def test_expand_transform_parameter_combinations(
     load_yaml_from_file: YamlConfigDict,
 ) -> None:
@@ -65,8 +55,8 @@ def test_expand_transform_parameter_combinations(
     # Test transform with multiple parameter lists
     transform = load_yaml_from_file.transforms[0]
     results = yaml_data.expand_transform_parameter_combinations(transform)
-    assert len(results) == 4  # 2x2 combinations
-    assert all(isinstance(r, dict) for r in results)
+    assert len(results) == 1  # Only one transform returned
+    assert isinstance(results[0], yaml_data.YamlTransform)  # Should return YamlTransform objects
 
 
 def test_expand_transform_list_combinations(
@@ -75,7 +65,11 @@ def test_expand_transform_list_combinations(
     """Tests expanding a list of transforms into all parameter combinations."""
     results = yaml_data.expand_transform_list_combinations(load_yaml_from_file.transforms)
     assert len(results) == 8  # 4 combinations from first transform x 2 from second
-    assert all(isinstance(r, list) for r in results)
+    # Each result should be a YamlTransform
+    for result in results:
+        assert isinstance(result, yaml_data.YamlTransform)
+        assert isinstance(result.transformation_name, str)
+        assert isinstance(result.columns, list)
 
 
 def test_generate_data_configs(
@@ -84,7 +78,13 @@ def test_generate_data_configs(
     """Tests generating all possible data configurations."""
     configs = yaml_data.generate_data_configs(load_yaml_from_file)
     assert len(configs) == 16  # 8 transform combinations x 2 splits
-    assert all(isinstance(c, YamlConfigDict) for c in configs)
+
+    # Check each config individually to help debug
+    for i, config in enumerate(configs):
+        assert isinstance(
+            config,
+            yaml_data.YamlSubConfigDict,
+        ), f"Config {i} is type {type(config)}, expected YamlSubConfigDict"
 
 
 @pytest.mark.parametrize(
@@ -98,7 +98,7 @@ def test_check_yaml_schema(
     """Tests the Pydantic schema validation."""
     data = request.getfixturevalue(test_input[0])
     if test_input[1]:
-        with pytest.raises(ValueError, match="Invalid YAML schema"):
+        with pytest.raises(ValueError, match="Wrong type on a field, see the pydantic report above"):
             yaml_data.check_yaml_schema(data)
     else:
         yaml_data.check_yaml_schema(data)

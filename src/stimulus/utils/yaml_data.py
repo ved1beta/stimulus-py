@@ -278,9 +278,9 @@ def dump_yaml_list_into_files(
             if len(self.indents) <= 1:  # At root level
                 super().write_line_break(data)
 
-        def increase_indent(self, *, flow: bool = False) -> bool:
+        def increase_indent(self, *, flow: bool = False, indentless: bool = False) -> bool:
             """Ensure consistent indentation by preventing indentless sequences."""
-            return super().increase_indent(flow=flow, indentless=False)
+            return super().increase_indent(flow=flow, indentless=indentless)
 
     # Register the custom representers with our dumper
     yaml.add_representer(type(None), represent_none, Dumper=CustomDumper)

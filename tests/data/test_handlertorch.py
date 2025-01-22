@@ -6,6 +6,7 @@ import pytest
 import yaml
 
 from stimulus.data import experiments, handlertorch
+from stimulus.utils import yaml_data
 
 
 @pytest.fixture
@@ -39,11 +40,11 @@ def titanic_yaml_config(titanic_config_path: str) -> dict:
         dict: Loaded YAML configuration
     """
     with open(titanic_config_path) as file:
-        return yaml.safe_load(file)
+        return yaml_data.YamlSubConfigDict(**yaml.safe_load(file))
 
 
 @pytest.fixture
-def titanic_encoder_loader(titanic_yaml_config: dict) -> experiments.EncoderLoader:
+def titanic_encoder_loader(titanic_yaml_config: yaml_data.YamlSubConfigDict) -> experiments.EncoderLoader:
     """Get Titanic encoder loader."""
     loader = experiments.EncoderLoader()
     loader.initialize_column_encoders_from_config(titanic_yaml_config.columns)
