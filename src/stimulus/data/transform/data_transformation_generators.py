@@ -28,7 +28,8 @@ class AbstractDataTransformer(ABC):
         transform_all: transforms a list of data points
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the data transformer."""
         self.add_row = None
         self.seed = 42
 
@@ -69,7 +70,8 @@ class AbstractNoiseGenerator(AbstractDataTransformer):
     All noise function should have the seed in it. This is because the multiprocessing of them could unset the seed.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the noise generator."""
         super().__init__()
         self.add_row = False
 
@@ -80,7 +82,8 @@ class AbstractAugmentationGenerator(AbstractDataTransformer):
     All augmentation function should have the seed in it. This is because the multiprocessing of them could unset the seed.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the augmentation generator."""
         super().__init__()
         self.add_row = True
 
@@ -96,6 +99,13 @@ class UniformTextMasker(AbstractNoiseGenerator):
     """
 
     def __init__(self, probability: float = 0.1, mask: str = "*", seed: float = 42) -> None:
+        """Initialize the text masker.
+
+        Args:
+            probability: Probability of masking each character
+            mask: Character to use for masking
+            seed: Random seed for reproducibility
+        """
         super().__init__()
         self.probability = probability
         self.mask = mask
@@ -124,12 +134,12 @@ class UniformTextMasker(AbstractNoiseGenerator):
             transformed_data (list): the transformed data points
         """
         with mp.Pool(mp.cpu_count()) as pool:
-            function_specific_input = [(item) for item in data]
+            function_specific_input = list(data)
             return pool.starmap(self.transform, function_specific_input)
 
 
 class GaussianNoise(AbstractNoiseGenerator):
-    """Add Gaussian noise to data
+    """Add Gaussian noise to data.
 
     This noise generator adds Gaussian noise to float values.
 
@@ -139,6 +149,13 @@ class GaussianNoise(AbstractNoiseGenerator):
     """
 
     def __init__(self, mean: float = 0, std: float = 1, seed: float = 42) -> None:
+        """Initialize the Gaussian noise generator.
+
+        Args:
+            mean: Mean of the Gaussian noise
+            std: Standard deviation of the Gaussian noise
+            seed: Random seed for reproducibility
+        """
         super().__init__()
         self.mean = mean
         self.std = std
@@ -157,7 +174,7 @@ class GaussianNoise(AbstractNoiseGenerator):
         return data + np.random.normal(self.mean, self.std)
 
     def transform_all(self, data: list) -> np.array:
-        """Adds Gaussian noise to a list of data points
+        """Adds Gaussian noise to a list of data points.
 
         Args:
             data (list): the data to be transformed
@@ -170,7 +187,7 @@ class GaussianNoise(AbstractNoiseGenerator):
 
 
 class ReverseComplement(AbstractAugmentationGenerator):
-    """Reverse complement biological sequences
+    """Reverse complement biological sequences.
 
     This augmentation strategy reverse complements the input nucleotide sequences.
 
@@ -182,15 +199,20 @@ class ReverseComplement(AbstractAugmentationGenerator):
         ValueError: if the type of the sequence is not DNA or RNA
     """
 
-    def __init__(self, type: str = "DNA") -> None:
+    def __init__(self, sequence_type: str = "DNA") -> None:
+        """Initialize the reverse complement generator.
+
+        Args:
+            sequence_type: Type of sequence ('DNA' or 'RNA')
+        """
         super().__init__()
-        if type not in ("DNA", "RNA"):
+        if sequence_type not in ("DNA", "RNA"):
             raise ValueError(
                 "Currently only DNA and RNA sequences are supported. Update the class ReverseComplement to support other types.",
             )
-        if type == "DNA":
+        if sequence_type == "DNA":
             self.complement_mapping = str.maketrans("ATCG", "TAGC")
-        elif type == "RNA":
+        elif sequence_type == "RNA":
             self.complement_mapping = str.maketrans("AUCG", "UAGC")
 
     def transform(self, data: str) -> str:
@@ -214,12 +236,12 @@ class ReverseComplement(AbstractAugmentationGenerator):
             transformed_data (list): the reverse complement of the sequences
         """
         with mp.Pool(mp.cpu_count()) as pool:
-            function_specific_input = [(item) for item in data]
+            function_specific_input = list(data)
             return pool.map(self.transform, function_specific_input)
 
 
 class GaussianChunk(AbstractAugmentationGenerator):
-    """Subset data around a random midpoint
+    """Subset data around a random midpoint.
 
     This augmentation strategy chunks the input sequences, for which the middle positions are obtained through a gaussian distribution.
 
@@ -233,6 +255,13 @@ class GaussianChunk(AbstractAugmentationGenerator):
     """
 
     def __init__(self, chunk_size: int, seed: float = 42, std: float = 1) -> None:
+        """Initialize the Gaussian chunk generator.
+
+        Args:
+            chunk_size: Size of chunks to extract
+            seed: Random seed for reproducibility
+            std: Standard deviation for the Gaussian distribution
+        """
         super().__init__()
         self.chunk_size = chunk_size
         self.seed = seed
@@ -256,7 +285,8 @@ class GaussianChunk(AbstractAugmentationGenerator):
         np.random.seed(self.seed)
 
         # make sure that the data is longer than chunk_size otherwise raise an error
-        assert len(data) > self.chunk_size, "The input data is shorter than the chunk size"
+        if len(data) <= self.chunk_size:
+            raise ValueError("The input data is shorter than the chunk size")
 
         # Get the middle position of the input sequence
         middle_position = len(data) // 2
@@ -290,5 +320,5 @@ class GaussianChunk(AbstractAugmentationGenerator):
             transformed_data (list): the transformed sequences
         """
         with mp.Pool(mp.cpu_count()) as pool:
-            function_specific_input = [(item) for item in data]
+            function_specific_input = list(data)
             return pool.starmap(self.transform, function_specific_input)

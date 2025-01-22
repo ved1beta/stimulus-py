@@ -1,10 +1,13 @@
-"""This file contains the splitter classes for splitting data accordingly"""
+"""This file contains the splitter classes for splitting data accordingly."""
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import polars as pl
+
+# Constants
+SPLIT_SIZE = 3  # Number of splits (train/val/test)
 
 
 class AbstractSplitter(ABC):
@@ -18,6 +21,11 @@ class AbstractSplitter(ABC):
     """
 
     def __init__(self, seed: float = 42) -> None:
+        """Initialize the splitter.
+
+        Args:
+            seed: Random seed for reproducibility
+        """
         self.seed = seed
 
     @abstractmethod
@@ -53,11 +61,17 @@ class AbstractSplitter(ABC):
 class RandomSplit(AbstractSplitter):
     """This splitter randomly splits the data."""
 
-    def __init__(self, split: list = [0.7, 0.2, 0.1], seed: float = None) -> None:
+    def __init__(self, split: Optional[list] = None, seed: Optional[float] = None) -> None:
+        """Initialize the random splitter.
+
+        Args:
+            split: List of proportions for train/val/test splits
+            seed: Random seed for reproducibility
+        """
         super().__init__()
-        self.split = split
+        self.split = [0.7, 0.2, 0.1] if split is None else split
         self.seed = seed
-        if len(self.split) != 3:
+        if len(self.split) != SPLIT_SIZE:
             raise ValueError(
                 "The split argument should be a list with length 3 that contains the proportions for [train, validation, test] splits.",
             )
@@ -107,6 +121,14 @@ class RandomSplit(AbstractSplitter):
 
         return train, validation, test
 
-    def distance(self) -> float:
-        """ """
-        NotImplemented
+    def distance(self, data_one: Any, data_two: Any) -> float:
+        """Calculate distance between two data points.
+
+        Args:
+            data_one: First data point
+            data_two: Second data point
+
+        Returns:
+            Distance between the points
+        """
+        raise NotImplementedError
