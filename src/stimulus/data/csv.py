@@ -2,7 +2,7 @@
 
 The module contains three main classes:
 - DatasetHandler: Base class for loading and managing CSV data
-- DatasetProcessor: Class for preprocessing data with transformations and splits 
+- DatasetProcessor: Class for preprocessing data with transformations and splits
 - DatasetLoader: Class for loading processed data for model training
 
 The data format consists of:
@@ -15,14 +15,14 @@ The data format consists of:
 
 The data handling pipeline consists of:
 1. Loading raw CSV data according to the YAML config
-2. Applying configured transformations 
+2. Applying configured transformations
 3. Splitting into train/val/test sets based on config
 4. Encoding data for model training using specified encoders
 
 See titanic.yaml in tests/test_data/titanic/ for an example configuration file format.
 """
 
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import polars as pl
@@ -52,6 +52,7 @@ class DatasetManager:
         self,
         config_path: str,
     ) -> None:
+        """Initialize the DatasetManager."""
         self.config = self._load_config(config_path)
         self.column_categories = self.categorize_columns_by_type()
 
@@ -120,7 +121,7 @@ class DatasetManager:
         Returns a dictionary in the following structure :
         {
             "transformation_name": str,
-            "transformations": list[Tuple[str, str, dict]]
+            "transformations": list[tuple[str, str, dict]]
         }
         """
         transformation_logic = {
@@ -158,7 +159,7 @@ class EncodeManager:
         self,
         encoder_loader: experiments.EncoderLoader,
     ) -> None:
-        """Initializes the EncodeManager.
+        """Initialize the EncodeManager.
 
         Args:
             encoder_loader: Loader that provides encoders based on configuration.
@@ -220,9 +221,10 @@ class TransformManager:
         self,
         transform_loader: experiments.TransformLoader,
     ) -> None:
+        """Initialize the TransformManager."""
         self.transform_loader = transform_loader
 
-    def transform_column(self, column_name: str, transform_name: str, column_data: list) -> Tuple[list, bool]:
+    def transform_column(self, column_name: str, transform_name: str, column_data: list) -> tuple[list, bool]:
         """Transform a column of data using the specified transformation.
 
         Args:
@@ -245,9 +247,10 @@ class SplitManager:
         self,
         split_loader: experiments.SplitLoader,
     ) -> None:
+        """Initialize the SplitManager."""
         self.split_loader = split_loader
 
-    def get_split_indices(self, data: dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def get_split_indices(self, data: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get the indices for train, validation, and test splits."""
         return self.split_loader.get_function_split()(data)
 
@@ -293,8 +296,7 @@ class DatasetHandler:
             list: List of column names from the CSV header.
         """
         with open(csv_path) as f:
-            header = f.readline().strip().split(",")
-        return header
+            return f.readline().strip().split(",")
 
     def select_columns(self, columns: list) -> dict:
         """Select specific columns from the DataFrame and return as a dictionary.
@@ -333,10 +335,12 @@ class DatasetProcessor(DatasetHandler):
     """Class for loading dataset, applying transformations and splitting."""
 
     def __init__(self, config_path: str, csv_path: str) -> None:
+        """Initialize the DatasetProcessor."""
         super().__init__(config_path, csv_path)
 
-    def add_split(self, split_manager: SplitManager, force=False) -> None:
+    def add_split(self, split_manager: SplitManager, *, force: bool = False) -> None:
         """Add a column specifying the train, validation, test splits of the data.
+
         An error exception is raised if the split column is already present in the csv file. This behaviour can be overriden by setting force=True.
 
         Args:
@@ -368,9 +372,11 @@ class DatasetProcessor(DatasetHandler):
 
     def apply_transformation_group(self, transform_manager: TransformManager) -> None:
         """Apply the transformation group to the data."""
-        for column_name, transform_name, params in self.dataset_manager.get_transform_logic()["transformations"]:
+        for column_name, transform_name, _params in self.dataset_manager.get_transform_logic()["transformations"]:
             transformed_data, add_row = transform_manager.transform_column(
-                column_name, transform_name, self.data[column_name]
+                column_name,
+                transform_name,
+                self.data[column_name],
             )
             if add_row:
                 new_rows = self.data.with_columns(pl.Series(column_name, transformed_data))
@@ -378,7 +384,7 @@ class DatasetProcessor(DatasetHandler):
             else:
                 self.data = self.data.with_columns(pl.Series(column_name, transformed_data))
 
-    def shuffle_labels(self, seed: float = None) -> None:
+    def shuffle_labels(self, seed: Optional[float] = None) -> None:
         """Shuffles the labels in the data."""
         # set the np seed
         np.random.seed(seed)
@@ -392,8 +398,13 @@ class DatasetLoader(DatasetHandler):
     """Class for loading dataset and passing it to the deep learning model."""
 
     def __init__(
-        self, config_path: str, csv_path: str, encoder_loader: experiments.EncoderLoader, split: Union[int, None] = None
+        self,
+        config_path: str,
+        csv_path: str,
+        encoder_loader: experiments.EncoderLoader,
+        split: Union[int, None] = None,
     ) -> None:
+        """Initialize the DatasetLoader."""
         super().__init__(config_path, csv_path)
         self.encoder_manager = EncodeManager(encoder_loader)
         self.data = self.load_csv_per_split(csv_path, split) if split is not None else self.load_csv(csv_path)
@@ -433,6 +444,7 @@ class DatasetLoader(DatasetHandler):
 
     def load_csv_per_split(self, csv_path: str, split: int) -> pl.DataFrame:
         """Load the part of csv file that has the specified split value.
+
         Split is a number that for 0 is train, 1 is validation, 2 is test.
         This is accessed through the column with category `split`. Example column name could be `split:split:int`.
 
@@ -446,11 +458,11 @@ class DatasetLoader(DatasetHandler):
         return pl.scan_csv(csv_path).filter(pl.col("split") == split).collect()
 
     def __len__(self) -> int:
-        """Returns the length of the first list in input, assumes that all are the same length"""
+        """Return the length of the first list in input, assumes that all are the same length."""
         return len(self.data)
 
     def __getitem__(self, idx: Any) -> dict:
-        """It gets the data at a given index, and encodes the input and label, leaving meta as it is.
+        """Get the data at a given index, and encodes the input and label, leaving meta as it is.
 
         Args:
             idx: The index of the data to be returned, it can be a single index, a list of indexes or a slice

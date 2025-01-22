@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 import yaml
 
@@ -7,7 +5,6 @@ from src.stimulus.utils import yaml_data
 from src.stimulus.utils.yaml_data import (
     YamlConfigDict,
     YamlSubConfigDict,
-    dump_yaml_list_into_files,
     generate_data_configs,
 )
 
@@ -96,6 +93,7 @@ def test_generate_data_configs(load_yaml_from_file):
         assert isinstance(config, YamlSubConfigDict)
         assert config.global_params == load_yaml_from_file.global_params
         assert config.columns == load_yaml_from_file.columns
+
 
 @pytest.mark.parametrize("test_input", [("load_yaml_from_file", False), ("load_wrong_type_yaml", True)])
 def test_check_yaml_schema(request, test_input):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""CLI module for transforming CSV data files."""
 
 import argparse
 import json
@@ -7,8 +8,8 @@ from stimulus.data.csv import CsvProcessing
 from stimulus.utils.launch_utils import get_experiment
 
 
-def get_args():
-    """Get the arguments when using from the commandline"""
+def get_args() -> argparse.Namespace:
+    """Get the arguments when using from the commandline."""
     parser = argparse.ArgumentParser(description="")
     parser.add_argument(
         "-c",
@@ -35,12 +36,13 @@ def get_args():
         help="The output file path to write the noised csv",
     )
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
-def main(data_csv, config_json, out_path):
-    """This launcher will be the connection between the csv and one json configuration.
+def main(data_csv: str, config_json: str, out_path: str) -> None:
+    """Connect CSV and JSON configuration and handle sanity checks.
+
+    This launcher will be the connection between the csv and one json configuration.
     It should also handle some sanity checks.
     """
     # open and read Json
@@ -63,7 +65,8 @@ def main(data_csv, config_json, out_path):
     csv_obj.save(out_path)
 
 
-def run():
+def run() -> None:
+    """Run the CSV transformation script."""
     args = get_args()
     main(args.csv, args.json, args.output)
 

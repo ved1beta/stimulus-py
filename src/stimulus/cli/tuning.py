@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
+"""CLI module for tuning model hyperparameters using Ray Tune.
+
+This module provides functionality to tune hyperparameters of machine learning models
+using Ray Tune. It supports configuring resources like GPUs/CPUs, saving best models
+and metrics, and debugging capabilities.
+"""
 
 import argparse
 import json
 import os
+from typing import Optional
 
 import yaml
 from torch.utils.data import DataLoader
@@ -14,8 +21,8 @@ from stimulus.learner.raytune_parser import TuneParser as StimulusTuneParser
 from stimulus.utils.launch_utils import get_experiment, import_class_from_file, memory_split_for_ray_init
 
 
-def get_args():
-    """Get the arguments when using from the commandline"""
+def get_args() -> argparse.Namespace:
+    """Get the arguments when using from the commandline."""
     parser = argparse.ArgumentParser(description="")
     parser.add_argument(
         "-c",
@@ -151,9 +158,7 @@ def get_args():
         help="activate debug mode for tuning. default false, no debug.",
     )
 
-    args = parser.parse_args()
-
-    return args
+    return parser.parse_args()
 
 
 def main(
@@ -165,13 +170,14 @@ def main(
     best_config_path: str,
     best_metrics_path: str,
     best_optimizer_path: str,
-    initial_weights_path: str = None,
-    gpus: int = None,
-    cpus: int = None,
-    memory: str = None,
-    ray_results_dirpath: str = None,
-    tune_run_name: str = None,
-    _debug_mode: str = False,
+    initial_weights_path: Optional[str] = None,
+    gpus: Optional[int] = None,
+    cpus: Optional[int] = None,
+    memory: Optional[str] = None,
+    ray_results_dirpath: Optional[str] = None,
+    tune_run_name: Optional[str] = None,
+    *,
+    debug_mode: bool = False,
 ) -> None:
     """This launcher use ray tune to find the best hyperparameters for a given model."""
     # TODO update to yaml the experiment config
@@ -216,7 +222,7 @@ def main(
         max_mem=mem,
         ray_results_dir=ray_results_dirpath,
         tune_run_name=tune_run_name,
-        _debug=_debug_mode,
+        _debug=debug_mode,
     )
 
     # Tune the model and get the tuning results
@@ -230,7 +236,7 @@ def main(
     results.save_best_optimizer(best_optimizer_path)
 
     # debug section. predict the validation data using the best model.
-    if _debug_mode:
+    if debug_mode:
         # imitialize the model class with the respective tune parameters from the associated config
         best_tune_config = results.get_best_config()
         best_model = model_class(**best_tune_config["model_params"])
@@ -252,7 +258,8 @@ def main(
             seed_f.write(str(best_tune_config["ray_worker_seed"]))
 
 
-def run():
+def run() -> None:
+    """Run the model tuning script."""
     args = get_args()
     main(
         args.config,
@@ -269,7 +276,7 @@ def run():
         args.memory,
         args.ray_results_dirpath,
         args.tune_run_name,
-        args.debug_mode,
+        debug_mode=args.debug_mode,
     )
 
 

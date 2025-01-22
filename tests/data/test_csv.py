@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 import yaml
 
@@ -17,7 +15,6 @@ from stimulus.utils.yaml_data import (
     YamlTransform,
     YamlTransformColumns,
     YamlTransformColumnsTransformation,
-    dump_yaml_list_into_files,
     generate_data_configs,
 )
 
@@ -150,7 +147,7 @@ def test_transform_manager_transform_column():
             YamlTransformColumns(
                 column_name="test_col",
                 transformations=[YamlTransformColumnsTransformation(name="GaussianNoise", params={"std": 0.1})],
-            )
+            ),
         ],
     )
     transform_loader.initialize_column_data_transformers_from_config(dummy_config)

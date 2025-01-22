@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+"""CLI module for model prediction on datasets."""
 
 import argparse
 import json
-from typing import Tuple
+from collections.abc import Sequence
+from typing import Any
 
 import polars as pl
 import torch
@@ -13,18 +15,22 @@ from stimulus.learner.predict import PredictWrapper
 from stimulus.utils.launch_utils import get_experiment, import_class_from_file
 
 
-def get_args():
-    """Get the arguments when using from the commandline"""
-    parser = argparse.ArgumentParser(description="Predict the output of a model on a dataset.")
-    parser.add_argument("-m", "--model", type=str, required=True, metavar="FILE", help="The model .py file")
-    parser.add_argument("-w", "--weight", type=str, required=True, metavar="FILE", help="Model weights .pt file")
+def get_args() -> argparse.Namespace:
+    """Parse command line arguments.
+
+    Returns:
+        Parsed command line arguments.
+    """
+    parser = argparse.ArgumentParser(description="Predict model outputs on a dataset.")
+    parser.add_argument("-m", "--model", type=str, required=True, metavar="FILE", help="Path to model .py file.")
+    parser.add_argument("-w", "--weight", type=str, required=True, metavar="FILE", help="Path to model weights file.")
     parser.add_argument(
         "-mc",
         "--model_config",
         type=str,
         required=True,
         metavar="FILE",
-        help="The tune config file with the model hyperparameters.",
+        help="Path to tune config file with model hyperparameters.",
     )
     parser.add_argument(
         "-ec",
@@ -32,60 +38,65 @@ def get_args():
         type=str,
         required=True,
         metavar="FILE",
-        help="The experiment config used to modify the data.",
+        help="Path to experiment config for data modification.",
     )
-    parser.add_argument("-d", "--data", type=str, required=True, metavar="FILE", help="Input data")
-    parser.add_argument("-o", "--output", type=str, required=True, metavar="FILE", help="output predictions csv file")
-    parser.add_argument("--split", type=int, help="The split of the data to use (default: None)")
-    parser.add_argument("--return_labels", action="store_true", help="return the labels with the prediction")
+    parser.add_argument("-d", "--data", type=str, required=True, metavar="FILE", help="Path to input data.")
+    parser.add_argument("-o", "--output", type=str, required=True, metavar="FILE", help="Path for output predictions.")
+    parser.add_argument("--split", type=int, help="Data split to use (default: None).")
+    parser.add_argument("--return_labels", action="store_true", help="Include labels with predictions.")
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
-def load_model(model_class: object, weight_path: str, mconfig: dict) -> object:
-    """Load the model with its hyperparameters and weights."""
+def load_model(model_class: Any, weight_path: str, mconfig: dict[str, Any]) -> Any:
+    """Load model with hyperparameters and weights.
+
+    Args:
+        model_class: Model class to instantiate.
+        weight_path: Path to model weights.
+        mconfig: Model configuration dictionary.
+
+    Returns:
+        Loaded model instance.
+    """
     hyperparameters = mconfig["model_params"]
     model = model_class(**hyperparameters)
     model.load_state_dict(torch.load(weight_path))
     return model
 
 
-def get_batch_size(mconfig: dict) -> int:
-    """Get the batch size from the model tune config dict.
+def get_batch_size(mconfig: dict[str, Any]) -> int:
+    """Get batch size from model config.
 
-    If batch_size in model config, use it.
-    Otherwise use the default of 256.
+    Args:
+        mconfig: Model configuration dictionary.
 
-    TODO not sure how much this batch size is gonna
-    affect the computation of forward prediction.
-    For the moment, just set to this.
+    Returns:
+        Batch size to use for predictions.
     """
-    batch_size = 256  # TODO: set batch_size in a global parameter
-    if "data_params" in mconfig:
-        if "batch_size" in mconfig["data_params"]:
-            batch_size = mconfig["data_params"]["batch_size"]
-    return batch_size
+    default_batch_size = 256
+    if "data_params" in mconfig and "batch_size" in mconfig["data_params"]:
+        return mconfig["data_params"]["batch_size"]
+    return default_batch_size
 
 
-def parse_y_keys(y: dict, data: pl.DataFrame, y_type="pred"):
-    """Parse the keys of the y dictionary.
+def parse_y_keys(y: dict[str, Any], data: pl.DataFrame, y_type: str = "pred") -> dict[str, Any]:
+    """Parse dictionary keys to match input data format.
 
-    Basically, it replaces the keys of the y dictionary with the keys of the input data.
-    such as 'binding' by 'binding:pred:float' or 'binding:label:float'
+    Args:
+        y: Dictionary of predictions or labels.
+        data: Input DataFrame.
+        y_type: Type of values ('pred' or 'label').
+
+    Returns:
+        Dictionary with updated keys.
     """
-    # return if empty
-    if len(y) == 0:
+    if not y:
         return y
 
-    # get the keys
-    keys_y = y.keys()
-    keys_data = data.columns
-
-    # parse the dictionary with the new keys
     parsed_y = {}
-    for k1 in keys_y:
-        for k2 in keys_data:
+    for k1 in y:
+        for k2 in data.columns:
             if k1 == k2.split(":")[0]:
                 new_key = f"{k1}:{y_type}:{k2.split(':')[2]}"
                 parsed_y[new_key] = y[k1]
@@ -93,28 +104,32 @@ def parse_y_keys(y: dict, data: pl.DataFrame, y_type="pred"):
     return parsed_y
 
 
-def add_meta_info(data: pl.DataFrame, y: dict):
-    """Add the meta columns to the dictionary of predictions and labels.
-    In this way the output file can also contain the meta information.
-    """
-    # get meta keys
-    keys = get_meta_keys(data.columns)
+def add_meta_info(data: pl.DataFrame, y: dict[str, Any]) -> dict[str, Any]:
+    """Add metadata columns to predictions/labels dictionary.
 
-    # add meta info
+    Args:
+        data: Input DataFrame with metadata.
+        y: Dictionary of predictions/labels.
+
+    Returns:
+        Updated dictionary with metadata.
+    """
+    keys = get_meta_keys(data.columns)
     for key in keys:
         y[key] = data[key].to_list()
-
     return y
 
 
-def get_meta_keys(names: list):
-    """Get the `meta` column keys."""
-    keys = []
-    for name in names:
-        fields = name.split(":")
-        if fields[1] == "meta":
-            keys.append(name)
-    return keys
+def get_meta_keys(names: Sequence[str]) -> list[str]:
+    """Extract metadata column keys.
+
+    Args:
+        names: List of column names.
+
+    Returns:
+        List of metadata column keys.
+    """
+    return [name for name in names if name.split(":")[1] == "meta"]
 
 
 def main(
@@ -124,57 +139,56 @@ def main(
     econfig_path: str,
     data_path: str,
     output: str,
+    *,
     return_labels: bool,
-    split: Tuple[None, int],
+    split: int | None,
 ) -> None:
-    # load tune output config into dictionary
+    """Run model prediction pipeline.
+
+    Args:
+        model_path: Path to model file.
+        weight_path: Path to model weights.
+        mconfig_path: Path to model config.
+        econfig_path: Path to experiment config.
+        data_path: Path to input data.
+        output: Path for output predictions.
+        return_labels: Whether to include labels.
+        split: Data split to use.
+    """
     with open(mconfig_path) as in_json:
         mconfig = json.load(in_json)
 
-    # load model
     model_class = import_class_from_file(model_path)
     model = load_model(model_class, weight_path, mconfig)
 
-    # read experiment config and retrieve experiment name and then initialize the experiment class
     with open(econfig_path) as in_json:
-        d = json.load(in_json)
-        experiment_name = d["experiment"]
+        experiment_name = json.load(in_json)["experiment"]
     initialized_experiment_class = get_experiment(experiment_name)
 
-    # load and encode data into dataloder
     dataloader = DataLoader(
         TorchDataset(data_path, initialized_experiment_class, split=split),
         batch_size=get_batch_size(mconfig),
         shuffle=False,
     )
 
-    # predict
     out = PredictWrapper(model, dataloader).predict(return_labels=return_labels)
-    if return_labels:
-        y_pred, y_true = out
-    else:
-        y_pred, y_true = out, {}
+    y_pred, y_true = out if return_labels else (out, {})
 
-    # conver tensors to list
-    # otherwise polars cannot process this dictionary properly later when converting it into data frame
     y_pred = {k: v.tolist() for k, v in y_pred.items()}
     y_true = {k: v.tolist() for k, v in y_true.items()}
 
-    # make the keys coherent with the columns from input data csv
     data = pl.read_csv(data_path)
     y_pred = parse_y_keys(y_pred, data, y_type="pred")
     y_true = parse_y_keys(y_true, data, y_type="label")
 
-    # parse predictions, labels and meta info into a data frame
     y = {**y_pred, **y_true}
     y = add_meta_info(data, y)
     df = pl.from_dict(y)
-
-    # save output
     df.write_csv(output)
 
 
-def run():
+def run() -> None:
+    """Execute model prediction pipeline."""
     args = get_args()
     main(
         args.model,
@@ -183,8 +197,8 @@ def run():
         args.experiment_config,
         args.data,
         args.output,
-        args.return_labels,
-        args.split,
+        return_labels=args.return_labels,
+        split=args.split,
     )
 
 

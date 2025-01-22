@@ -1,7 +1,10 @@
+"""Ray Tune wrapper and trainable model classes for hyperparameter optimization."""
+
 import datetime
+import logging
 import os
 import random
-from typing import Tuple
+from typing import Optional, tuple
 
 import numpy as np
 import torch
@@ -12,26 +15,29 @@ from safetensors.torch import save_model as safe_save_model
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
-from ..data.handlertorch import TorchDataset
-from ..utils.generic_utils import set_general_seeds
-from ..utils.yaml_model_schema import YamlRayConfigLoader
-from .predict import PredictWrapper
+from stimulus.data.handlertorch import TorchDataset
+from stimulus.learner.predict import PredictWrapper
+from stimulus.utils.generic_utils import set_general_seeds
+from stimulus.utils.yaml_model_schema import YamlRayConfigLoader
 
 
 class TuneWrapper:
+    """Wrapper class for Ray Tune hyperparameter optimization."""
+
     def __init__(
         self,
         config_path: str,
         model_class: nn.Module,
         data_path: str,
         experiment_object: object,
-        max_gpus: int = None,
-        max_cpus: int = None,
-        max_object_store_mem: float = None,
-        max_mem: float = None,
-        ray_results_dir: str = None,
-        tune_run_name: str = None,
-        _debug: str = False,
+        max_gpus: Optional[int] = None,
+        max_cpus: Optional[int] = None,
+        max_object_store_mem: Optional[float] = None,
+        max_mem: Optional[float] = None,
+        ray_results_dir: Optional[str] = None,
+        tune_run_name: Optional[str] = None,
+        *,  # Force debug to be keyword-only
+        debug: bool = False,
     ) -> None:
         """Initialize the TuneWrapper with the paths to the config, model, and data."""
         self.config = YamlRayConfigLoader(config_path).get_config()
@@ -66,7 +72,7 @@ class TuneWrapper:
         self.checkpoint_config = train.CheckpointConfig(checkpoint_at_end=True)  # TODO implement checkpoiting
         # in case a custom name was not given for tune_run_name, build it like ray would do. to later pass it on the worker for the debug section.
         if tune_run_name is None:
-            tune_run_name = "TuneModel_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            tune_run_name = "TuneModel_" + datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
         self.run_config = train.RunConfig(
             name=tune_run_name,
             storage_path=ray_results_dir,
@@ -82,7 +88,7 @@ class TuneWrapper:
 
         # pass the debug flag to the config taken fromn tune so it can be used inside the setup of the trainable
         self.config["_debug"] = False
-        if _debug:
+        if debug:
             self.config["_debug"] = True
 
         self.tuner = self.tuner_initialization()
@@ -102,13 +108,13 @@ class TuneWrapper:
             _memory=self.max_mem,
         )
 
-        print("CLUSTER resources   ->  ", cluster_resources())
+        logging.info(f"CLUSTER resources   ->  {cluster_resources()}")
 
         # check if resources per trial are not exceeding maximum resources. traial = single set/combination of hyperparameter (parrallel actors maximum resources in ray tune gergon).
         self.gpu_per_trial = self._chek_per_trial_resources("gpu_per_trial", cluster_resources(), "GPU")
         self.cpu_per_trial = self._chek_per_trial_resources("cpu_per_trial", cluster_resources(), "CPU")
 
-        print("PER_TRIAL resources ->  GPU:", self.gpu_per_trial, "CPU:", self.cpu_per_trial)
+        logging.info(f"PER_TRIAL resources ->  GPU: {self.gpu_per_trial} CPU: {self.cpu_per_trial}")
 
         # wrap the trainable with the allowed resources per trial
         # also provide the training and validation data to the trainable through with_parameters
@@ -131,15 +137,16 @@ class TuneWrapper:
         resurce_key: str,
         cluster_max_resources: dict,
         resource_type: str,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Helper function that check that user requested per trial resources are not exceeding the available resources for the ray cluster.
+
         If the per trial resources are not asked they are set to a default resoanable ammount.
 
         resurce_key:            str object          the key used to look into the self.config["tune"]
         cluster_max_resources:  dict object         the output of the ray.cluster_resources() function. It hold what ray has found to be the available resources for CPU, GPU and Memory
         resource_type:          str object          the key used to llok into the cluster_resources dict
         """
-        if resource_type == "GPU" and resource_type not in cluster_resources().keys():
+        if resource_type == "GPU" and resource_type not in cluster_resources():
             # ray does not have a GPU field also if GPUs were set to zero. So trial GPU resources have to be set to zero.
             if self.max_gpus == 0:
                 return 0.0
@@ -151,36 +158,31 @@ class TuneWrapper:
         per_trial_resource = None
         # if everything is alright, leave the value as it is.
         if (
-            resurce_key in self.config["tune"].keys()
+            resurce_key in self.config["tune"]
             and self.config["tune"][resurce_key] <= cluster_max_resources[resource_type]
         ):
             per_trial_resource = self.config["tune"][resurce_key]
 
         # if per_trial_resource are more than what is avaialble to ray set them to what is available and warn the user
         elif (
-            resurce_key in self.config["tune"].keys()
+            resurce_key in self.config["tune"]
             and self.config["tune"][resurce_key] > cluster_max_resources[resource_type]
         ):
             # TODO write a better warning
-            print(
-                "\n\n####   WARNING  - ",
-                resource_type,
-                "per trial are more than what is available.",
-                resource_type,
-                " per trial :",
-                self.config["tune"][resurce_key],
-                "available :",
-                cluster_max_resources[resource_type],
-                "overwrting value to max avaialable",
+            logging.warning(
+                f"\n\n####   WARNING  - {resource_type} per trial are more than what is available. "
+                f"{resource_type} per trial: {self.config['tune'][resurce_key]} "
+                f"available: {cluster_max_resources[resource_type]} "
+                "overwriting value to max available",
             )
             per_trial_resource = cluster_max_resources[resource_type]
 
         # if per_trial_resource has not been asked and there is none available set them to zero
-        elif resurce_key not in self.config["tune"].keys() and cluster_max_resources[resource_type] == 0.0:
+        elif resurce_key not in self.config["tune"] and cluster_max_resources[resource_type] == 0.0:
             per_trial_resource = 0
 
         # if per_trial_resource has not been asked and the resource is available set the value to either 1 or number_available resource / num_samples
-        elif resurce_key not in self.config["tune"].keys() and cluster_max_resources[resource_type] != 0.0:
+        elif resurce_key not in self.config["tune"] and cluster_max_resources[resource_type] != 0.0:
             # TODO maybe set the default to 0.5 instead of 1 ? fractional use in case of GPU? Should this be a mandatory parameter?
             per_trial_resource = max(
                 1,
@@ -191,6 +193,8 @@ class TuneWrapper:
 
 
 class TuneModel(Trainable):
+    """Trainable model class for Ray Tune."""
+
     def setup(self, config: dict, training: object, validation: object) -> None:
         """Get the model, loss function(s), optimizer, train and test data from the config."""
         # set the seeds the second time, first in TuneWrapper initialization. This will make all important seed worker specific.
@@ -209,10 +213,10 @@ class TuneModel(Trainable):
         for key, loss_fn in self.loss_dict.items():
             try:
                 self.loss_dict[key] = getattr(nn, loss_fn)()
-            except AttributeError:
+            except AttributeError as err:
                 raise ValueError(
                     f"Invalid loss function: {loss_fn}, check PyTorch for documentation on available loss functions",
-                )
+                ) from err
 
         # get the optimizer parameters
         optimizer_lr = config["optimizer_params"]["lr"]
@@ -258,11 +262,12 @@ class TuneModel(Trainable):
 
     def step(self) -> dict:
         """For each batch in the training data, calculate the loss and update the model parameters.
+
         This calculation is performed based on the model's batch function.
         At the end, return the objective metric(s) for the tuning process.
         """
-        for step_size in range(self.step_size):
-            for x, y, meta in self.training:
+        for _step_size in range(self.step_size):
+            for x, y, _meta in self.training:
                 # the loss dict could be unpacked with ** and the function declaration handle it differently like **kwargs. to be decided, personally find this more clean and understable.
                 self.model.batch(x=x, y=y, optimizer=self.optimizer, **self.loss_dict)
         return self.objective()
@@ -287,13 +292,16 @@ class TuneModel(Trainable):
         }
 
     def export_model(self, export_dir: str) -> None:
+        """Export model to safetensors format."""
         safe_save_model(self.model, os.path.join(export_dir, "model.safetensors"))
 
     def load_checkpoint(self, checkpoint_dir: str) -> None:
+        """Load model and optimizer state from checkpoint."""
         self.model = safe_load_model(self.model, os.path.join(checkpoint_dir, "model.safetensors"))
         self.optimizer.load_state_dict(torch.load(os.path.join(checkpoint_dir, "optimizer.pt")))
 
     def save_checkpoint(self, checkpoint_dir: str) -> dict | None:
+        """Save model and optimizer state to checkpoint."""
         safe_save_model(self.model, os.path.join(checkpoint_dir, "model.safetensors"))
         torch.save(self.optimizer.state_dict(), os.path.join(checkpoint_dir, "optimizer.pt"))
         return checkpoint_dir
