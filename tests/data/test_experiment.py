@@ -2,8 +2,8 @@ import pytest
 import yaml
 
 from stimulus.data import experiments
-from stimulus.data.splitters import splitters
 from stimulus.data.encoding.encoders import AbstractEncoder
+from stimulus.data.splitters import splitters
 from stimulus.data.transform import data_transformation_generators
 from stimulus.utils import yaml_data
 
