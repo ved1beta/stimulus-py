@@ -260,6 +260,7 @@ class TextOneHotEncoder(AbstractEncoder):
                 raise ValueError(error_msg)
 
         return torch.from_numpy(np.array(encoded_data))
+
     def decode(self, data: torch.Tensor) -> Union[str, list[str]]:
         """Decodes one-hot encoded tensor back to sequences.
 
@@ -291,8 +292,11 @@ class TextOneHotEncoder(AbstractEncoder):
             data_np = data.reshape(-1, len(self.alphabet)).numpy()
             decoded = self.encoder.inverse_transform(data_np)
             sequences = decoded.reshape(batch_size, seq_len)
-            sequences = np.where(sequences is None, "-", sequences)
-            return ["".join(seq) for seq in sequences]
+            # Convert to masked array where None values are masked
+            masked_sequences = np.ma.masked_equal(sequences, None)
+            # Fill masked values with "-"
+            filled_sequences = masked_sequences.filled("-")
+            return ["".join(seq) for seq in filled_sequences]
 
         raise ValueError(f"Expected 2D or 3D tensor, got {data.dim()}D")
 

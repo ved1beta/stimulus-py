@@ -73,7 +73,9 @@ class EncoderLoader:
             if encoder_params is None:
                 return getattr(encoders, encoder_name)()
             logging.exception(f"Encoder '{encoder_name}' has incorrect parameters: {encoder_params}")
-            logging.exception(f"Expected parameters for '{encoder_name}': {inspect.signature(getattr(encoders, encoder_name))}")
+            logging.exception(
+                f"Expected parameters for '{encoder_name}': {inspect.signature(getattr(encoders, encoder_name))}",
+            )
             raise
 
     def set_encoder_as_attribute(self, field_name: str, encoder: encoders.AbstractEncoder) -> None:
@@ -220,7 +222,9 @@ class SplitLoader:
             if splitter_params is None:
                 return getattr(splitters, splitter_name)()
             logging.exception(f"Splitter '{splitter_name}' has incorrect parameters: {splitter_params}")
-            logging.exception(f"Expected parameters for '{splitter_name}': {inspect.signature(getattr(splitters, splitter_name))}")
+            logging.exception(
+                f"Expected parameters for '{splitter_name}': {inspect.signature(getattr(splitters, splitter_name))}",
+            )
             raise
 
     def set_splitter_as_attribute(self, splitter: Any) -> None:

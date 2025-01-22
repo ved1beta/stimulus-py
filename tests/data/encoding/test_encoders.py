@@ -28,8 +28,8 @@ class TestTextOneHotEncoder:
 
     # ---- Test for initialization ---- #
 
-    def test_init_with_non_string_alphabet_raises_value_error(self):
-        with pytest.raises(ValueError) as excinfo:
+    def test_init_with_non_string_alphabet_raises_type_error(self):
+        with pytest.raises(TypeError) as excinfo:
             TextOneHotEncoder(alphabet=["a", "c", "g", "t"])  # Passing a list instead of string
         assert "Expected a string input for alphabet" in str(excinfo.value)
 
@@ -42,7 +42,7 @@ class TestTextOneHotEncoder:
     # ---- Tests for _sequence_to_array ---- #
 
     def test_sequence_to_array_with_non_string_input(self, encoder_default):
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(TypeError) as excinfo:
             encoder_default._sequence_to_array(1234)
         assert "Expected string input for sequence" in str(excinfo.value)
 

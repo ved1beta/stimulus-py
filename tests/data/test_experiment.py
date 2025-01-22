@@ -1,7 +1,8 @@
 import pytest
 import yaml
 
-from stimulus.data import experiments, splitters
+from stimulus.data import experiments
+from stimulus.data.splitters import splitters
 from stimulus.data.encoding.encoders import AbstractEncoder
 from stimulus.data.transform import data_transformation_generators
 from stimulus.utils import yaml_data
@@ -121,9 +122,6 @@ def test_initialize_column_data_transformers_from_config(dna_experiment_sub_yaml
 
     # Get transformers for the column
     column_transformers = experiment.col1
-
-    # Debug print to see what we actually have
-    print(f"Transformers: {column_transformers}")
 
     # Verify the column has the expected transformers
     assert any(isinstance(t, data_transformation_generators.ReverseComplement) for t in column_transformers.values())

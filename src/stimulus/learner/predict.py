@@ -1,24 +1,39 @@
+"""A module for making predictions with PyTorch models using DataLoaders."""
+
+from typing import Any, Optional
+
 import torch
 
-from ..utils.generic_utils import ensure_at_least_1d
-from ..utils.performance import Performance
+from stimulus.utils.generic_utils import ensure_at_least_1d
+from stimulus.utils.performance import Performance
 
 
 class PredictWrapper:
     """A wrapper to predict the output of a model on a datset loaded into a torch DataLoader.
+
     It also provides the functionalities to measure the performance of the model.
     """
 
-    def __init__(self, model: object, dataloader: object, loss_dict: dict = None):
+    def __init__(self, model: object, dataloader: object, loss_dict: Optional[dict[str, Any]] = None) -> None:
+        """Initialize the PredictWrapper.
+
+        Args:
+            model: The PyTorch model to make predictions with
+            dataloader: DataLoader containing the evaluation data
+            loss_dict: Optional dictionary of loss functions
+        """
         self.model = model
         self.dataloader = dataloader
         self.loss_dict = loss_dict
         try:
             self.model.eval()
-        except:
-            print("warning: not able to run model.eval")
+        except RuntimeError as e:
+            # Using logging instead of print
+            import logging
 
-    def predict(self, return_labels=False) -> dict:
+            logging.warning("Not able to run model.eval: %s", str(e))
+
+    def predict(self, *, return_labels: bool = False) -> dict[str, torch.Tensor]:
         """Get the model predictions.
 
         Basically, it runs a foward pass on the model for each batch,
@@ -29,9 +44,16 @@ class PredictWrapper:
         At the end it returns `predictions` as a dictionary of tensors with the same keys as `y`.
 
         If return_labels if True, then the `labels` will be returned as well, also as a dictionary of tensors.
+
+        Args:
+            return_labels: Whether to also return the labels
+
+        Returns:
+            Dictionary of predictions, and optionally labels
         """
-        # create empty dictionaries witht the column names
-        keys = list(self.dataloader)[0][1].keys()
+        # create empty dictionaries with the column names
+        first_batch = next(iter(self.dataloader))
+        keys = first_batch[1].keys()
         predictions = {k: [] for k in keys}
         labels = {k: [] for k in keys}
 
@@ -51,13 +73,13 @@ class PredictWrapper:
             return {k: torch.cat(v) for k, v in predictions.items()}
         return {k: torch.cat(v) for k, v in predictions.items()}, {k: torch.cat(v) for k, v in labels.items()}
 
-    def handle_predictions(self, predictions, y) -> dict:
+    def handle_predictions(self, predictions: Any, y: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Handle the model outputs from forward pass, into a dictionary of tensors, just like y."""
         if len(y) == 1:
-            return {list(y.keys())[0]: predictions}
-        return {k: v for k, v in zip(y.keys(), predictions)}
+            return {next(iter(y.keys())): predictions}
+        return dict(zip(y.keys(), predictions))
 
-    def compute_metrics(self, metrics: list) -> dict:
+    def compute_metrics(self, metrics: list[str]) -> dict[str, float]:
         """Wrapper to compute the performance metrics."""
         return {m: self.compute_metric(m) for m in metrics}
 
@@ -92,6 +114,5 @@ class PredictWrapper:
         if (not hasattr(self, "predictions")) or (not hasattr(self, "labels")):
             self.predictions, self.labels = self.predict(return_labels=True)
         return sum(
-            Performance(labels=self.labels[k], predictions=self.predictions[k], metric=metric).val
-            for k in self.labels.keys()
-        ) / len(self.labels.keys())
+            Performance(labels=self.labels[k], predictions=self.predictions[k], metric=metric).val for k in self.labels
+        ) / len(self.labels)
