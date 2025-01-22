@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""CLI module for splitting YAML configuration files.
+
+This module provides functionality to split a single YAML configuration file into multiple
+YAML files, each containing a specific combination of data transformations and splits.
+The resulting YAML files can be used as input configurations for the stimulus package.
+"""
+
 
 import argparse
 
