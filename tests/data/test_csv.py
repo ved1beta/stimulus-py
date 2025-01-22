@@ -4,8 +4,22 @@ import pytest
 import yaml
 
 from stimulus.data import experiments
-from stimulus.data.csv import DatasetHandler, DatasetManager, EncodeManager, SplitManager, TransformManager
-from stimulus.utils.yaml_data import YamlConfigDict, dump_yaml_list_into_files, generate_data_configs
+from stimulus.data.csv import (
+    DatasetLoader,
+    DatasetManager,
+    DatasetProcessor,
+    EncodeManager,
+    SplitManager,
+    TransformManager,
+)
+from stimulus.utils.yaml_data import (
+    YamlConfigDict,
+    YamlTransform,
+    YamlTransformColumns,
+    YamlTransformColumnsTransformation,
+    dump_yaml_list_into_files,
+    generate_data_configs,
+)
 
 
 # Fixtures
@@ -33,20 +47,8 @@ def generate_sub_configs(base_config):
 
 
 @pytest.fixture
-def dump_single_split_config_to_disk(generate_sub_configs):
-    config_to_dump = [generate_sub_configs[0]]
-    dump_yaml_list_into_files(config_to_dump, "tests/test_data/titanic/", "titanic_sub_config")
-    return "tests/test_data/titanic/titanic_sub_config_0.yaml"
-
-
-@pytest.fixture(scope="session")
-def cleanup_titanic_config_file():
-    """Cleanup any generated config files after all tests complete"""
-    yield  # Run all tests first
-    # Delete the config file after tests complete
-    config_path = Path("tests/test_data/titanic/titanic_sub_config_0.yaml")
-    if config_path.exists():
-        config_path.unlink()
+def dump_single_split_config_to_disk():
+    return "tests/test_data/titanic/titanic_sub_config.yaml"
 
 
 ## Loader fixtures
@@ -103,6 +105,7 @@ def test_dataset_manager_get_transform_logic(dump_single_split_config_to_disk):
     assert transform_logic["transformation_name"] == "noise"
     assert len(transform_logic["transformations"]) == 2
 
+
 # Test EncodeManager
 def test_encode_manager_init():
     encoder_loader = experiments.EncoderLoader()
@@ -118,7 +121,7 @@ def test_encode_manager_initialize_encoders():
 
 def test_encode_manager_encode_numeric():
     encoder_loader = experiments.EncoderLoader()
-    intencoder = encoder_loader.get_encoder("IntEncoder")
+    intencoder = encoder_loader.get_encoder("NumericEncoder")
     encoder_loader.set_encoder_as_attribute("test_col", intencoder)
     manager = EncodeManager(encoder_loader)
     data = [1, 2, 3]
@@ -139,10 +142,23 @@ def test_transform_manager_initialize_transforms():
     assert hasattr(manager, "transform_loader")
 
 
-def test_transform_manager_apply_transforms():
+def test_transform_manager_transform_column():
     transform_loader = experiments.TransformLoader()
+    dummy_config = YamlTransform(
+        transformation_name="GaussianNoise",
+        columns=[
+            YamlTransformColumns(
+                column_name="test_col",
+                transformations=[YamlTransformColumnsTransformation(name="GaussianNoise", params={"std": 0.1})],
+            )
+        ],
+    )
+    transform_loader.initialize_column_data_transformers_from_config(dummy_config)
     manager = TransformManager(transform_loader)
-    assert hasattr(manager, "transform_loader")
+    data = [1, 2, 3]
+    transformed, added_row = manager.transform_column("test_col", "GaussianNoise", data)
+    assert len(transformed) == len(data)
+    assert added_row is False
 
 
 # Test SplitManager
@@ -165,51 +181,86 @@ def test_split_manager_apply_split(split_loader):
     assert len(split_indices[1]) == 15
     assert len(split_indices[2]) == 15
 
-# Test DatasetHandler
 
-
-def test_dataset_handler_init(
-    dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader
+# Test DatasetProcessor
+def test_dataset_processor_init(
+    dump_single_split_config_to_disk,
+    titanic_csv_path,
 ):
-    handler = DatasetHandler(
+    processor = DatasetProcessor(
         config_path=dump_single_split_config_to_disk,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader,
-        split_loader=split_loader,
         csv_path=titanic_csv_path,
     )
 
-    assert isinstance(handler.encoder_manager, EncodeManager)
-    assert isinstance(handler.transform_manager, TransformManager)
-    assert isinstance(handler.split_manager, SplitManager)
+    assert isinstance(processor.dataset_manager, DatasetManager)
+    assert processor.columns is not None
 
-def test_dataset_hanlder_apply_split(
-    dump_single_split_config_to_disk, titanic_csv_path, encoder_loader, transform_loader, split_loader
+
+def test_dataset_processor_apply_split(
+    dump_single_split_config_to_disk,
+    titanic_csv_path,
+    split_loader,
 ):
-    handler = DatasetHandler(
+    processor = DatasetProcessor(
         config_path=dump_single_split_config_to_disk,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader,
-        split_loader=split_loader,
         csv_path=titanic_csv_path,
     )
-    handler.add_split()
-    assert "split" in handler.columns
-    assert "split" in handler.data.columns
-    assert len(handler.data["split"]) == 712
+    processor.data = processor.load_csv(titanic_csv_path)
+    processor.add_split(split_manager=SplitManager(split_loader))
+    assert "split" in processor.columns
+    assert "split" in processor.data.columns
+    assert len(processor.data["split"]) == 712
 
 
-def test_dataset_handler_get_dataset(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader):
-    transform_loader = experiments.TransformLoader()
-    split_loader = experiments.SplitLoader()
-
-    handler = DatasetHandler(
+def test_dataset_processor_apply_transformation_group(
+    dump_single_split_config_to_disk,
+    titanic_csv_path,
+    transform_loader,
+):
+    processor = DatasetProcessor(
         config_path=dump_single_split_config_to_disk,
-        encoder_loader=encoder_loader,
-        transform_loader=transform_loader,
-        split_loader=split_loader,
         csv_path=titanic_csv_path,
     )
+    processor.data = processor.load_csv(titanic_csv_path)
 
-    dataset = handler.get_all_items()
+    processor_control = DatasetProcessor(
+        config_path=dump_single_split_config_to_disk,
+        csv_path=titanic_csv_path,
+    )
+    processor_control.data = processor_control.load_csv(titanic_csv_path)
+
+    processor.apply_transformation_group(transform_manager=TransformManager(transform_loader))
+
+    assert processor.data["age"].to_list() != processor_control.data["age"].to_list()
+    assert processor.data["fare"].to_list() != processor_control.data["fare"].to_list()
+    assert processor.data["parch"].to_list() == processor_control.data["parch"].to_list()
+    assert processor.data["sibsp"].to_list() == processor_control.data["sibsp"].to_list()
+    assert processor.data["pclass"].to_list() == processor_control.data["pclass"].to_list()
+    assert processor.data["embarked"].to_list() == processor_control.data["embarked"].to_list()
+    assert processor.data["sex"].to_list() == processor_control.data["sex"].to_list()
+
+
+# Test DatasetLoader
+def test_dataset_loader_init(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader):
+    loader = DatasetLoader(
+        config_path=dump_single_split_config_to_disk,
+        csv_path=titanic_csv_path,
+        encoder_loader=encoder_loader,
+    )
+
+    assert isinstance(loader.dataset_manager, DatasetManager)
+    assert loader.data is not None
+    assert loader.columns is not None
+    assert hasattr(loader, "encoder_manager")
+
+
+def test_dataset_loader_get_dataset(dump_single_split_config_to_disk, titanic_csv_path, encoder_loader):
+    loader = DatasetLoader(
+        config_path=dump_single_split_config_to_disk,
+        csv_path=titanic_csv_path,
+        encoder_loader=encoder_loader,
+    )
+
+    dataset = loader.get_all_items()
     assert isinstance(dataset, tuple)
+    assert len(dataset) == 3  # input_data, label_data, meta_data

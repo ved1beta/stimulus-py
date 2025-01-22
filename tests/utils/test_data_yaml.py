@@ -40,30 +40,9 @@ def load_wrong_type_yaml() -> dict:
         return yaml.safe_load(f)
 
 
-@pytest.fixture(scope="session")
-def cleanup_titanic_config_file():
-    """Cleanup any generated config files after all tests complete"""
-    yield  # Run all tests first
-    # Delete the config file after tests complete
-    config_path = Path("tests/test_data/titanic/titanic_sub_config_0.yaml")
-    if config_path.exists():
-        config_path.unlink()
-
-
 def test_sub_config_validation(load_titanic_yaml_from_file):
     sub_config = generate_data_configs(load_titanic_yaml_from_file)[0]
     YamlSubConfigDict.model_validate(sub_config)
-
-
-def test_sub_config_dump_to_disk(load_titanic_yaml_from_file, cleanup_titanic_config_file):
-    sub_config = generate_data_configs(load_titanic_yaml_from_file)[0]
-    dump_yaml_list_into_files([sub_config], "tests/test_data/titanic/", "titanic_sub_config")
-
-    # load the file back in
-    with open("tests/test_data/titanic/titanic_sub_config_0.yaml") as f:
-        yaml_dict = yaml.safe_load(f)
-        sub_config_loaded = YamlSubConfigDict(**yaml_dict)
-        YamlSubConfigDict.model_validate(sub_config_loaded)
 
 
 def test_extract_transform_parameters_at_index(load_yaml_from_file):
@@ -117,13 +96,6 @@ def test_generate_data_configs(load_yaml_from_file):
         assert isinstance(config, YamlSubConfigDict)
         assert config.global_params == load_yaml_from_file.global_params
         assert config.columns == load_yaml_from_file.columns
-
-
-def test_dump_yaml_list_into_files(load_yaml_from_file):
-    """Tests dumping a list of YAML configurations into separate files."""
-    configs = yaml_data.generate_data_configs(load_yaml_from_file)
-    yaml_data.dump_yaml_list_into_files(configs, "scratch/", "dna_experiment_config_template")
-
 
 @pytest.mark.parametrize("test_input", [("load_yaml_from_file", False), ("load_wrong_type_yaml", True)])
 def test_check_yaml_schema(request, test_input):

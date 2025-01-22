@@ -46,7 +46,6 @@ def TextOneHotEncoder_name_and_params():
     return "TextOneHotEncoder", {"alphabet": "acgt"}
 
 
-
 def test_get_encoder(TextOneHotEncoder_name_and_params):
     """Test the get_encoder method of the AbstractExperiment class.
 
@@ -68,7 +67,7 @@ def test_set_encoder_as_attribute(TextOneHotEncoder_name_and_params):
     encoder = experiment.get_encoder(encoder_name, encoder_params)
     experiment.set_encoder_as_attribute("ciao", encoder)
     assert hasattr(experiment, "ciao")
-    assert experiment.ciao["encoder"] == encoder
+    assert experiment.ciao == encoder
     assert experiment.get_function_encode_all("ciao") == encoder.encode_all
 
 
@@ -85,7 +84,7 @@ def test_build_experiment_class_encoder_dict(dna_experiment_sub_yaml):
     assert hasattr(experiment, "ciao")
 
     # call encoder from "hello", check that it completes successfully
-    assert experiment.hello["encoder"].encode_all(["a", "c", "g", "t"]) is not None
+    assert experiment.hello.encode_all(["a", "c", "g", "t"]) is not None
 
 
 def test_get_data_transformer():
@@ -108,27 +107,26 @@ def test_set_data_transformer_as_attribute():
     transformer = experiment.get_data_transformer("ReverseComplement")
     experiment.set_data_transformer_as_attribute("col1", transformer)
     assert hasattr(experiment, "col1")
-    assert experiment.col1["data_transformation_generators"] == transformer
+    assert experiment.col1["ReverseComplement"] == transformer
 
 
 def test_initialize_column_data_transformers_from_config(dna_experiment_sub_yaml):
-    """Test the initialize_column_data_transformers_from_config method of the TransformLoader class.
-
-    This test checks if the initialize_column_data_transformers_from_config method correctly builds
-    the experiment class from a config dictionary.
-    """
+    """Test the initialize_column_data_transformers_from_config method of the TransformLoader class."""
     experiment = experiments.TransformLoader()
     config = dna_experiment_sub_yaml.transforms
     experiment.initialize_column_data_transformers_from_config(config)
 
-    # Check columns have transformers set
+    # Check that the column from the config exists
     assert hasattr(experiment, "col1")
 
-    # Check transformers were properly initialized
-    col1_transformers = experiment.col1["data_transformation_generators"]
+    # Get transformers for the column
+    column_transformers = experiment.col1
 
-    # Verify col1 has the expected transformers
-    assert any(isinstance(t, data_transformation_generators.ReverseComplement) for t in col1_transformers)
+    # Debug print to see what we actually have
+    print(f"Transformers: {column_transformers}")
+
+    # Verify the column has the expected transformers
+    assert any(isinstance(t, data_transformation_generators.ReverseComplement) for t in column_transformers.values())
 
 
 def test_initialize_splitter_from_config(dna_experiment_sub_yaml):

@@ -9,7 +9,6 @@ Loaders are built from an input config YAML file which format is described in th
 """
 
 import inspect
-from collections import defaultdict
 from typing import Any
 
 from stimulus.data.encoding import encoders as encoders
@@ -43,7 +42,7 @@ class EncoderLoader:
         Returns:
             Any: The encode_all function for the specified field
         """
-        return getattr(self, field_name)["encoder"].encode_all
+        return getattr(self, field_name).encode_all
 
     def get_encoder(self, encoder_name: str, encoder_params: dict = None) -> Any:
         """Gets an encoder object from the encoders module and initializes it with the given parametersß.
@@ -60,7 +59,7 @@ class EncoderLoader:
         except AttributeError:
             print(f"Encoder '{encoder_name}' not found in the encoders module.")
             print(
-                f"Available encoders: {[name for name, obj in encoders.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}"
+                f"Available encoders: {[name for name, obj in encoders.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}",
             )
             raise
 
@@ -78,7 +77,7 @@ class EncoderLoader:
             field_name (str): The name of the field to set the encoder for
             encoder (encoders.AbstractEncoder): The encoder to set
         """
-        setattr(self, field_name, {"encoder": encoder})
+        setattr(self, field_name, encoder)
 
 
 class TransformLoader:
@@ -101,7 +100,7 @@ class TransformLoader:
         except AttributeError:
             print(f"Transformer '{transformation_name}' not found in the transformers module.")
             print(
-                f"Available transformers: {[name for name, obj in data_transformation_generators.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}"
+                f"Available transformers: {[name for name, obj in data_transformation_generators.__dict__.items() if isinstance(obj, type) and name not in ('ABC', 'Any')]}",
             )
             raise
 
@@ -110,7 +109,7 @@ class TransformLoader:
                 return getattr(data_transformation_generators, transformation_name)()
             print(f"Transformer '{transformation_name}' has incorrect parameters: {transformation_params}")
             print(
-                f"Expected parameters for '{transformation_name}': {inspect.signature(getattr(data_transformation_generators, transformation_name))}"
+                f"Expected parameters for '{transformation_name}': {inspect.signature(getattr(data_transformation_generators, transformation_name))}",
             )
             raise
 
@@ -121,39 +120,47 @@ class TransformLoader:
             field_name (str): The name of the field to set the data transformer for
             data_transformer (Any): The data transformer to set
         """
-        setattr(self, field_name, {"data_transformation_generators": data_transformer})
+        # check if the field already exists, if it does not, initialize it to an empty dict
+        if not hasattr(self, field_name):
+            setattr(self, field_name, {data_transformer.__class__.__name__: data_transformer})
+        else:
+            self.field_name[data_transformer.__class__.__name__] = data_transformer
 
     def initialize_column_data_transformers_from_config(self, transform_config: yaml_data.YamlTransform) -> None:
         """Build the loader from a config dictionary.
 
         Args:
             config (yaml_data.YamlSubConfigDict): Configuration dictionary containing transforms configurations.
-                Each transform can specify multiple columns and their transformations.
-                The method will organize transformers by column, ensuring each column
-                has all its required transformations.
-        """
-        # Use defaultdict to automatically initialize empty lists
-        column_transformers = defaultdict(list)
 
-        # First pass: collect all transformations by column
+        Example:
+            Given a YAML config like:
+            ```yaml
+            transforms:
+              transformation_name: noise
+              columns:
+                - column_name: age
+                  transformations:
+                    - name: GaussianNoise
+                      params:
+                        std: 0.1
+                - column_name: fare
+                  transformations:
+                    - name: GaussianNoise
+                      params:
+                        std: 0.1
+            ```
+
+            The loader will:
+            1. Iterate through each column (age, fare)
+            2. For each transformation in the column:
+               - Get the transformer (GaussianNoise) with its params (std=0.1)
+               - Set it as an attribute on the loader using the column name as key
+        """
         for column in transform_config.columns:
             col_name = column.column_name
-
-            # Process each transformation for this column
             for transform_spec in column.transformations:
-                # Create transformer instance
                 transformer = self.get_data_transformer(transform_spec.name, transform_spec.params)
-
-                # Get transformer class for comparison
-                transformer_type = type(transformer)
-
-                # Add transformer if its type isn't already present
-                if not any(isinstance(existing, transformer_type) for existing in column_transformers[col_name]):
-                    column_transformers[col_name].append(transformer)
-
-        # Second pass: set all collected transformers as attributes
-        for col_name, transformers in column_transformers.items():
-            self.set_data_transformer_as_attribute(col_name, transformers)
+                self.set_data_transformer_as_attribute(col_name, transformer)
 
 
 class SplitLoader:
