@@ -337,6 +337,7 @@ class DatasetProcessor(DatasetHandler):
     def __init__(self, config_path: str, csv_path: str) -> None:
         """Initialize the DatasetProcessor."""
         super().__init__(config_path, csv_path)
+        self.data = self.load_csv(csv_path)
 
     def add_split(self, split_manager: SplitManager, *, force: bool = False) -> None:
         """Add a column specifying the train, validation, test splits of the data.
@@ -389,7 +390,7 @@ class DatasetProcessor(DatasetHandler):
         # set the np seed
         np.random.seed(seed)
 
-        label_keys = self.dataset_manager.get_label_columns()["label"]
+        label_keys = self.dataset_manager.categorize_columns_by_type()["label"]
         for key in label_keys:
             self.data = self.data.with_columns(pl.Series(key, np.random.permutation(list(self.data[key]))))
 
