@@ -57,7 +57,7 @@ def test_split_csv(
             main(csv_path, yaml_path, tmpdir / "test.csv", force=force, seed=42)
     else:
         filename = f"{csv_type}_{force}.csv"
-        assert main(csv_path, yaml_path, tmpdir /  filename, force=force, seed=42) is None
+        assert main(csv_path, yaml_path, tmpdir / filename, force=force, seed=42) is None
         with open(tmpdir / filename) as file:
-            hash = hashlib.md5(file.read().encode()).hexdigest() # noqa: S324
+            hash = hashlib.md5(file.read().encode()).hexdigest()  # noqa: S324
         assert hash == snapshot
