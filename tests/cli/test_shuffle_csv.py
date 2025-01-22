@@ -31,7 +31,11 @@ test_cases = [
 # Tests
 @pytest.mark.parametrize(("csv_type", "yaml_type", "error"), test_cases)
 def test_shuffle_csv(
-    request: pytest.FixtureRequest, snapshot: pytest.fixture, csv_type: str, yaml_type: str, error: Exception | None,
+    request: pytest.FixtureRequest,
+    snapshot: pytest.fixture,
+    csv_type: str,
+    yaml_type: str,
+    error: Exception | None,
 ) -> None:
     """Tests the CLI command with correct and wrong YAML files."""
     csv_path = request.getfixturevalue(csv_type)
