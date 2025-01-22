@@ -95,11 +95,11 @@ def parse_y_keys(y: dict[str, Any], data: pl.DataFrame, y_type: str = "pred") ->
         return y
 
     parsed_y = {}
-    for k1 in y:
+    for k1, v1 in y.items():
         for k2 in data.columns:
             if k1 == k2.split(":")[0]:
                 new_key = f"{k1}:{y_type}:{k2.split(':')[2]}"
-                parsed_y[new_key] = y[k1]
+                parsed_y[new_key] = v1
 
     return parsed_y
 

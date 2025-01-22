@@ -4,7 +4,7 @@ import datetime
 import logging
 import os
 import random
-from typing import Optional, tuple
+from typing import Optional
 
 import numpy as np
 import torch

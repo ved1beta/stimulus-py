@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 from stimulus.data import experiments
-from stimulus.data.csv import (
+from stimulus.data.data_handlers import (
     DatasetLoader,
     DatasetManager,
     DatasetProcessor,
