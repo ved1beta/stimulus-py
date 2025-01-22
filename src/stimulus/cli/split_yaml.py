@@ -6,7 +6,6 @@ YAML files, each containing a specific combination of data transformations and s
 The resulting YAML files can be used as input configurations for the stimulus package.
 """
 
-
 import argparse
 
 import yaml

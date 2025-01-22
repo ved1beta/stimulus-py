@@ -11,7 +11,11 @@ class TorchDataset(Dataset):
     """Class for creating a torch dataset"""
 
     def __init__(
-        self, config_path: str, csv_path: str, encoder_loader: experiments.EncoderLoader, split: Tuple[None, int] = None
+        self,
+        config_path: str,
+        csv_path: str,
+        encoder_loader: experiments.EncoderLoader,
+        split: Tuple[None, int] = None,
     ) -> None:
         self.loader = csv.DatasetLoader(
             config_path=config_path,

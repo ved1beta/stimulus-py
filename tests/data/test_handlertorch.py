@@ -34,20 +34,26 @@ def titanic_encoder_loader(titanic_yaml_config):
 
 def test_init_handlertorch(titanic_config_path, titanic_csv_path, titanic_encoder_loader):
     handlertorch.TorchDataset(
-        config_path=titanic_config_path, csv_path=titanic_csv_path, encoder_loader=titanic_encoder_loader
+        config_path=titanic_config_path,
+        csv_path=titanic_csv_path,
+        encoder_loader=titanic_encoder_loader,
     )
 
 
 def test_len_handlertorch(titanic_config_path, titanic_csv_path, titanic_encoder_loader):
     dataset = handlertorch.TorchDataset(
-        config_path=titanic_config_path, csv_path=titanic_csv_path, encoder_loader=titanic_encoder_loader
+        config_path=titanic_config_path,
+        csv_path=titanic_csv_path,
+        encoder_loader=titanic_encoder_loader,
     )
     assert len(dataset) == 712
 
 
 def test_getitem_handlertorch_slice(titanic_config_path, titanic_csv_path, titanic_encoder_loader):
     dataset = handlertorch.TorchDataset(
-        config_path=titanic_config_path, csv_path=titanic_csv_path, encoder_loader=titanic_encoder_loader
+        config_path=titanic_config_path,
+        csv_path=titanic_csv_path,
+        encoder_loader=titanic_encoder_loader,
     )
     assert len(dataset[0:5]) == 3
     assert len(dataset[0:5][0]["pclass"]) == 5
@@ -55,6 +61,8 @@ def test_getitem_handlertorch_slice(titanic_config_path, titanic_csv_path, titan
 
 def test_getitem_handlertorch_int(titanic_config_path, titanic_csv_path, titanic_encoder_loader):
     dataset = handlertorch.TorchDataset(
-        config_path=titanic_config_path, csv_path=titanic_csv_path, encoder_loader=titanic_encoder_loader
+        config_path=titanic_config_path,
+        csv_path=titanic_csv_path,
+        encoder_loader=titanic_encoder_loader,
     )
     assert len(dataset[0]) == 3
