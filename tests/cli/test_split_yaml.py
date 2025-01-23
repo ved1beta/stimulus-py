@@ -3,6 +3,7 @@
 import hashlib
 import os
 import tempfile
+from typing import Any, Callable
 
 import pytest
 
@@ -33,7 +34,7 @@ test_cases = [
 @pytest.mark.parametrize(("yaml_type", "error"), test_cases)
 def test_split_yaml(
     request: pytest.FixtureRequest,
-    snapshot: pytest.fixture,
+    snapshot: Callable[[], Any],
     yaml_type: str,
     error: Exception | None,
 ) -> None:
@@ -41,10 +42,10 @@ def test_split_yaml(
     yaml_path = request.getfixturevalue(yaml_type)
     tmpdir = tempfile.gettempdir()
     if error:
-        with pytest.raises(error):
+        with pytest.raises(error):  # type: ignore[call-overload]
             main(yaml_path, tmpdir)
     else:
-        assert main(yaml_path, tmpdir) is None  # this is to assert that the function does not raise any exceptions
+        main(yaml_path, tmpdir)  # main() returns None, no need to assert
         files = os.listdir(tmpdir)
         test_out = [f for f in files if f.startswith("test_")]
         hashes = []
