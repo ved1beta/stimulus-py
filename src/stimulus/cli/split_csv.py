@@ -4,7 +4,7 @@
 import argparse
 from typing import Optional
 
-from stimulus.data.csv import DatasetProcessor, SplitManager
+from stimulus.data.data_handlers import DatasetProcessor, SplitManager
 from stimulus.data.experiments import SplitLoader
 
 
@@ -60,7 +60,7 @@ def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False,
 
     Args:
         data_csv: Path to input CSV file.
-        config_json: Path to config YAML file.
+        config_yaml: Path to config YAML file.
         out_path: Path to output split CSV.
         force: Overwrite the split column if it already exists in the CSV.
     """

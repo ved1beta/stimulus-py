@@ -3,7 +3,7 @@
 
 import argparse
 
-from stimulus.data.csv import DatasetProcessor
+from stimulus.data.data_handlers import DatasetProcessor
 
 
 def get_args() -> argparse.Namespace:
