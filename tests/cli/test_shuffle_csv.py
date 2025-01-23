@@ -3,6 +3,7 @@
 import hashlib
 import pathlib
 import tempfile
+from typing import Any, Callable
 
 import pytest
 
@@ -32,7 +33,7 @@ test_cases = [
 @pytest.mark.parametrize(("csv_type", "yaml_type", "error"), test_cases)
 def test_shuffle_csv(
     request: pytest.FixtureRequest,
-    snapshot: pytest.fixture,
+    snapshot: Callable[[], Any],
     csv_type: str,
     yaml_type: str,
     error: Exception | None,
@@ -42,10 +43,10 @@ def test_shuffle_csv(
     yaml_path = request.getfixturevalue(yaml_type)
     tmpdir = pathlib.Path(tempfile.gettempdir())
     if error:
-        with pytest.raises(error):
-            main(csv_path, yaml_path, tmpdir / "test.csv")
+        with pytest.raises(error): # type: ignore[call-overload]
+            main(csv_path, yaml_path, str(tmpdir / "test.csv"))
     else:
-        assert main(csv_path, yaml_path, tmpdir / "test.csv") is None
+        main(csv_path, yaml_path, str(tmpdir / "test.csv"))
         with open(tmpdir / "test.csv") as file:
             hash = hashlib.md5(file.read().encode()).hexdigest()  # noqa: S324
         assert hash == snapshot

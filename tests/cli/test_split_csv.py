@@ -3,6 +3,7 @@
 import hashlib
 import pathlib
 import tempfile
+from typing import Any, Callable
 
 import pytest
 
@@ -42,7 +43,7 @@ test_cases = [
 @pytest.mark.parametrize(("csv_type", "yaml_type", "force", "error"), test_cases)
 def test_split_csv(
     request: pytest.FixtureRequest,
-    snapshot: pytest.fixture,
+    snapshot: Callable[[], Any],
     csv_type: str,
     yaml_type: str,
     force: bool,
@@ -53,11 +54,11 @@ def test_split_csv(
     yaml_path = request.getfixturevalue(yaml_type)
     tmpdir = pathlib.Path(tempfile.gettempdir())
     if error:
-        with pytest.raises(error):
-            main(csv_path, yaml_path, tmpdir / "test.csv", force=force, seed=42)
+        with pytest.raises(error): # type: ignore[call-overload]
+            main(csv_path, yaml_path, str(tmpdir / "test.csv"), force=force, seed=42)
     else:
         filename = f"{csv_type}_{force}.csv"
-        assert main(csv_path, yaml_path, tmpdir / filename, force=force, seed=42) is None
+        main(csv_path, yaml_path, str(tmpdir / filename), force=force, seed=42)
         with open(tmpdir / filename) as file:
             hash = hashlib.md5(file.read().encode()).hexdigest()  # noqa: S324
         assert hash == snapshot
