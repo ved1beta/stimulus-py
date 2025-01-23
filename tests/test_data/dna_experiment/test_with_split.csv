@@ -1,4 +1,4 @@
-hello:input:dna,hola:label:float,split:split:int,pet:meta:str
+hello,hola,split,pet
 CACTGACTGATCGAG,0,0,dog
 CCACTGACTGATCAT,0,0,dog
 CCACTGACTGATGAT,0,0,dog

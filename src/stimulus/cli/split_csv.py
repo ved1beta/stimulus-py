@@ -2,11 +2,10 @@
 """CLI module for splitting CSV data files."""
 
 import argparse
-import json
-import logging
+from typing import Optional
 
-from stimulus.data.data_handlers import CsvProcessing
-from stimulus.utils.launch_utils import get_experiment
+from stimulus.data.data_handlers import DatasetProcessor, SplitManager
+from stimulus.data.experiments import SplitLoader
 
 
 def get_args() -> argparse.Namespace:
@@ -21,12 +20,12 @@ def get_args() -> argparse.Namespace:
         help="The file path for the csv containing all data",
     )
     parser.add_argument(
-        "-j",
-        "--json",
+        "-y",
+        "--yaml",
         type=str,
         required=True,
         metavar="FILE",
-        help="The json config file that hold all parameter info",
+        help="The YAML config file that hold all parameter info",
     )
     parser.add_argument(
         "-o",
@@ -36,61 +35,55 @@ def get_args() -> argparse.Namespace:
         metavar="FILE",
         help="The output file path to write the noised csv",
     )
+    parser.add_argument(
+        "-f",
+        "--force",
+        type=bool,
+        required=False,
+        default=False,
+        help="Overwrite the split column if it already exists in the csv",
+    )
+    parser.add_argument(
+        "-s",
+        "--seed",
+        type=int,
+        required=False,
+        default=None,
+        help="Seed for the random number generator",
+    )
 
     return parser.parse_args()
 
 
-def main(data_csv: str, config_json: str, out_path: str) -> None:
-    """Connect CSV and JSON configuration and handle sanity checks.
+def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False, seed: Optional[int] = None) -> None:
+    """Connect CSV and YAML configuration and handle sanity checks.
 
     Args:
         data_csv: Path to input CSV file.
-        config_json: Path to config JSON file.
+        config_yaml: Path to config YAML file.
         out_path: Path to output split CSV.
-
-    TODO what happens when the user write his own experiment class? how should he do it ? how does it integrates here?
+        force: Overwrite the split column if it already exists in the CSV.
     """
-    # open and read Json
-    config = {}
-    with open(config_json) as in_json:
-        config = json.load(in_json)
+    # create a DatasetProcessor object from the config and the csv
+    processor = DatasetProcessor(config_path=config_yaml, csv_path=data_csv)
 
-    # initialize the experiment class
-    exp_obj = get_experiment(config["experiment"])
+    # create a split manager from the config
+    split_config = processor.dataset_manager.config.split
+    split_loader = SplitLoader(seed=seed)
+    split_loader.initialize_splitter_from_config(split_config)
+    split_manager = SplitManager(split_loader)
 
-    # initialize the csv processing class, it open and reads the csv in automatic
-    csv_obj = CsvProcessing(exp_obj, data_csv)
-
-    # CASE 1: SPLIT in csv, not in json --> keep the split from the csv
-    if "split" in csv_obj.check_and_get_categories() and config["split"] is None:
-        pass
-
-    # CASE 2: SPLIT in csv and in json --> use the split from the json
-    # TODO change this behaviour to do both, maybe
-    elif "split" in csv_obj.check_and_get_categories() and config["split"]:
-        logging.info("SPLIT present in both csv and json --> use the split from the json")
-        csv_obj.add_split(config["split"], force=True)
-
-    # CASE 3: SPLIT nor in csv and or json --> use the default RandomSplitter
-    elif "split" not in csv_obj.check_and_get_categories() and config["split"] is None:
-        # In case no split is provided, we use the default RandomSplitter
-        logging.warning("SPLIT nor in csv and or json --> use the default RandomSplitter")
-        # if the user config is None then set to default splitter -> RandomSplitter.
-        config_default = {"name": "RandomSplitter", "params": {}}
-        csv_obj.add_split(config_default)
-
-    # CASE 4: SPLIT in json, not in csv --> use the split from the json
-    else:
-        csv_obj.add_split(config["split"], force=True)
+    # apply the split method to the data
+    processor.add_split(split_manager=split_manager, force=force)
 
     # save the modified csv
-    csv_obj.save(out_path)
+    processor.save(out_path)
 
 
 def run() -> None:
     """Run the CSV splitting script."""
     args = get_args()
-    main(args.csv, args.json, args.output)
+    main(args.csv, args.json, args.output, force=args.force, seed=args.seed)
 
 
 if __name__ == "__main__":
