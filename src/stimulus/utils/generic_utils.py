@@ -1,3 +1,5 @@
+"""Utility functions for general purpose operations like seed setting and tensor manipulation."""
+
 import random
 from typing import Union
 
@@ -13,8 +15,9 @@ def ensure_at_least_1d(tensor: torch.Tensor) -> torch.Tensor:
 
 
 def set_general_seeds(seed_value: Union[int, None]) -> None:
-    """Function that sets all the relevant seeds to a given value. Especially usefull in case of ray.tune.
-    Ray does not have a "generic" seed as far as ray 2.23
+    """Set all relevant random seeds to a given value.
+
+    Especially useful in case of ray.tune. Ray does not have a "generic" seed as far as ray 2.23.
     """
     # Set python seed
     random.seed(seed_value)
