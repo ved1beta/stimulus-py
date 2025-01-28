@@ -1,4 +1,4 @@
-"""Tests for YAML model handling functionalities"""
+"""Tests for YAML model handling functionalities."""
 
 import pytest
 import yaml
