@@ -1,31 +1,24 @@
 model_params:
   nb_neurons_intermediate_layer:
-    space: [7,15]
-    mode: randint
+    space: tune.randint(7, 15)
   nb_intermediate_layers:
-    space: [1,5]
-    mode: randint
+    space: tune.randint(1, 5)
   nb_classes:
-    space: [2]
-    mode: choice
+    space: 2
 
 optimizer_params:
   method:
-      space: ['Adam', 'SGD']
-      mode: choice
+    space: tune.choice(['Adam', 'SGD'])
   lr:
-    space: [0.0001, 0.1]
-    mode: loguniform
+    space: tune.loguniform(0.0001, 0.1)
 
 loss_params:
   loss_fn:
-    space: ['CrossEntropyLoss']
-    mode: choice
+    space: tune.choice(['CrossEntropyLoss'])
 
 data_params:
   batch_size:
-    space: [16, 32, 64, 128, 256]
-    mode: choice
+    space: tune.choice([16, 32, 64, 128, 256])
 
 tune:
   config_name: "tune_config"
