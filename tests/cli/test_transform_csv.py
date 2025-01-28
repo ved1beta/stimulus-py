@@ -31,7 +31,7 @@ test_cases = [
 
 # Tests
 @pytest.mark.parametrize(("csv_type", "yaml_type", "error"), test_cases)
-def test_split_csv(
+def test_transform_csv(
     request: pytest.FixtureRequest,
     snapshot: Callable[[], Any],
     csv_type: str,
@@ -44,10 +44,10 @@ def test_split_csv(
     tmpdir = pathlib.Path(tempfile.gettempdir())
     if error:
         with pytest.raises(error):  # type: ignore[call-overload]
-            main(csv_path, yaml_path, str(tmpdir / "test.csv"), seed=42)
+            main(csv_path, yaml_path, str(tmpdir / "test.csv"))
     else:
         filename = f"{csv_type}.csv"
-        main(csv_path, yaml_path, str(tmpdir / filename), seed=42)
+        main(csv_path, yaml_path, str(tmpdir / filename))
         with open(tmpdir / filename) as file:
             hash = hashlib.md5(file.read().encode()).hexdigest()  # noqa: S324
         assert hash == snapshot

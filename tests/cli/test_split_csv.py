@@ -55,10 +55,10 @@ def test_split_csv(
     tmpdir = pathlib.Path(tempfile.gettempdir())
     if error:
         with pytest.raises(error):  # type: ignore[call-overload]
-            main(csv_path, yaml_path, str(tmpdir / "test.csv"), force=force, seed=42)
+            main(csv_path, yaml_path, str(tmpdir / "test.csv"), force=force)
     else:
         filename = f"{csv_type}_{force}.csv"
-        main(csv_path, yaml_path, str(tmpdir / filename), force=force, seed=42)
+        main(csv_path, yaml_path, str(tmpdir / filename), force=force)
         with open(tmpdir / filename) as file:
             hash = hashlib.md5(file.read().encode()).hexdigest()  # noqa: S324
         assert hash == snapshot
