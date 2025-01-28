@@ -19,23 +19,24 @@ class TunableParameter(pydantic.BaseModel):
     @pydantic.model_validator(mode="after")
     def validate_mode(self) -> "TunableParameter":
         """Validate that mode is supported by Ray Tune."""
-        try:
-            mode = getattr(tune, self.mode)
-            if mode.__name__ not in [
-                "choice",
-                "uniform",
-                "loguniform",
-                "quniform",
-                "qloguniform",
-                "qnormal",
-                "randint",
-                "sample_from",
-            ]:
-                raise NotImplementedError(f"Mode {mode.__name__} not implemented yet")
-        except AttributeError as err:
+        if not hasattr(tune, self.mode):
             raise AttributeError(
                 f"Mode {self.mode} not recognized, check the ray.tune documentation at https://docs.ray.io/en/master/tune/api_docs/suggestion.html",
-            ) from err
+            )
+
+        mode = getattr(tune, self.mode)
+        if mode.__name__ not in [
+            "choice",
+            "uniform",
+            "loguniform",
+            "quniform",
+            "qloguniform",
+            "qnormal",
+            "randint",
+            "sample_from",
+        ]:
+            raise NotImplementedError(f"Mode {mode.__name__} not implemented yet")
+
         return self
 
 
