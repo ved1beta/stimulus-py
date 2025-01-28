@@ -96,11 +96,11 @@ class Model(pydantic.BaseModel):
 
 class RayTuneModel(pydantic.BaseModel):
     """Ray Tune compatible model configuration."""
-    
+
     model_config = {
-        "arbitrary_types_allowed": True  # Add this line to allow Domain type
+        "arbitrary_types_allowed": True,  # Add this line to allow Domain type
     }
-    
+
     network_params: dict[str, Domain]
     optimizer_params: dict[str, Domain]
     loss_params: dict[str, Domain]
