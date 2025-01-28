@@ -58,7 +58,7 @@ class Tune(pydantic.BaseModel):
 class Model(pydantic.BaseModel):
     """Model configuration."""
 
-    model_params: dict[str, Any]
+    network_params: dict[str, Any]
     optimizer_params: dict[str, Any]
     loss_params: Loss
     data_params: Data

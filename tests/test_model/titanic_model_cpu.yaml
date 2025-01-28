@@ -1,4 +1,4 @@
-model_params:
+network_params:
   nb_neurons_intermediate_layer:
     space: tune.randint(7, 15)
   nb_intermediate_layers:
