@@ -42,11 +42,11 @@ def test_convert_raytune(titanic_model_yaml_path: str) -> None:
     model = yaml_model_schema.Model.model_validate(model_config)
     loader = yaml_model_schema.YamlRayConfigLoader(model)
 
-    param = {"space": [16, 32, 64], "mode": "choice"}
+    param = yaml_model_schema.TunableParameter(space=[16, 32, 64], mode="choice")
     result = loader.convert_raytune(param)
     assert str(type(result).__name__) == "Categorical"
 
-    param = {"space": [1, 5], "mode": "randint"}
+    param = yaml_model_schema.TunableParameter(space=[1, 5], mode="randint")
     result = loader.convert_raytune(param)
     assert str(type(result).__name__) == "Integer"
 

@@ -9,6 +9,14 @@ from ray import tune
 from ray.tune.search.sample import Domain
 
 
+class CustomTunableParameter(pydantic.BaseModel):
+    """Custom tunable parameter."""
+
+    function: str
+    sample_space: list[Any]
+    n_space: list[Any]
+
+
 class TunableParameter(pydantic.BaseModel):
     """Tunable parameter."""
 
@@ -87,10 +95,10 @@ class Tune(pydantic.BaseModel):
 class Model(pydantic.BaseModel):
     """Model configuration."""
 
-    network_params: dict[str, Any]
-    optimizer_params: dict[str, Any]
-    loss_params: dict[str, Any]
-    data_params: dict[str, Any]
+    network_params: dict[str, TunableParameter]
+    optimizer_params: dict[str, TunableParameter]
+    loss_params: Loss
+    data_params: Data
     tune: Tune
 
 
@@ -139,12 +147,12 @@ class YamlRayConfigLoader:
 
         return mode(*tuple(space))
 
-    def raytune_sample_from(self, mode: Callable, param: dict) -> Any:
+    def raytune_sample_from(self, mode: Callable, param: CustomTunableParameter) -> Any:
         """Apply tune.sample_from to a given custom sampling function.
 
         Args:
             mode: Ray Tune sampling function
-            param: Dictionary containing sampling parameters
+            param: TunableParameter containing sampling parameters
 
         Returns:
             Configured sampling function
@@ -152,12 +160,12 @@ class YamlRayConfigLoader:
         Raises:
             NotImplementedError: If the sampling function is not supported
         """
-        if param["function"] == "sampint":
-            return mode(lambda _: self.sampint(param["sample_space"], param["n_space"]))
+        if param.function == "sampint":
+            return mode(lambda _: self.sampint(param.sample_space, param.n_space))
 
-        raise NotImplementedError(f"Function {param['function']} not implemented yet")
+        raise NotImplementedError(f"Function {param.function} not implemented yet")
 
-    def convert_raytune(self, param: dict) -> Any:
+    def convert_raytune(self, param: TunableParameter | CustomTunableParameter) -> Any:
         """Convert parameter configuration to Ray Tune format.
 
         Args:
@@ -166,10 +174,10 @@ class YamlRayConfigLoader:
         Returns:
             Ray Tune compatible parameter configuration
         """
-        mode = getattr(tune, param["mode"])
+        mode = getattr(tune, param.mode)
 
-        if param["mode"] != "sample_from":
-            return self.raytune_space_selector(mode, param["space"])
+        if isinstance(param, TunableParameter):
+            return self.raytune_space_selector(mode, param.space)
         return self.raytune_sample_from(mode, param)
 
     def convert_config_to_ray(self, model: Model) -> RayTuneModel:
@@ -186,8 +194,8 @@ class YamlRayConfigLoader:
         return RayTuneModel(
             network_params={k: self.convert_raytune(v) for k, v in model.network_params.items()},
             optimizer_params={k: self.convert_raytune(v) for k, v in model.optimizer_params.items()},
-            loss_params={k: self.convert_raytune(v) for k, v in model.loss_params.items()},
-            data_params={k: self.convert_raytune(v) for k, v in model.data_params.items()},
+            loss_params={k: self.convert_raytune(v) for k, v in model.loss_params},
+            data_params={k: self.convert_raytune(v) for k, v in model.data_params},
             tune=model.tune,
         )
 
