@@ -48,9 +48,6 @@ def test_transform_csv(
     else:
         filename = f"{csv_type}.csv"
         main(csv_path, yaml_path, str(tmpdir / filename))
-        with open(tmpdir / filename) as file:
-            for line in file.readlines()[:10]:
-                print(line)
-        with open(tmpdir / filename) as file:
+        with open(tmpdir / filename, newline="", encoding="utf-8") as file:
             hash = hashlib.md5(file.read().encode()).hexdigest()  # noqa: S324
         assert hash == snapshot
