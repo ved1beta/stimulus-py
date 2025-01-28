@@ -16,6 +16,28 @@ class TunableParameter(pydantic.BaseModel):
     space: list[Any]
     mode: str
 
+    @pydantic.model_validator(mode="after")
+    def validate_mode(self) -> "TunableParameter":
+        """Validate that mode is supported by Ray Tune."""
+        try:
+            mode = getattr(tune, self.mode)
+            if mode.__name__ not in [
+                "choice",
+                "uniform",
+                "loguniform",
+                "quniform",
+                "qloguniform",
+                "qnormal",
+                "randint",
+                "sample_from",
+            ]:
+                raise NotImplementedError(f"Mode {mode.__name__} not implemented yet")
+        except AttributeError as err:
+            raise AttributeError(
+                f"Mode {self.mode} not recognized, check the ray.tune documentation at https://docs.ray.io/en/master/tune/api_docs/suggestion.html",
+            ) from err
+        return self
+
 
 class Loss(pydantic.BaseModel):
     """Loss parameters."""
@@ -98,17 +120,11 @@ class YamlRayConfigLoader:
 
         Returns:
             Configured Ray Tune search space
-
-        Raises:
-            NotImplementedError: If the mode is not supported
         """
         if mode.__name__ == "choice":
             return mode(space)
 
-        if mode.__name__ in ["uniform", "loguniform", "quniform", "qloguniform", "qnormal", "randint"]:
-            return mode(*tuple(space))
-
-        raise NotImplementedError(f"Mode {mode.__name__} not implemented yet")
+        return mode(*tuple(space))
 
     def raytune_sample_from(self, mode: Callable, param: dict) -> dict[str, Any]:
         """Apply tune.sample_from to a given custom sampling function.
