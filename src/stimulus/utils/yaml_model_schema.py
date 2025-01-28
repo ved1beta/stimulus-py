@@ -10,6 +10,13 @@ import yaml
 from ray import tune
 
 
+class TunableParameter(pydantic.BaseModel):
+    """Tunable parameter."""
+
+    space: list[Any]
+    mode: str
+
+
 class Loss(pydantic.BaseModel):
     """Loss parameters."""
 
@@ -58,8 +65,8 @@ class Tune(pydantic.BaseModel):
 class Model(pydantic.BaseModel):
     """Model configuration."""
 
-    network_params: dict[str, Any]
-    optimizer_params: dict[str, Any]
+    network_params: dict[str, TunableParameter]
+    optimizer_params: dict[str, TunableParameter]
     loss_params: Loss
     data_params: Data
     tune: Tune
