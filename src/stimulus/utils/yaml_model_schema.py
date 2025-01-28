@@ -3,7 +3,7 @@
 import random
 from collections.abc import Callable
 from copy import deepcopy
-from typing import Any
+from typing import Any, Optional
 
 import pydantic
 import yaml
@@ -47,7 +47,7 @@ class Scheduler(pydantic.BaseModel):
 class RunParams(pydantic.BaseModel):
     """Run parameters."""
 
-    stop: dict[str, Any]
+    stop: Optional[dict[str, Any]] = None
 
 
 class Tune(pydantic.BaseModel):
@@ -57,7 +57,7 @@ class Tune(pydantic.BaseModel):
     tune_params: TuneParams
     scheduler: Scheduler
     run_params: RunParams
-    step_size: int
+    step_size: Optional[int] = 1
     gpu_per_trial: int
     cpu_per_trial: int
 
