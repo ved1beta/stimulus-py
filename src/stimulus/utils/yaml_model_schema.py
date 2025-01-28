@@ -5,8 +5,64 @@ from collections.abc import Callable
 from copy import deepcopy
 from typing import Any
 
+import pydantic
 import yaml
 from ray import tune
+
+
+class Loss(pydantic.BaseModel):
+    """Loss parameters."""
+
+    loss_fn: dict[str, Any]
+
+
+class Data(pydantic.BaseModel):
+    """Data parameters."""
+
+    batch_size: dict[str, Any]
+
+
+class TuneParams(pydantic.BaseModel):
+    """Tune parameters."""
+
+    metric: str
+    mode: str
+    num_samples: int
+
+
+class Scheduler(pydantic.BaseModel):
+    """Scheduler parameters."""
+
+    name: str
+    params: dict[str, Any]
+
+
+class RunParams(pydantic.BaseModel):
+    """Run parameters."""
+
+    stop: dict[str, Any]
+
+
+class Tune(pydantic.BaseModel):
+    """Tune parameters."""
+
+    config_name: str
+    tune_params: TuneParams
+    scheduler: Scheduler
+    run_params: RunParams
+    step_size: int
+    gpu_per_trial: int
+    cpu_per_trial: int
+
+
+class Model(pydantic.BaseModel):
+    """Model configuration."""
+
+    model_params: dict[str, Any]
+    optimizer_params: dict[str, Any]
+    loss_params: Loss
+    data_params: Data
+    tune: Tune
 
 
 class YamlRayConfigLoader:
