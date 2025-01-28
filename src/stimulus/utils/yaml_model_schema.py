@@ -15,6 +15,7 @@ class CustomTunableParameter(pydantic.BaseModel):
     function: str
     sample_space: list[Any]
     n_space: list[Any]
+    mode: str
 
 
 class TunableParameter(pydantic.BaseModel):
