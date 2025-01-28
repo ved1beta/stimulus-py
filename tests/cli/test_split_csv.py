@@ -54,7 +54,7 @@ def test_split_csv(
     yaml_path = request.getfixturevalue(yaml_type)
     tmpdir = pathlib.Path(tempfile.gettempdir())
     if error:
-        with pytest.raises(error): # type: ignore[call-overload]
+        with pytest.raises(error):  # type: ignore[call-overload]
             main(csv_path, yaml_path, str(tmpdir / "test.csv"), force=force, seed=42)
     else:
         filename = f"{csv_type}_{force}.csv"

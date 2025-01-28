@@ -43,7 +43,7 @@ def test_shuffle_csv(
     yaml_path = request.getfixturevalue(yaml_type)
     tmpdir = pathlib.Path(tempfile.gettempdir())
     if error:
-        with pytest.raises(error): # type: ignore[call-overload]
+        with pytest.raises(error):  # type: ignore[call-overload]
             main(csv_path, yaml_path, str(tmpdir / "test.csv"))
     else:
         main(csv_path, yaml_path, str(tmpdir / "test.csv"))
