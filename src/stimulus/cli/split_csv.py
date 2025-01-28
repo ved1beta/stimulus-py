@@ -2,10 +2,12 @@
 """CLI module for splitting CSV data files."""
 
 import argparse
-from typing import Optional
+
+import yaml
 
 from stimulus.data.data_handlers import DatasetProcessor, SplitManager
 from stimulus.data.experiments import SplitLoader
+from stimulus.utils.yaml_data import YamlSubConfigDict
 
 
 def get_args() -> argparse.Namespace:
@@ -43,19 +45,11 @@ def get_args() -> argparse.Namespace:
         default=False,
         help="Overwrite the split column if it already exists in the csv",
     )
-    parser.add_argument(
-        "-s",
-        "--seed",
-        type=int,
-        required=False,
-        default=None,
-        help="Seed for the random number generator",
-    )
 
     return parser.parse_args()
 
 
-def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False, seed: Optional[int] = None) -> None:
+def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False) -> None:
     """Connect CSV and YAML configuration and handle sanity checks.
 
     Args:
@@ -69,7 +63,9 @@ def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False,
 
     # create a split manager from the config
     split_config = processor.dataset_manager.config.split
-    split_loader = SplitLoader(seed=seed)
+    with open(config_yaml) as f:
+        yaml_config = YamlSubConfigDict(**yaml.safe_load(f))
+    split_loader = SplitLoader(seed=yaml_config.global_params.seed)
     split_loader.initialize_splitter_from_config(split_config)
     split_manager = SplitManager(split_loader)
 
@@ -83,7 +79,7 @@ def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False,
 def run() -> None:
     """Run the CSV splitting script."""
     args = get_args()
-    main(args.csv, args.json, args.output, force=args.force, seed=args.seed)
+    main(args.csv, args.json, args.output, force=args.force)
 
 
 if __name__ == "__main__":
