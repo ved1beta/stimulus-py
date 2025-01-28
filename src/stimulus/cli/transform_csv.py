@@ -2,10 +2,10 @@
 """CLI module for transforming CSV data files."""
 
 import argparse
-from typing import Optional
 
 from stimulus.data.data_handlers import DatasetProcessor, TransformManager
 from stimulus.data.experiments import TransformLoader
+from stimulus.utils.yaml_data import YamlSubConfig
 
 
 def get_args() -> argparse.Namespace:
@@ -39,7 +39,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main(data_csv: str, config_yaml: str, out_path: str, seed: Optional[int] = None) -> None:
+def main(data_csv: str, config_yaml: str, out_path: str) -> None:
     """Connect CSV and YAML configuration and handle sanity checks.
 
     This launcher will be the connection between the csv and one YAML configuration.
@@ -50,7 +50,7 @@ def main(data_csv: str, config_yaml: str, out_path: str, seed: Optional[int] = N
 
     # initialize the transform manager
     transform_config = processor.dataset_manager.config.transforms
-    transform_loader = TransformLoader(seed=seed)
+    transform_loader = TransformLoader(seed=YamlSubConfig(config_yaml).global_params.seed)
     transform_loader.initialize_column_data_transformers_from_config(transform_config)
     transform_manager = TransformManager(transform_loader)
 

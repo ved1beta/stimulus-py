@@ -2,10 +2,10 @@
 """CLI module for splitting CSV data files."""
 
 import argparse
-from typing import Optional
 
 from stimulus.data.data_handlers import DatasetProcessor, SplitManager
 from stimulus.data.experiments import SplitLoader
+from stimulus.utils.yaml_data import YamlSubConfig
 
 
 def get_args() -> argparse.Namespace:
@@ -55,7 +55,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False, seed: Optional[int] = None) -> None:
+def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False) -> None:
     """Connect CSV and YAML configuration and handle sanity checks.
 
     Args:
@@ -69,7 +69,7 @@ def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False,
 
     # create a split manager from the config
     split_config = processor.dataset_manager.config.split
-    split_loader = SplitLoader(seed=seed)
+    split_loader = SplitLoader(seed=YamlSubConfig(config_yaml).global_params.seed)
     split_loader.initialize_splitter_from_config(split_config)
     split_manager = SplitManager(split_loader)
 
