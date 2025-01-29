@@ -74,11 +74,11 @@ def test_get_config(titanic_model_yaml_path: str) -> None:
     loader = yaml_model_schema.YamlRayConfigLoader(model)
 
     config = loader.get_config()
-    assert isinstance(config, dict)
-    assert "network_params" in config
-    assert "optimizer_params" in config
-    assert "loss_params" in config
-    assert "data_params" in config
+    assert isinstance(config, yaml_model_schema.RayTuneModel)
+    assert hasattr(config, "network_params")
+    assert hasattr(config, "optimizer_params")
+    assert hasattr(config, "loss_params")
+    assert hasattr(config, "data_params")
 
 
 def test_sampint() -> None:

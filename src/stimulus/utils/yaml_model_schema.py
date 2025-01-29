@@ -200,13 +200,13 @@ class YamlRayConfigLoader:
             tune=model.tune,
         )
 
-    def get_config(self) -> dict:
+    def get_config(self) -> RayTuneModel:
         """Return the current configuration.
 
         Returns:
             Current configuration dictionary
         """
-        return self.ray_model.model_dump()
+        return self.ray_model
 
     @staticmethod
     def sampint(sample_space: list, n_space: list) -> list[int]:
