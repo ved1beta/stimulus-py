@@ -6,7 +6,7 @@ import argparse
 import yaml
 
 from stimulus.data.data_handlers import DatasetProcessor, TransformManager
-from stimulus.data.experiments import TransformLoader
+from stimulus.data.loaders import TransformLoader
 from stimulus.utils.yaml_data import YamlSubConfigDict
 
 

@@ -4,7 +4,8 @@ from typing import Optional
 
 from torch.utils.data import Dataset
 
-from src.stimulus.data import data_handlers, experiments
+from src.stimulus.data import data_handlers
+from stimulus.data import loaders
 
 
 class TorchDataset(Dataset):
@@ -14,7 +15,7 @@ class TorchDataset(Dataset):
         self,
         config_path: str,
         csv_path: str,
-        encoder_loader: experiments.EncoderLoader,
+        encoder_loader: loaders.EncoderLoader,
         split: Optional[int] = None,
     ) -> None:
         """Initialize the TorchDataset.

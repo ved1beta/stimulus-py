@@ -5,7 +5,7 @@ import os
 import pytest
 import yaml
 
-from stimulus.data import experiments, handlertorch
+from stimulus.data import handlertorch, loaders
 from stimulus.utils import yaml_data
 
 
@@ -44,9 +44,9 @@ def titanic_yaml_config(titanic_config_path: str) -> dict:
 
 
 @pytest.fixture
-def titanic_encoder_loader(titanic_yaml_config: yaml_data.YamlSubConfigDict) -> experiments.EncoderLoader:
+def titanic_encoder_loader(titanic_yaml_config: yaml_data.YamlSubConfigDict) -> loaders.EncoderLoader:
     """Get Titanic encoder loader."""
-    loader = experiments.EncoderLoader()
+    loader = loaders.EncoderLoader()
     loader.initialize_column_encoders_from_config(titanic_yaml_config.columns)
     return loader
 
@@ -54,7 +54,7 @@ def titanic_encoder_loader(titanic_yaml_config: yaml_data.YamlSubConfigDict) -> 
 def test_init_handlertorch(
     titanic_config_path: str,
     titanic_csv_path: str,
-    titanic_encoder_loader: experiments.EncoderLoader,
+    titanic_encoder_loader: loaders.EncoderLoader,
 ) -> None:
     """Test TorchDataset initialization."""
     handlertorch.TorchDataset(
@@ -67,7 +67,7 @@ def test_init_handlertorch(
 def test_len_handlertorch(
     titanic_config_path: str,
     titanic_csv_path: str,
-    titanic_encoder_loader: experiments.EncoderLoader,
+    titanic_encoder_loader: loaders.EncoderLoader,
 ) -> None:
     """Test length functionality of TorchDataset.
 
@@ -87,7 +87,7 @@ def test_len_handlertorch(
 def test_getitem_handlertorch_slice(
     titanic_config_path: str,
     titanic_csv_path: str,
-    titanic_encoder_loader: experiments.EncoderLoader,
+    titanic_encoder_loader: loaders.EncoderLoader,
 ) -> None:
     """Test slice indexing functionality of TorchDataset.
 
@@ -108,7 +108,7 @@ def test_getitem_handlertorch_slice(
 def test_getitem_handlertorch_int(
     titanic_config_path: str,
     titanic_csv_path: str,
-    titanic_encoder_loader: experiments.EncoderLoader,
+    titanic_encoder_loader: loaders.EncoderLoader,
 ) -> None:
     """Test integer indexing functionality of TorchDataset.
 
