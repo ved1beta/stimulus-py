@@ -65,35 +65,29 @@ class TuneWrapper:
             scheduler=scheduler,
         )
 
-        self.config["model"] = model_class
-        self.config["encoder_loader"] = encoder_loader
-
-        # add the ray method for number generation to the config
-        self.config["ray_worker_seed"] = tune.randint(0, 1000)
+        # build the run config
+        self.run_config = train.RunConfig(
+            name=tune_run_name
+            if tune_run_name is not None
+            else "TuneModel_" + datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d_%H-%M-%S"),
+            storage_path=ray_results_dir,
+            checkpoint_config=train.CheckpointConfig(checkpoint_at_end=True),
+            stop=config.tune.run_params.stop,
+        )
 
         # add the data path to the config
         if not os.path.exists(data_path):
             raise ValueError("Data path does not exist. Given path:" + data_path)
         self.config["data_path"] = os.path.abspath(data_path)
 
-        # build the run config
-        self.checkpoint_config = train.CheckpointConfig(checkpoint_at_end=True)
-        if tune_run_name is None:
-            tune_run_name = "TuneModel_" + datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-        self.run_config = train.RunConfig(
-            name=tune_run_name,
-            storage_path=ray_results_dir,
-            checkpoint_config=self.checkpoint_config,
-            **self.config["tune"]["run_params"],
-        )
-
         # Set up tune_run path
         if ray_results_dir is None:
             ray_results_dir = os.environ.get("HOME", "")
         self.config["tune_run_path"] = os.path.join(ray_results_dir, tune_run_name)
-
-        # Set debug flag
         self.config["_debug"] = debug
+        self.config["model"] = model_class
+        self.config["encoder_loader"] = encoder_loader
+        self.config["ray_worker_seed"] = tune.randint(0, 1000)
 
         self.tuner = self.tuner_initialization()
 
