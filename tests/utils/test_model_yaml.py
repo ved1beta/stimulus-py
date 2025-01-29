@@ -76,7 +76,7 @@ def test_get_config(titanic_model_yaml_path: str) -> None:
     config = loader.get_config()
     assert isinstance(config, yaml_model_schema.RayTuneModel)
     assert hasattr(config, "network_params")
-    assert hasattr(config, "optimizer_params") 
+    assert hasattr(config, "optimizer_params")
     assert hasattr(config, "loss_params")
     assert hasattr(config, "data_params")
 

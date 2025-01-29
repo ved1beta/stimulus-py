@@ -8,7 +8,7 @@ from typing import Any, Optional, TypedDict
 
 import numpy as np
 import torch
-from ray import cluster_resources, init, is_initialized, shutdown, train, tune
+from ray import cluster_resources, train, tune
 from ray.tune import Trainable, schedulers
 from safetensors.torch import load_model as safe_load_model
 from safetensors.torch import save_model as safe_save_model
@@ -140,14 +140,14 @@ class TuneWrapper:
             return 0.0
 
         per_trial_resource: float = 0.0
-        
+
         # Check if resource is specified in config and within limits
         if (
             resource_key in self.config["tune"]
             and self.config["tune"][resource_key] <= cluster_max_resources[resource_type]
         ):
             per_trial_resource = float(self.config["tune"][resource_key])
-        
+
         # Warn if requested resources exceed available
         elif (
             resource_key in self.config["tune"]
@@ -160,7 +160,7 @@ class TuneWrapper:
                 "overwriting value to max available",
             )
             per_trial_resource = float(cluster_max_resources[resource_type])
-        
+
         # Set default if not specified
         elif resource_key not in self.config["tune"]:
             if cluster_max_resources[resource_type] == 0.0:
