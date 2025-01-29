@@ -9,16 +9,17 @@ from typing import Any, Optional, TypedDict
 import numpy as np
 import torch
 from ray import cluster_resources, train, tune
-from ray.tune import Trainable, schedulers
+from ray.tune import Trainable
 from safetensors.torch import load_model as safe_load_model
 from safetensors.torch import save_model as safe_save_model
 from torch import nn, optim
 from torch.utils.data import DataLoader, Dataset
 
+from stimulus.data.experiments import EncoderLoader
 from stimulus.data.handlertorch import TorchDataset
 from stimulus.learner.predict import PredictWrapper
 from stimulus.utils.generic_utils import set_general_seeds
-from stimulus.utils.yaml_model_schema import YamlRayConfigLoader, RayTuneModel
+from stimulus.utils.yaml_model_schema import RayTuneModel
 
 
 class CheckpointDict(TypedDict):
@@ -35,11 +36,11 @@ class TuneWrapper:
         config: RayTuneModel,
         model_class: nn.Module,
         data_path: str,
-        experiment_object: object,
+        encoder_loader: EncoderLoader,
         seed: int,
         ray_results_dir: Optional[str] = None,
         tune_run_name: Optional[str] = None,
-        *,  # Force debug to be keyword-only
+        *,
         debug: bool = False,
     ) -> None:
         """Initialize the TuneWrapper with the paths to the config, model, and data."""
@@ -48,8 +49,24 @@ class TuneWrapper:
         # set all general seeds: python, numpy and torch.
         set_general_seeds(seed)
 
+        # build the tune config:
+        try:
+            scheduler_class = getattr(tune.schedulers, config.tune.scheduler.name)  # todo, do this in RayConfigLoader
+        except AttributeError as err:
+            raise ValueError(
+                f"Invalid scheduler: {config.tune.scheduler.name}, check Ray Tune for documentation on available schedulers",
+            ) from err
+
+        scheduler = scheduler_class(**config.tune.scheduler.params)
+        self.tune_config = tune.TuneConfig(
+            metric=config.tune.tune_params.metric,
+            mode=config.tune.tune_params.mode,
+            num_samples=config.tune.tune_params.num_samples,
+            scheduler=scheduler,
+        )
+
         self.config["model"] = model_class
-        self.config["experiment"] = experiment_object
+        self.config["encoder_loader"] = encoder_loader
 
         # add the ray method for number generation to the config
         self.config["ray_worker_seed"] = tune.randint(0, 1000)
@@ -58,12 +75,6 @@ class TuneWrapper:
         if not os.path.exists(data_path):
             raise ValueError("Data path does not exist. Given path:" + data_path)
         self.config["data_path"] = os.path.abspath(data_path)
-
-        # build the tune config
-        self.config["tune"]["tune_params"]["scheduler"] = getattr(schedulers, self.config["tune"]["scheduler"]["name"])(
-            **self.config["tune"]["scheduler"]["params"],
-        )
-        self.tune_config = tune.TuneConfig(**self.config["tune"]["tune_params"])
 
         # build the run config
         self.checkpoint_config = train.CheckpointConfig(checkpoint_at_end=True)
