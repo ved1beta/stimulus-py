@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, Dataset
 from stimulus.data.handlertorch import TorchDataset
 from stimulus.learner.predict import PredictWrapper
 from stimulus.utils.generic_utils import set_general_seeds
-from stimulus.utils.yaml_model_schema import YamlRayConfigLoader
+from stimulus.utils.yaml_model_schema import YamlRayConfigLoader, RayTuneModel
 
 
 class CheckpointDict(TypedDict):
@@ -32,7 +32,7 @@ class TuneWrapper:
 
     def __init__(
         self,
-        config_path: str,
+        config: RayTuneModel,
         model_class: nn.Module,
         data_path: str,
         experiment_object: object,
@@ -42,7 +42,7 @@ class TuneWrapper:
         debug: bool = False,
     ) -> None:
         """Initialize the TuneWrapper with the paths to the config, model, and data."""
-        self.config = YamlRayConfigLoader(config_path).get_config()
+        self.config = config.model_dump()
 
         # set all general seeds: python, numpy and torch.
         set_general_seeds(self.config["seed"])
