@@ -200,7 +200,7 @@ class YamlRayConfigLoader:
             tune=model.tune,
         )
 
-    def get_config(self) -> dict:
+    def get_config(self) -> RayTuneModel:
         """Return the current configuration.
 
         Returns:

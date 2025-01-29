@@ -83,7 +83,12 @@ class TuneWrapper:
         # Set up tune_run path
         if ray_results_dir is None:
             ray_results_dir = os.environ.get("HOME", "")
-        self.config["tune_run_path"] = os.path.join(ray_results_dir, tune_run_name)
+        self.config["tune_run_path"] = os.path.join(
+            ray_results_dir,
+            tune_run_name
+            if tune_run_name is not None
+            else "TuneModel_" + datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d_%H-%M-%S"),
+        )
         self.config["_debug"] = debug
         self.config["model"] = model_class
         self.config["encoder_loader"] = encoder_loader
