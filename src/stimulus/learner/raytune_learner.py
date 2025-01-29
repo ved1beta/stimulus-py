@@ -15,8 +15,8 @@ from safetensors.torch import save_model as safe_save_model
 from torch import nn, optim
 from torch.utils.data import DataLoader, Dataset
 
-from stimulus.data.loaders import EncoderLoader
 from stimulus.data.handlertorch import TorchDataset
+from stimulus.data.loaders import EncoderLoader
 from stimulus.learner.predict import PredictWrapper
 from stimulus.utils.generic_utils import set_general_seeds
 from stimulus.utils.yaml_model_schema import RayTuneModel
