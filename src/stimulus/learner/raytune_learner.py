@@ -36,6 +36,7 @@ class TuneWrapper:
         model_class: nn.Module,
         data_path: str,
         experiment_object: object,
+        seed: int,
         ray_results_dir: Optional[str] = None,
         tune_run_name: Optional[str] = None,
         *,  # Force debug to be keyword-only
@@ -45,7 +46,7 @@ class TuneWrapper:
         self.config = config.model_dump()
 
         # set all general seeds: python, numpy and torch.
-        set_general_seeds(self.config["seed"])
+        set_general_seeds(seed)
 
         self.config["model"] = model_class
         self.config["experiment"] = experiment_object
