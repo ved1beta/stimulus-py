@@ -3,7 +3,7 @@
 import pytest
 import yaml
 
-from stimulus.data import experiments
+from stimulus.data import loaders
 from stimulus.data.data_handlers import (
     DatasetLoader,
     DatasetManager,
@@ -82,7 +82,7 @@ def dump_single_split_config_to_disk() -> str:
 
 ## Loader fixtures
 @pytest.fixture
-def encoder_loader(generate_sub_configs: list[YamlConfigDict]) -> experiments.EncoderLoader:
+def encoder_loader(generate_sub_configs: list[YamlConfigDict]) -> loaders.EncoderLoader:
     """Create encoder loader with initialized encoders.
 
     Args:
@@ -91,13 +91,13 @@ def encoder_loader(generate_sub_configs: list[YamlConfigDict]) -> experiments.En
     Returns:
         experiments.EncoderLoader: Initialized encoder loader
     """
-    loader = experiments.EncoderLoader()
+    loader = loaders.EncoderLoader()
     loader.initialize_column_encoders_from_config(generate_sub_configs[0].columns)
     return loader
 
 
 @pytest.fixture
-def transform_loader(generate_sub_configs: list[YamlConfigDict]) -> experiments.TransformLoader:
+def transform_loader(generate_sub_configs: list[YamlConfigDict]) -> loaders.TransformLoader:
     """Create transform loader with initialized transformers.
 
     Args:
@@ -106,13 +106,13 @@ def transform_loader(generate_sub_configs: list[YamlConfigDict]) -> experiments.
     Returns:
         experiments.TransformLoader: Initialized transform loader
     """
-    loader = experiments.TransformLoader()
+    loader = loaders.TransformLoader()
     loader.initialize_column_data_transformers_from_config(generate_sub_configs[0].transforms)
     return loader
 
 
 @pytest.fixture
-def split_loader(generate_sub_configs: list[YamlConfigDict]) -> experiments.SplitLoader:
+def split_loader(generate_sub_configs: list[YamlConfigDict]) -> loaders.SplitLoader:
     """Create split loader with initialized splitter.
 
     Args:
@@ -121,7 +121,7 @@ def split_loader(generate_sub_configs: list[YamlConfigDict]) -> experiments.Spli
     Returns:
         experiments.SplitLoader: Initialized split loader
     """
-    loader = experiments.SplitLoader()
+    loader = loaders.SplitLoader()
     loader.initialize_splitter_from_config(generate_sub_configs[0].split)
     return loader
 
@@ -166,21 +166,21 @@ def test_dataset_manager_get_transform_logic(dump_single_split_config_to_disk: s
 # Test EncodeManager
 def test_encode_manager_init() -> None:
     """Test initialization of EncodeManager."""
-    encoder_loader = experiments.EncoderLoader()
+    encoder_loader = loaders.EncoderLoader()
     manager = EncodeManager(encoder_loader)
     assert hasattr(manager, "encoder_loader")
 
 
 def test_encode_manager_initialize_encoders() -> None:
     """Test encoder initialization."""
-    encoder_loader = experiments.EncoderLoader()
+    encoder_loader = loaders.EncoderLoader()
     manager = EncodeManager(encoder_loader)
     assert hasattr(manager, "encoder_loader")
 
 
 def test_encode_manager_encode_numeric() -> None:
     """Test numeric encoding."""
-    encoder_loader = experiments.EncoderLoader()
+    encoder_loader = loaders.EncoderLoader()
     intencoder = encoder_loader.get_encoder("NumericEncoder")
     encoder_loader.set_encoder_as_attribute("test_col", intencoder)
     manager = EncodeManager(encoder_loader)
@@ -192,21 +192,21 @@ def test_encode_manager_encode_numeric() -> None:
 # Test TransformManager
 def test_transform_manager_init() -> None:
     """Test initialization of TransformManager."""
-    transform_loader = experiments.TransformLoader()
+    transform_loader = loaders.TransformLoader()
     manager = TransformManager(transform_loader)
     assert hasattr(manager, "transform_loader")
 
 
 def test_transform_manager_initialize_transforms() -> None:
     """Test transform initialization."""
-    transform_loader = experiments.TransformLoader()
+    transform_loader = loaders.TransformLoader()
     manager = TransformManager(transform_loader)
     assert hasattr(manager, "transform_loader")
 
 
 def test_transform_manager_transform_column() -> None:
     """Test column transformation."""
-    transform_loader = experiments.TransformLoader()
+    transform_loader = loaders.TransformLoader()
     dummy_config = YamlTransform(
         transformation_name="GaussianNoise",
         columns=[
@@ -230,19 +230,19 @@ def test_transform_manager_transform_column() -> None:
 
 
 # Test SplitManager
-def test_split_manager_init(split_loader: experiments.SplitLoader) -> None:
+def test_split_manager_init(split_loader: loaders.SplitLoader) -> None:
     """Test initialization of SplitManager."""
     manager = SplitManager(split_loader)
     assert hasattr(manager, "split_loader")
 
 
-def test_split_manager_initialize_splits(split_loader: experiments.SplitLoader) -> None:
+def test_split_manager_initialize_splits(split_loader: loaders.SplitLoader) -> None:
     """Test split initialization."""
     manager = SplitManager(split_loader)
     assert hasattr(manager, "split_loader")
 
 
-def test_split_manager_apply_split(split_loader: experiments.SplitLoader) -> None:
+def test_split_manager_apply_split(split_loader: loaders.SplitLoader) -> None:
     """Test applying splits to data."""
     manager = SplitManager(split_loader)
     data = {"col": range(100)}
@@ -271,7 +271,7 @@ def test_dataset_processor_init(
 def test_dataset_processor_apply_split(
     dump_single_split_config_to_disk: str,
     titanic_csv_path: str,
-    split_loader: experiments.SplitLoader,
+    split_loader: loaders.SplitLoader,
 ) -> None:
     """Test applying splits in DatasetProcessor."""
     processor = DatasetProcessor(
@@ -288,7 +288,7 @@ def test_dataset_processor_apply_split(
 def test_dataset_processor_apply_transformation_group(
     dump_single_split_config_to_disk: str,
     titanic_csv_path: str,
-    transform_loader: experiments.TransformLoader,
+    transform_loader: loaders.TransformLoader,
 ) -> None:
     """Test applying transformation groups."""
     processor = DatasetProcessor(
@@ -318,7 +318,7 @@ def test_dataset_processor_apply_transformation_group(
 def test_dataset_loader_init(
     dump_single_split_config_to_disk: str,
     titanic_csv_path: str,
-    encoder_loader: experiments.EncoderLoader,
+    encoder_loader: loaders.EncoderLoader,
 ) -> None:
     """Test initialization of DatasetLoader."""
     loader = DatasetLoader(
@@ -336,7 +336,7 @@ def test_dataset_loader_init(
 def test_dataset_loader_get_dataset(
     dump_single_split_config_to_disk: str,
     titanic_csv_path: str,
-    encoder_loader: experiments.EncoderLoader,
+    encoder_loader: loaders.EncoderLoader,
 ) -> None:
     """Test getting dataset from loader."""
     loader = DatasetLoader(

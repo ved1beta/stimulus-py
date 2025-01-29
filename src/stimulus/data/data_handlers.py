@@ -29,7 +29,7 @@ import polars as pl
 import torch
 import yaml
 
-from stimulus.data import experiments
+from stimulus.data import loaders
 from stimulus.utils import yaml_data
 
 
@@ -157,7 +157,7 @@ class EncodeManager:
 
     def __init__(
         self,
-        encoder_loader: experiments.EncoderLoader,
+        encoder_loader: loaders.EncoderLoader,
     ) -> None:
         """Initialize the EncodeManager.
 
@@ -219,7 +219,7 @@ class TransformManager:
 
     def __init__(
         self,
-        transform_loader: experiments.TransformLoader,
+        transform_loader: loaders.TransformLoader,
     ) -> None:
         """Initialize the TransformManager."""
         self.transform_loader = transform_loader
@@ -245,7 +245,7 @@ class SplitManager:
 
     def __init__(
         self,
-        split_loader: experiments.SplitLoader,
+        split_loader: loaders.SplitLoader,
     ) -> None:
         """Initialize the SplitManager."""
         self.split_loader = split_loader
@@ -396,7 +396,7 @@ class DatasetLoader(DatasetHandler):
         self,
         config_path: str,
         csv_path: str,
-        encoder_loader: experiments.EncoderLoader,
+        encoder_loader: loaders.EncoderLoader,
         split: Union[int, None] = None,
     ) -> None:
         """Initialize the DatasetLoader."""

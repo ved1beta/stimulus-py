@@ -3,7 +3,7 @@
 import pytest
 import yaml
 
-from stimulus.data import experiments
+from stimulus.data import loaders
 from stimulus.data.encoding.encoders import AbstractEncoder
 from stimulus.data.splitters import splitters
 from stimulus.data.transform import data_transformation_generators
@@ -74,7 +74,7 @@ def test_get_encoder(text_onehot_encoder_params: tuple[str, dict[str, str]]) -> 
     Args:
         text_onehot_encoder_params: Tuple of encoder name and parameters
     """
-    experiment = experiments.EncoderLoader()
+    experiment = loaders.EncoderLoader()
     encoder_name, encoder_params = text_onehot_encoder_params
     encoder = experiment.get_encoder(encoder_name, encoder_params)
     assert isinstance(encoder, AbstractEncoder)
@@ -86,7 +86,7 @@ def test_set_encoder_as_attribute(text_onehot_encoder_params: tuple[str, dict[st
     Args:
         text_onehot_encoder_params: Tuple of encoder name and parameters
     """
-    experiment = experiments.EncoderLoader()
+    experiment = loaders.EncoderLoader()
     encoder_name, encoder_params = text_onehot_encoder_params
     encoder = experiment.get_encoder(encoder_name, encoder_params)
     experiment.set_encoder_as_attribute("ciao", encoder)
@@ -101,7 +101,7 @@ def test_build_experiment_class_encoder_dict(dna_experiment_sub_yaml: yaml_data.
     Args:
         dna_experiment_sub_yaml: DNA experiment sub-configuration
     """
-    experiment = experiments.EncoderLoader()
+    experiment = loaders.EncoderLoader()
     config = dna_experiment_sub_yaml.columns
     experiment.initialize_column_encoders_from_config(config)
     assert hasattr(experiment, "hello")
@@ -113,14 +113,14 @@ def test_build_experiment_class_encoder_dict(dna_experiment_sub_yaml: yaml_data.
 
 def test_get_data_transformer() -> None:
     """Test the get_data_transformer method of the TransformLoader class."""
-    experiment = experiments.TransformLoader()
+    experiment = loaders.TransformLoader()
     transformer = experiment.get_data_transformer("ReverseComplement")
     assert isinstance(transformer, data_transformation_generators.ReverseComplement)
 
 
 def test_set_data_transformer_as_attribute() -> None:
     """Test the set_data_transformer_as_attribute method."""
-    experiment = experiments.TransformLoader()
+    experiment = loaders.TransformLoader()
     transformer = experiment.get_data_transformer("ReverseComplement")
     experiment.set_data_transformer_as_attribute("col1", transformer)
     assert hasattr(experiment, "col1")
@@ -135,7 +135,7 @@ def test_initialize_column_data_transformers_from_config(
     Args:
         dna_experiment_sub_yaml: DNA experiment sub-configuration
     """
-    experiment = experiments.TransformLoader()
+    experiment = loaders.TransformLoader()
     config = dna_experiment_sub_yaml.transforms
     experiment.initialize_column_data_transformers_from_config(config)
 
@@ -152,7 +152,7 @@ def test_initialize_splitter_from_config(
     Args:
         dna_experiment_sub_yaml: DNA experiment sub-configuration
     """
-    experiment = experiments.SplitLoader()
+    experiment = loaders.SplitLoader()
     config = dna_experiment_sub_yaml.split
     experiment.initialize_splitter_from_config(config)
     assert hasattr(experiment, "split")
