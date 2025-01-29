@@ -2,31 +2,138 @@
 
 import random
 from collections.abc import Callable
-from copy import deepcopy
-from typing import Any
+from typing import Any, Optional
 
-import yaml
+import pydantic
 from ray import tune
+from ray.tune.search.sample import Domain
+
+
+class CustomTunableParameter(pydantic.BaseModel):
+    """Custom tunable parameter."""
+
+    function: str
+    sample_space: list[Any]
+    n_space: list[Any]
+    mode: str
+
+
+class TunableParameter(pydantic.BaseModel):
+    """Tunable parameter."""
+
+    space: list[Any]
+    mode: str
+
+    @pydantic.model_validator(mode="after")
+    def validate_mode(self) -> "TunableParameter":
+        """Validate that mode is supported by Ray Tune."""
+        if not hasattr(tune, self.mode):
+            raise AttributeError(
+                f"Mode {self.mode} not recognized, check the ray.tune documentation at https://docs.ray.io/en/master/tune/api_docs/suggestion.html",
+            )
+
+        mode = getattr(tune, self.mode)
+        if mode.__name__ not in [
+            "choice",
+            "uniform",
+            "loguniform",
+            "quniform",
+            "qloguniform",
+            "qnormal",
+            "randint",
+            "sample_from",
+        ]:
+            raise NotImplementedError(f"Mode {mode.__name__} not implemented yet")
+
+        return self
+
+
+class Loss(pydantic.BaseModel):
+    """Loss parameters."""
+
+    loss_fn: TunableParameter
+
+
+class Data(pydantic.BaseModel):
+    """Data parameters."""
+
+    batch_size: TunableParameter
+
+
+class TuneParams(pydantic.BaseModel):
+    """Tune parameters."""
+
+    metric: str
+    mode: str
+    num_samples: int
+
+
+class Scheduler(pydantic.BaseModel):
+    """Scheduler parameters."""
+
+    name: str
+    params: dict[str, Any]
+
+
+class RunParams(pydantic.BaseModel):
+    """Run parameters."""
+
+    stop: Optional[dict[str, Any]] = None
+
+
+class Tune(pydantic.BaseModel):
+    """Tune parameters."""
+
+    config_name: str
+    tune_params: TuneParams
+    scheduler: Scheduler
+    run_params: RunParams
+    step_size: Optional[int] = 1
+    gpu_per_trial: int
+    cpu_per_trial: int
+
+
+class Model(pydantic.BaseModel):
+    """Model configuration."""
+
+    network_params: dict[str, TunableParameter]
+    optimizer_params: dict[str, TunableParameter]
+    loss_params: Loss
+    data_params: Data
+    tune: Tune
+
+
+class RayTuneModel(pydantic.BaseModel):
+    """Ray Tune compatible model configuration."""
+
+    model_config = {
+        "arbitrary_types_allowed": True,  # Add this line to allow Domain type
+    }
+
+    network_params: dict[str, Domain]
+    optimizer_params: dict[str, Domain]
+    loss_params: dict[str, Domain]
+    data_params: dict[str, Domain]
+    tune: Tune
 
 
 class YamlRayConfigLoader:
     """Load and convert YAML configurations to Ray Tune format.
 
-    This class handles loading YAML configuration files and converting them into
+    This class handles loading model configurations and converting them into
     formats compatible with Ray Tune's hyperparameter search spaces.
     """
 
-    def __init__(self, config_path: str) -> None:
-        """Initialize the config loader with a YAML file path.
+    def __init__(self, model: Model) -> None:
+        """Initialize the config loader with a Model instance.
 
         Args:
-            config_path: Path to the YAML configuration file
+            model: Pydantic Model instance containing configuration
         """
-        with open(config_path) as f:
-            self.config = yaml.safe_load(f)
-            self.config = self.convert_config_to_ray(self.config)
+        self.model = model
+        self.ray_model = self.convert_config_to_ray(model)
 
-    def raytune_space_selector(self, mode: Callable, space: list) -> dict[str, Any]:
+    def raytune_space_selector(self, mode: Callable, space: list) -> Any:
         """Convert space parameters to Ray Tune format based on the mode.
 
         Args:
@@ -35,24 +142,18 @@ class YamlRayConfigLoader:
 
         Returns:
             Configured Ray Tune search space
-
-        Raises:
-            NotImplementedError: If the mode is not supported
         """
         if mode.__name__ == "choice":
             return mode(space)
 
-        if mode.__name__ in ["uniform", "loguniform", "quniform", "qloguniform", "qnormal", "randint"]:
-            return mode(*tuple(space))
+        return mode(*tuple(space))
 
-        raise NotImplementedError(f"Mode {mode.__name__} not implemented yet")
-
-    def raytune_sample_from(self, mode: Callable, param: dict) -> dict[str, Any]:
+    def raytune_sample_from(self, mode: Callable, param: CustomTunableParameter) -> Any:
         """Apply tune.sample_from to a given custom sampling function.
 
         Args:
             mode: Ray Tune sampling function
-            param: Dictionary containing sampling parameters
+            param: TunableParameter containing sampling parameters
 
         Returns:
             Configured sampling function
@@ -60,67 +161,44 @@ class YamlRayConfigLoader:
         Raises:
             NotImplementedError: If the sampling function is not supported
         """
-        if param["function"] == "sampint":
-            return mode(lambda _: self.sampint(param["sample_space"], param["n_space"]))
+        if param.function == "sampint":
+            return mode(lambda _: self.sampint(param.sample_space, param.n_space))
 
-        raise NotImplementedError(f"Function {param['function']} not implemented yet")
+        raise NotImplementedError(f"Function {param.function} not implemented yet")
 
-    def convert_raytune(self, param: dict) -> dict[str, Any]:
+    def convert_raytune(self, param: TunableParameter | CustomTunableParameter) -> Any:
         """Convert parameter configuration to Ray Tune format.
 
         Args:
-            param: Parameter configuration dictionary
+            param: Parameter configuration
 
         Returns:
             Ray Tune compatible parameter configuration
-
-        Raises:
-            AttributeError: If the mode is not recognized in Ray Tune
         """
-        try:
-            mode = getattr(tune, param["mode"])
-        except AttributeError as err:
-            raise AttributeError(
-                f"Mode {param['mode']} not recognized, check the ray.tune documentation at https://docs.ray.io/en/master/tune/api_docs/suggestion.html",
-            ) from err
+        mode = getattr(tune, param.mode)
 
-        if param["mode"] != "sample_from":
-            return self.raytune_space_selector(mode, param["space"])
+        if isinstance(param, TunableParameter):
+            return self.raytune_space_selector(mode, param.space)
         return self.raytune_sample_from(mode, param)
 
-    def convert_config_to_ray(self, config: dict) -> dict:
-        """Convert YAML configuration to Ray Tune format.
+    def convert_config_to_ray(self, model: Model) -> RayTuneModel:
+        """Convert Model configuration to Ray Tune format.
 
-        Converts parameters in model_params, loss_params, optimizer_params, and data_params
-        to Ray Tune search spaces when a mode is specified.
+        Converts parameters in network_params and optimizer_params to Ray Tune search spaces.
 
         Args:
-            config: Raw configuration dictionary from YAML
+            model: Model configuration
 
         Returns:
-            Ray Tune compatible configuration dictionary
+            Ray Tune compatible model configuration
         """
-        new_config = deepcopy(config)
-        for key in ["model_params", "loss_params", "optimizer_params", "data_params"]:
-            for sub_key in config[key]:
-                if "mode" in config[key][sub_key]:
-                    new_config[key][sub_key] = self.convert_raytune(config[key][sub_key])
-
-        return new_config
-
-    def get_config_instance(self) -> dict:
-        """Generate a configuration instance with sampled values.
-
-        Returns:
-            Configuration dictionary with concrete sampled values
-        """
-        config_instance = deepcopy(self.config)
-        for key in ["model_params", "loss_params", "optimizer_params", "data_params"]:
-            config_instance[key] = {}
-            for sub_key in self.config[key]:
-                config_instance[key][sub_key] = self.config[key][sub_key].sample()
-
-        return config_instance
+        return RayTuneModel(
+            network_params={k: self.convert_raytune(v) for k, v in model.network_params.items()},
+            optimizer_params={k: self.convert_raytune(v) for k, v in model.optimizer_params.items()},
+            loss_params={k: self.convert_raytune(v) for k, v in model.loss_params},
+            data_params={k: self.convert_raytune(v) for k, v in model.data_params},
+            tune=model.tune,
+        )
 
     def get_config(self) -> dict:
         """Return the current configuration.
@@ -128,7 +206,7 @@ class YamlRayConfigLoader:
         Returns:
             Current configuration dictionary
         """
-        return self.config
+        return self.ray_model
 
     @staticmethod
     def sampint(sample_space: list, n_space: list) -> list[int]:
