@@ -6,7 +6,7 @@ import argparse
 import yaml
 
 from stimulus.data.data_handlers import DatasetProcessor, SplitManager
-from stimulus.data.experiments import SplitLoader
+from stimulus.data.loaders import SplitLoader
 from stimulus.utils.yaml_data import YamlSubConfigDict
 
 

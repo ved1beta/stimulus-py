@@ -5,7 +5,7 @@ import math
 import os
 from typing import Union
 
-import stimulus.data.experiments as exp
+import stimulus.data.loaders as exp
 
 
 def import_class_from_file(file_path: str) -> type:
