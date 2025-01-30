@@ -79,7 +79,7 @@ def main(data_csv: str, config_yaml: str, out_path: str, *, force: bool = False)
 def run() -> None:
     """Run the CSV splitting script."""
     args = get_args()
-    main(args.csv, args.json, args.output, force=args.force)
+    main(args.csv, args.yaml, args.output, force=args.force)
 
 
 if __name__ == "__main__":
