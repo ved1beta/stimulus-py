@@ -1,12 +1,13 @@
 """This file contains encoders classes for encoding various types of data."""
 
 import logging
-import multiprocessing as mp
 from abc import ABC, abstractmethod
 from typing import Any, Union
 
 import numpy as np
 import torch
+import torch.multiprocessing as mp
+import torch.nn.functional as F  # noqa: N812
 from sklearn import preprocessing
 
 logger = logging.getLogger(__name__)
@@ -67,18 +68,6 @@ class AbstractEncoder(ABC):
             decoded_data_point (Any): the decoded data point
         """
         raise NotImplementedError
-
-    def encode_multiprocess(self, data: list[Any]) -> list[Any]:
-        """Helper function for encoding the data using multiprocessing.
-
-        Args:
-            data (list[Any]): a list of data points
-
-        Returns:
-            encoded_data (list[Any]): encoded data points
-        """
-        with mp.Pool(mp.cpu_count()) as pool:
-            return pool.map(self.encode, data)
 
 
 class TextOneHotEncoder(AbstractEncoder):
@@ -203,6 +192,11 @@ class TextOneHotEncoder(AbstractEncoder):
         numpy_array = np.squeeze(np.stack(transformed.toarray()))
         return torch.from_numpy(numpy_array)
 
+    def encode_multiprocess(self, data: list[str]) -> list[torch.Tensor]:
+        """Encodes a list of sequences using multiprocessing."""
+        with mp.Pool() as pool:
+            return pool.map(self.encode, data)
+
     def encode_all(self, data: Union[str, list[str]]) -> torch.Tensor:
         """Encodes a list of sequences.
 
@@ -235,13 +229,14 @@ class TextOneHotEncoder(AbstractEncoder):
                      [0, 0, 0, 1],
                      [0, 0, 0, 0]]])
         """
+        encoded_data = None  # to prevent UnboundLocalError
         # encode data
         if isinstance(data, str):
             encoded_data = self.encode(data)
             return torch.stack([encoded_data])
         if isinstance(data, list):
             # TODO instead maybe we can run encode_multiprocess when data size is larger than a certain threshold.
-            encoded_data = self.encode_multiprocess(data)  # type: ignore[assignment]
+            encoded_list = self.encode_multiprocess(data)
         else:
             error_msg = f"Expected list or string input for data, got {type(data).__name__}"
             logger.error(error_msg)
@@ -249,16 +244,20 @@ class TextOneHotEncoder(AbstractEncoder):
 
         # handle padding
         if self.padding:
-            max_length = max([len(d) for d in encoded_data])
-            encoded_data = [np.pad(d, ((0, max_length - len(d)), (0, 0))) for d in encoded_data]  # type: ignore[assignment]
+            max_length = max([len(d) for d in encoded_list])
+            encoded_data = torch.stack([F.pad(d, (0, 0, 0, max_length - len(d))) for d in encoded_list])
         else:
-            lengths = {len(d) for d in encoded_data}
+            lengths = {len(d) for d in encoded_list}
             if len(lengths) > 1:
                 error_msg = "All sequences must have the same length when padding is False."
                 logger.error(error_msg)
                 raise ValueError(error_msg)
+            encoded_data = torch.stack(encoded_list)
 
-        return torch.from_numpy(np.array(encoded_data))
+        if encoded_data is None:
+            raise ValueError("Encoded data is None. This should not happen.")
+
+        return encoded_data
 
     def decode(self, data: torch.Tensor) -> Union[str, list[str]]:
         """Decodes one-hot encoded tensor back to sequences.
