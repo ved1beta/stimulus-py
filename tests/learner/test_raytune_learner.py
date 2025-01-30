@@ -1,7 +1,11 @@
+"""Test the RayTuneLearner class."""
+
+import os
+import warnings
+
 import pytest
 import ray
 import yaml
-import os
 
 from stimulus.data.loaders import EncoderLoader
 from stimulus.learner.raytune_learner import TuneWrapper
@@ -12,6 +16,7 @@ from tests.test_model import titanic_model
 
 @pytest.fixture
 def ray_config_loader() -> RayTuneModel:
+    """Load the RayTuneModel configuration."""
     with open("tests/test_model/titanic_model_cpu.yaml") as file:
         model_config = yaml.safe_load(file)
     return YamlRayConfigLoader(Model(**model_config)).get_config()
@@ -19,25 +24,40 @@ def ray_config_loader() -> RayTuneModel:
 
 @pytest.fixture
 def encoder_loader() -> EncoderLoader:
+    """Load the EncoderLoader configuration."""
     with open("tests/test_data/titanic/titanic_sub_config.yaml") as file:
         data_config = yaml.safe_load(file)
     return EncoderLoader(YamlSubConfigDict(**data_config).columns)
 
 
-def test_TuneWrapper_init(ray_config_loader: RayTuneModel, encoder_loader: EncoderLoader):
-    ray.init()
-    tune_wrapper = TuneWrapper(
-        model_config=ray_config_loader,
-        model_class=titanic_model,
-        data_path="tests/test_data/titanic/titanic_stimulus_split.csv",
-        data_config_path="tests/test_data/titanic/titanic_sub_config.yaml",
-        encoder_loader=encoder_loader,
-        seed=42,
-        ray_results_dir=os.path.abspath("tests/test_data/titanic/ray_results"),
-        tune_run_name="test_run",
-        debug=False,
-        autoscaler=False,
-    )
+def test_tunewrapper_init(ray_config_loader: RayTuneModel, encoder_loader: EncoderLoader) -> None:
+    """Test the initialization of the TuneWrapper class."""
+    # Filter ResourceWarning during Ray shutdown
+    warnings.filterwarnings("ignore", category=ResourceWarning)
 
-    assert isinstance(tune_wrapper, TuneWrapper)
-    ray.shutdown()
+    # Initialize Ray with minimal resources for testing
+    ray.init(ignore_reinit_error=True)
+
+    try:
+        tune_wrapper = TuneWrapper(
+            model_config=ray_config_loader,
+            model_class=titanic_model,
+            data_path="tests/test_data/titanic/titanic_stimulus_split.csv",
+            data_config_path="tests/test_data/titanic/titanic_sub_config.yaml",
+            encoder_loader=encoder_loader,
+            seed=42,
+            ray_results_dir=os.path.abspath("tests/test_data/titanic/ray_results"),
+            tune_run_name="test_run",
+            debug=False,
+            autoscaler=False,
+        )
+
+        assert isinstance(tune_wrapper, TuneWrapper)
+    finally:
+        # Force cleanup of Ray resources
+        ray.shutdown()
+        # Clear any temporary files
+        if os.path.exists("tests/test_data/titanic/ray_results"):
+            import shutil
+
+            shutil.rmtree("tests/test_data/titanic/ray_results", ignore_errors=True)
