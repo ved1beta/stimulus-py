@@ -33,7 +33,8 @@ class TuneWrapper:
 
     def __init__(
         self,
-        config: RayTuneModel,
+        model_config: RayTuneModel,
+        data_config_path: str,
         model_class: nn.Module,
         data_path: str,
         encoder_loader: EncoderLoader,
@@ -45,24 +46,27 @@ class TuneWrapper:
         autoscaler: bool = False,
     ) -> None:
         """Initialize the TuneWrapper with the paths to the config, model, and data."""
-        self.config = config.model_dump()
+        self.config = model_config.model_dump()
 
         # set all general seeds: python, numpy and torch.
         set_general_seeds(seed)
 
         # build the tune config:
         try:
-            scheduler_class = getattr(tune.schedulers, config.tune.scheduler.name)  # todo, do this in RayConfigLoader
+            scheduler_class = getattr(
+                tune.schedulers,
+                model_config.tune.scheduler.name,
+            )  # todo, do this in RayConfigLoader
         except AttributeError as err:
             raise ValueError(
-                f"Invalid scheduler: {config.tune.scheduler.name}, check Ray Tune for documentation on available schedulers",
+                f"Invalid scheduler: {model_config.tune.scheduler.name}, check Ray Tune for documentation on available schedulers",
             ) from err
 
-        scheduler = scheduler_class(**config.tune.scheduler.params)
+        scheduler = scheduler_class(**model_config.tune.scheduler.params)
         self.tune_config = tune.TuneConfig(
-            metric=config.tune.tune_params.metric,
-            mode=config.tune.tune_params.mode,
-            num_samples=config.tune.tune_params.num_samples,
+            metric=model_config.tune.tune_params.metric,
+            mode=model_config.tune.tune_params.mode,
+            num_samples=model_config.tune.tune_params.num_samples,
             scheduler=scheduler,
         )
 
@@ -73,7 +77,7 @@ class TuneWrapper:
             else "TuneModel_" + datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y-%m-%d_%H-%M-%S"),
             storage_path=ray_results_dir,
             checkpoint_config=train.CheckpointConfig(checkpoint_at_end=True),
-            stop=config.tune.run_params.stop,
+            stop=model_config.tune.run_params.stop,
         )
 
         # add the data path to the config
@@ -95,22 +99,37 @@ class TuneWrapper:
         self.config["encoder_loader"] = encoder_loader
         self.config["ray_worker_seed"] = tune.randint(0, 1000)
 
-        self.gpu_per_trial = config.tune.tune_params.gpu_per_trial
-        self.cpu_per_trial = config.tune.tune_params.cpu_per_trial
+        self.gpu_per_trial = model_config.tune.gpu_per_trial
+        self.cpu_per_trial = model_config.tune.cpu_per_trial
 
-        self.tuner = self.tuner_initialization(autoscaler=autoscaler)
+        self.tuner = self.tuner_initialization(
+            config_path=data_config_path,
+            data_path=data_path,
+            encoder_loader=encoder_loader,
+            autoscaler=autoscaler,
+        )
 
-    def tuner_initialization(self, *, autoscaler: bool = False) -> tune.Tuner:
+    def tuner_initialization(
+        self,
+        config_path: str,
+        data_path: str,
+        encoder_loader: EncoderLoader,
+        *,
+        autoscaler: bool = False,
+    ) -> tune.Tuner:
         """Prepare the tuner with the configs."""
         # Get available resources from Ray cluster
         cluster_res = cluster_resources()
         logging.info(f"CLUSTER resources   ->  {cluster_res}")
 
         # Check per-trial resources
-        if self.gpu_per_trial > cluster_res["GPU"] and not autoscaler:
-            raise ValueError(
-                "GPU per trial is more than what is available in the cluster, set autoscaler to True to allow for autoscaler to be used.",
-            )
+        try:
+            if self.gpu_per_trial > cluster_res["GPU"] and not autoscaler:
+                raise ValueError(
+                    "GPU per trial is more than what is available in the cluster, set autoscaler to True to allow for autoscaler to be used.",
+                )
+        except KeyError as err:
+            logging.warning(f"KeyError: {err}, no GPU resources available in the cluster: {cluster_res}")
 
         if self.cpu_per_trial > cluster_res["CPU"] and not autoscaler:
             raise ValueError(
@@ -123,8 +142,13 @@ class TuneWrapper:
         trainable = tune.with_resources(TuneModel, resources={"cpu": self.cpu_per_trial, "gpu": self.gpu_per_trial})
         trainable = tune.with_parameters(
             trainable,
-            training=TorchDataset(self.config["data_path"], self.config["experiment"], split=0),
-            validation=TorchDataset(self.config["data_path"], self.config["experiment"], split=1),
+            training=TorchDataset(config_path=config_path, csv_path=data_path, encoder_loader=encoder_loader, split=0),
+            validation=TorchDataset(
+                config_path=config_path,
+                csv_path=data_path,
+                encoder_loader=encoder_loader,
+                split=1,
+            ),
         )
 
         return tune.Tuner(trainable, tune_config=self.tune_config, param_space=self.config, run_config=self.run_config)
