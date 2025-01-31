@@ -51,14 +51,14 @@ class ModelTitanic(torch.nn.Module):
             pclass: Tensor of shape [batch_size, 1]
             sex: Tensor of shape [batch_size, 1]
             ...etc
-            
+
         Returns:
             Tensor of shape [batch_size, nb_classes] containing class probabilities
         """
         # Stack features and remove the extra dimension
         x = torch.stack((pclass, sex, age, sibsp, parch, fare, embarked), dim=1).float()  # [batch_size, 7, 1]
         x = x.squeeze(-1)  # [batch_size, 7]
-        
+
         # Pass through layers
         x = self.relu(self.input_layer(x))
         for layer in self.intermediate:
