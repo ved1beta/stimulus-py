@@ -4,11 +4,10 @@
 import argparse
 import logging
 
-import ray
 import yaml
 from torch.utils.data import DataLoader
 
-from stimulus.data import data_handlers, handlertorch, loaders
+from stimulus.data import handlertorch, loaders
 from stimulus.learner import raytune_learner
 from stimulus.utils import launch_utils, yaml_data, yaml_model_schema
 
@@ -87,7 +86,7 @@ def main(
     data_path: str,
     data_config_path: str,
     model_config_path: str,
-    initial_weights: str | None = None,
+    initial_weights: str | None = None,  # noqa: ARG001
     num_samples: int = 3,
     ray_results_dirpath: str | None = None,
     *,
@@ -115,9 +114,6 @@ def main(
 
     encoder_loader = loaders.EncoderLoader()
     encoder_loader.initialize_column_encoders_from_config(column_config=data_config.columns)
-    dataset = data_handlers.DatasetLoader(
-        config_path=data_config_path, csv_path=data_path, encoder_loader=encoder_loader
-    )
 
     logger.info("Dataset loaded successfully.")
 
@@ -143,7 +139,9 @@ def main(
     logger.info("Model instance loaded successfully.")
 
     torch_dataset = handlertorch.TorchDataset(
-        config_path=data_config_path, csv_path=data_path, encoder_loader=encoder_loader
+        config_path=data_config_path,
+        csv_path=data_path,
+        encoder_loader=encoder_loader,
     )
 
     torch_dataloader = DataLoader(torch_dataset, batch_size=10, shuffle=True)
@@ -169,9 +167,6 @@ def main(
 
     # override num_samples
     model_config.tune.tune_params.num_samples = num_samples
-
-    # initialize ray
-    ray.init()
 
     tuner = raytune_learner.TuneWrapper(
         model_config=ray_config_model,
