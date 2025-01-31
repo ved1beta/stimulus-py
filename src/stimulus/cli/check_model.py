@@ -2,19 +2,18 @@
 """CLI module for checking model configuration and running initial tests."""
 
 import argparse
-import json
 import logging
-import os
 
-import yaml
 import ray
-
-from stimulus.data import loaders, data_handlers, handlertorch
-from stimulus.learner import raytune_learner
-from stimulus.utils import yaml_data, yaml_model_schema, launch_utils
+import yaml
 from torch.utils.data import DataLoader
 
+from stimulus.data import data_handlers, handlertorch, loaders
+from stimulus.learner import raytune_learner
+from stimulus.utils import launch_utils, yaml_data, yaml_model_schema
+
 logger = logging.getLogger(__name__)
+
 
 def get_args() -> argparse.Namespace:
     """Get the arguments when using from the commandline.
@@ -106,17 +105,19 @@ def main(
         ray_results_dirpath: Directory for ray results.
         debug_mode: Whether to run in debug mode.
     """
-    with open(data_config_path, "r") as file:
+    with open(data_config_path) as file:
         data_config = yaml.safe_load(file)
         data_config = yaml_data.YamlSubConfigDict(**data_config)
 
-    with open(model_config_path, "r") as file:
+    with open(model_config_path) as file:
         model_config = yaml.safe_load(file)
         model_config = yaml_model_schema.Model(**model_config)
 
     encoder_loader = loaders.EncoderLoader()
     encoder_loader.initialize_column_encoders_from_config(column_config=data_config.columns)
-    dataset = data_handlers.DatasetLoader(config_path=data_config_path, csv_path=data_path, encoder_loader=encoder_loader)
+    dataset = data_handlers.DatasetLoader(
+        config_path=data_config_path, csv_path=data_path, encoder_loader=encoder_loader
+    )
 
     logger.info("Dataset loaded successfully.")
 
@@ -131,7 +132,7 @@ def main(
     logger.info("Ray config loaded successfully.")
 
     sampled_model_params = {
-        key: domain.sample() if hasattr(domain, "sample") else domain 
+        key: domain.sample() if hasattr(domain, "sample") else domain
         for key, domain in ray_config_dict["network_params"].items()
     }
 
@@ -141,7 +142,9 @@ def main(
 
     logger.info("Model instance loaded successfully.")
 
-    torch_dataset = handlertorch.TorchDataset(config_path=data_config_path, csv_path=data_path, encoder_loader=encoder_loader)
+    torch_dataset = handlertorch.TorchDataset(
+        config_path=data_config_path, csv_path=data_path, encoder_loader=encoder_loader
+    )
 
     torch_dataloader = DataLoader(torch_dataset, batch_size=10, shuffle=True)
 
@@ -187,6 +190,7 @@ def main(
 
     logger.info("Tuning completed successfully.")
     logger.info("Checks complete")
+
 
 def run() -> None:
     """Run the model checking script."""

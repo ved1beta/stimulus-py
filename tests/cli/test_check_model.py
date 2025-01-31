@@ -1,14 +1,11 @@
 """Test the check_model CLI."""
 
-import pytest
-
-from stimulus.cli import check_model
-
-
 import os
 from pathlib import Path
 
 import pytest
+
+from stimulus.cli import check_model
 
 
 @pytest.fixture
@@ -37,7 +34,7 @@ def model_config() -> str:
 
 def test_check_model_main(data_path: str, data_config: str, model_path: str, model_config: str) -> None:
     """Test that check_model.main runs without errors.
-    
+
     Args:
         data_path: Path to test CSV data
         data_config: Path to data config YAML
@@ -60,4 +57,3 @@ def test_check_model_main(data_path: str, data_config: str, model_path: str, mod
         num_samples=1,
         ray_results_dirpath=None,
     )
-

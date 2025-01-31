@@ -3,6 +3,7 @@
 import importlib.util
 import os
 
+
 def import_class_from_file(file_path: str) -> type:
     """Import and return the Model class from a specified Python file.
 
