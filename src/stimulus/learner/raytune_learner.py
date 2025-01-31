@@ -14,6 +14,7 @@ from safetensors.torch import load_model as safe_load_model
 from safetensors.torch import save_model as safe_save_model
 from torch import nn, optim
 from torch.utils.data import DataLoader, Dataset
+import ray
 
 from stimulus.data.handlertorch import TorchDataset
 from stimulus.data.loaders import EncoderLoader
@@ -138,13 +139,31 @@ class TuneWrapper:
 
         logging.info(f"PER_TRIAL resources ->  GPU: {self.gpu_per_trial} CPU: {self.cpu_per_trial}")
 
+        # Pre-load and encode datasets once, then put them in Ray's object store
+        @ray.remote
+        def create_datasets(data_config_path: str, data_path: str, encoder_loader: EncoderLoader):
+            training = TorchDataset(
+                config_path=data_config_path,
+                csv_path=data_path,
+                encoder_loader=encoder_loader,
+                split=0,
+            )
+            validation = TorchDataset(
+                config_path=data_config_path,
+                csv_path=data_path,
+                encoder_loader=encoder_loader,
+                split=1,
+            )
+            return training, validation
+
+        # Put datasets in Ray's object store
+        datasets_ref = create_datasets.remote(data_config_path, data_path, encoder_loader)
+        
         # Configure trainable with resources and dataset parameters
         trainable = tune.with_resources(
             tune.with_parameters(
                 TuneModel,
-                data_config_path=data_config_path,
-                data_path=data_path,
-                encoder_loader=encoder_loader,
+                datasets_ref=datasets_ref,
             ),
             resources={"cpu": self.cpu_per_trial, "gpu": self.gpu_per_trial}
         )
@@ -159,16 +178,13 @@ class TuneWrapper:
 class TuneModel(Trainable):
     """Trainable model class for Ray Tune."""
 
-    def setup(self, config: dict[Any, Any], *, data_config_path: str, data_path: str, encoder_loader: EncoderLoader) -> None:
+    def setup(self, config: dict[Any, Any], *, datasets_ref: ray.ObjectRef) -> None:
         """Get the model, loss function(s), optimizer, train and test data from the config."""
         # set the seeds the second time, first in TuneWrapper initialization
         set_general_seeds(self.config["ray_worker_seed"])
 
         # Initialize model with the config params
         self.model = config["model"](**config["model_params"])
-
-        # Add data path
-        self.data_path = data_path
 
         # Get the loss function(s) from the config model params
         self.loss_dict = config["loss_params"]
@@ -190,19 +206,8 @@ class TuneModel(Trainable):
         # get step size from the config
         self.step_size = config["tune"]["step_size"]
 
-        # Initialize datasets using the passed parameters
-        training = TorchDataset(
-            config_path=data_config_path,
-            csv_path=data_path,
-            encoder_loader=encoder_loader,
-            split=0,
-        )
-        validation = TorchDataset(
-            config_path=data_config_path,
-            csv_path=data_path,
-            encoder_loader=encoder_loader,
-            split=1,
-        )
+        # Get datasets from Ray's object store
+        training, validation = ray.get(datasets_ref)
 
         # use dataloader on training/validation data
         self.batch_size = config["data_params"]["batch_size"]
