@@ -480,7 +480,7 @@ class DatasetLoader(DatasetHandler):
 
         elif isinstance(idx, int):
             # For single row, convert to dict with column names as keys
-            row_dict = {col: val for col, val in zip(self.data.columns, self.data.row(idx))}
+            row_dict = dict(zip(self.data.columns, self.data.row(idx)))
 
             # Create single-row DataFrames for encoding
             input_df = pl.DataFrame({col: [row_dict[col]] for col in input_columns})
