@@ -104,7 +104,7 @@ class TuneWrapper:
         self.cpu_per_trial = model_config.tune.cpu_per_trial
 
         self.tuner = self.tuner_initialization(
-            config_path=data_config_path,
+            data_config_path=data_config_path,
             data_path=data_path,
             encoder_loader=encoder_loader,
             autoscaler=autoscaler,
