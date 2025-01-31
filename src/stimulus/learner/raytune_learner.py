@@ -184,7 +184,7 @@ class TuneModel(Trainable):
         set_general_seeds(self.config["ray_worker_seed"])
 
         # Initialize model with the config params
-        self.model = config["model"](**config["model_params"])
+        self.model = config["model"](**config["network_params"])
 
         # Get the loss function(s) from the config model params
         self.loss_dict = config["loss_params"]
