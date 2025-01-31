@@ -140,30 +140,32 @@ class TuneWrapper:
         logging.info(f"PER_TRIAL resources ->  GPU: {self.gpu_per_trial} CPU: {self.cpu_per_trial}")
 
         # Pre-load and encode datasets once, then put them in Ray's object store
-        @ray.remote
-        def create_datasets(data_config_path: str, data_path: str, encoder_loader: EncoderLoader):
-            training = TorchDataset(
-                config_path=data_config_path,
-                csv_path=data_path,
-                encoder_loader=encoder_loader,
-                split=0,
-            )
-            validation = TorchDataset(
-                config_path=data_config_path,
-                csv_path=data_path,
-                encoder_loader=encoder_loader,
-                split=1,
-            )
-            return training, validation
+ 
 
-        # Put datasets in Ray's object store
-        datasets_ref = create_datasets.remote(data_config_path, data_path, encoder_loader)
+        training = TorchDataset(
+            config_path=data_config_path,
+            csv_path=data_path,
+            encoder_loader=encoder_loader,
+            split=0,
+        )
+        validation = TorchDataset(
+            config_path=data_config_path,
+            csv_path=data_path,
+            encoder_loader=encoder_loader,
+            split=1,
+        )
+
+
+        training_ref = ray.put(training)
+        validation_ref = ray.put(validation)
+
+        self.config["_training_ref"] = training_ref
+        self.config["_validation_ref"] = validation_ref
         
         # Configure trainable with resources and dataset parameters
         trainable = tune.with_resources(
             tune.with_parameters(
                 TuneModel,
-                datasets_ref=datasets_ref,
             ),
             resources={"cpu": self.cpu_per_trial, "gpu": self.gpu_per_trial}
         )
@@ -178,7 +180,7 @@ class TuneWrapper:
 class TuneModel(Trainable):
     """Trainable model class for Ray Tune."""
 
-    def setup(self, config: dict[Any, Any], *, datasets_ref: ray.ObjectRef) -> None:
+    def setup(self, config: dict[Any, Any]) -> None:
         """Get the model, loss function(s), optimizer, train and test data from the config."""
         # set the seeds the second time, first in TuneWrapper initialization
         set_general_seeds(self.config["ray_worker_seed"])
@@ -207,7 +209,7 @@ class TuneModel(Trainable):
         self.step_size = config["tune"]["step_size"]
 
         # Get datasets from Ray's object store
-        training, validation = ray.get(datasets_ref)
+        training, validation = ray.get(self.config["_training_ref"]), ray.get(self.config["_validation_ref"])
 
         # use dataloader on training/validation data
         self.batch_size = config["data_params"]["batch_size"]
