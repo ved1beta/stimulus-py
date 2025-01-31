@@ -18,6 +18,7 @@ from sklearn.metrics import (
 # Constants for threshold and number of classes
 BINARY_THRESHOLD = 0.5
 BINARY_CLASS_COUNT = 2
+NON_SQUEEZED_SHAPE_LENGTH = 2
 
 
 class Performance:
@@ -89,19 +90,37 @@ class Performance:
     ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         """Handle the case of multiclass classification.
 
-        TODO currently only two class predictions are handled. Needs to handle the other scenarios.
+        Args:
+            labels: Labels array of shape (N,) or (N, 1)
+            predictions: Predictions array of shape (N,) or (N, C) where C is number of classes
+
+        Returns:
+            tuple[NDArray[np.float64], NDArray[np.float64]]: Processed labels and predictions
+
+        Raises:
+            ValueError: If input shapes are not compatible
         """
-        # if only one columns for labels and predictions
-        if (len(labels.shape) == 1) and (len(predictions.shape) == 1):
-            return labels, predictions
+        # Case 1: If labels are 2D with shape (N,1), squeeze to 1D shape (N,)
+        # This handles cases where labels come as column vectors
+        if len(labels.shape) == NON_SQUEEZED_SHAPE_LENGTH and labels.shape[1] == 1:
+            labels = labels.squeeze(-1)
 
-        # if one columns for labels, but two columns for predictions
-        if (len(labels.shape) == 1) and (predictions.shape[1] == BINARY_CLASS_COUNT):
-            predictions = predictions[:, 1]  # assumes the second column is the positive class
-            return labels, predictions
+        if len(predictions.shape) == NON_SQUEEZED_SHAPE_LENGTH:
+            # Case 2: Binary classification with shape (N,2)
+            # Take probability of positive class (second column)
+            if predictions.shape[1] == BINARY_CLASS_COUNT:
+                predictions = predictions[:, 1]  # Shape becomes (N,)
+                return labels, predictions
+            # Case 3: Multi-class classification with shape (N,C)
+            # Keep predictions as-is if labels are 1D and batch sizes match
+            if len(labels.shape) == 1 and predictions.shape[0] == labels.shape[0]:
+                return labels, predictions
 
-        # other scenarios not implemented yet
-        raise ValueError(f"Labels have shape {labels.shape} and predictions have shape {predictions.shape}.")
+        # If we get here, the shapes are not compatible
+        raise ValueError(
+            f"Incompatible shapes: labels {labels.shape}, predictions {predictions.shape}. "
+            "Expected labels (N,) or (N, 1) and predictions (N,) or (N, C) where C is number of classes.",
+        )
 
     def rocauc(self, labels: NDArray[np.float64], predictions: NDArray[np.float64]) -> float:
         """Compute ROC AUC score."""
