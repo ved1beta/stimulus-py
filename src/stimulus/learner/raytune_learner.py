@@ -111,7 +111,7 @@ class TuneWrapper:
 
     def tuner_initialization(
         self,
-        config_path: str,
+        data_config_path: str,
         data_path: str,
         encoder_loader: EncoderLoader,
         *,
@@ -138,17 +138,15 @@ class TuneWrapper:
 
         logging.info(f"PER_TRIAL resources ->  GPU: {self.gpu_per_trial} CPU: {self.cpu_per_trial}")
 
-        # Configure trainable with resources and data
-        trainable = tune.with_resources(TuneModel, resources={"cpu": self.cpu_per_trial, "gpu": self.gpu_per_trial})
-        trainable = tune.with_parameters(
-            trainable,
-            training=TorchDataset(config_path=config_path, csv_path=data_path, encoder_loader=encoder_loader, split=0),
-            validation=TorchDataset(
-                config_path=config_path,
-                csv_path=data_path,
+        # Configure trainable with resources and dataset parameters
+        trainable = tune.with_resources(
+            tune.with_parameters(
+                TuneModel,
+                data_config_path=data_config_path,
+                data_path=data_path,
                 encoder_loader=encoder_loader,
-                split=1,
             ),
+            resources={"cpu": self.cpu_per_trial, "gpu": self.gpu_per_trial}
         )
 
         return tune.Tuner(trainable, tune_config=self.tune_config, param_space=self.config, run_config=self.run_config)
@@ -161,20 +159,18 @@ class TuneWrapper:
 class TuneModel(Trainable):
     """Trainable model class for Ray Tune."""
 
-    def setup(self, config: dict[Any, Any]) -> None:
+    def setup(self, config: dict[Any, Any], *, data_config_path: str, data_path: str, encoder_loader: EncoderLoader) -> None:
         """Get the model, loss function(s), optimizer, train and test data from the config."""
-        # set the seeds the second time, first in TuneWrapper initialization. This will make all important seed worker specific.
+        # set the seeds the second time, first in TuneWrapper initialization
         set_general_seeds(self.config["ray_worker_seed"])
 
         # Initialize model with the config params
         self.model = config["model"](**config["model_params"])
 
         # Add data path
-        self.data_path = config["data_path"]
+        self.data_path = data_path
 
         # Get the loss function(s) from the config model params
-        # Note that the loss function(s) are stored in a dictionary,
-        # where the keys are the key of loss_params in the yaml config file and the values are the loss functions associated to such keys.
         self.loss_dict = config["loss_params"]
         for key, loss_fn in self.loss_dict.items():
             try:
@@ -186,23 +182,40 @@ class TuneModel(Trainable):
 
         # get the optimizer parameters
         optimizer_lr = config["optimizer_params"]["lr"]
-
-        # get the optimizer from PyTorch
-        self.optimizer = getattr(optim, config["optimizer_params"]["method"])(self.model.parameters(), lr=optimizer_lr)
+        self.optimizer = getattr(optim, config["optimizer_params"]["method"])(
+            self.model.parameters(), 
+            lr=optimizer_lr
+        )
 
         # get step size from the config
         self.step_size = config["tune"]["step_size"]
 
+        # Initialize datasets using the passed parameters
+        training = TorchDataset(
+            config_path=data_config_path,
+            csv_path=data_path,
+            encoder_loader=encoder_loader,
+            split=0,
+        )
+        validation = TorchDataset(
+            config_path=data_config_path,
+            csv_path=data_path,
+            encoder_loader=encoder_loader,
+            split=1,
+        )
+
         # use dataloader on training/validation data
         self.batch_size = config["data_params"]["batch_size"]
-        training: Dataset = config["training"]
-        validation: Dataset = config["validation"]
         self.training = DataLoader(
             training,
             batch_size=self.batch_size,
             shuffle=True,
-        )  # TODO need to check the reproducibility of this shuffling
-        self.validation = DataLoader(validation, batch_size=self.batch_size, shuffle=True)
+        )
+        self.validation = DataLoader(
+            validation, 
+            batch_size=self.batch_size, 
+            shuffle=True
+        )
 
         # debug section, first create a dedicated directory for each worker inside Ray_results/<tune_model_run_specific_dir> location
         debug_dir = os.path.join(
