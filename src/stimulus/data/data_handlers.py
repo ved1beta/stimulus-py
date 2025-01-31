@@ -472,27 +472,27 @@ class DatasetLoader(DatasetHandler):
             start = idx.start if idx.start is not None else 0
             stop = idx.stop if idx.stop is not None else len(self.data)
             data_at_index = self.data.slice(start, stop - start)
-            
+
             # Process DataFrame
             input_data = self.encoder_manager.encode_dataframe(data_at_index[input_columns])
             label_data = self.encoder_manager.encode_dataframe(data_at_index[label_columns])
             meta_data = {key: data_at_index[key].to_list() for key in meta_columns}
-            
+
         elif isinstance(idx, int):
             # For single row, convert to dict with column names as keys
             row_dict = {col: val for col, val in zip(self.data.columns, self.data.row(idx))}
-            
+
             # Create single-row DataFrames for encoding
             input_df = pl.DataFrame({col: [row_dict[col]] for col in input_columns})
             label_df = pl.DataFrame({col: [row_dict[col]] for col in label_columns})
-            
+
             input_data = self.encoder_manager.encode_dataframe(input_df)
             label_data = self.encoder_manager.encode_dataframe(label_df)
             meta_data = {key: [row_dict[key]] for key in meta_columns}
-            
+
         else:  # list or other sequence
             data_at_index = self.data.select(idx)
-            
+
             # Process DataFrame
             input_data = self.encoder_manager.encode_dataframe(data_at_index[input_columns])
             label_data = self.encoder_manager.encode_dataframe(data_at_index[label_columns])
