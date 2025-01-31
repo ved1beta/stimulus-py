@@ -8,11 +8,9 @@ import os
 
 import yaml
 
-from stimulus.data.csv import CsvProcessing
-from stimulus.learner.raytune_learner import TuneWrapper as StimulusTuneWrapper
-from stimulus.utils.json_schema import JsonSchema
-from stimulus.utils.launch_utils import get_experiment, import_class_from_file, memory_split_for_ray_init
-
+from stimulus.data import loaders
+from stimulus.learner import raytune_learner
+from stimulus.data import data_handlers
 
 def get_args() -> argparse.Namespace:
     """Get the arguments when using from the commandline.
@@ -25,15 +23,15 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("-m", "--model", type=str, required=True, metavar="FILE", help="Path to model file.")
     parser.add_argument(
         "-e",
-        "--experiment",
+        "--data_config",
         type=str,
         required=True,
         metavar="FILE",
-        help="Experiment config file. From this the experiment class name is extracted.",
+        help="Path to data config file.",
     )
     parser.add_argument(
         "-c",
-        "--config",
+        "--model_config",
         type=str,
         required=True,
         metavar="FILE",
@@ -48,38 +46,9 @@ def get_args() -> argparse.Namespace:
         const=None,
         default=None,
         metavar="FILE",
-        help="The path to the initial weights. These can be used by the model instead of the random initialization.",
+        help="The path to the initial weights (optional).",
     )
-    parser.add_argument(
-        "--gpus",
-        type=int,
-        required=False,
-        nargs="?",
-        const=None,
-        default=None,
-        metavar="NUM_OF_MAX_GPU",
-        help="Use to limit the number of GPUs ray can use. This might be useful on many occasions, especially in a cluster system.",
-    )
-    parser.add_argument(
-        "--cpus",
-        type=int,
-        required=False,
-        nargs="?",
-        const=None,
-        default=None,
-        metavar="NUM_OF_MAX_CPU",
-        help="Use to limit the number of CPUs ray can use. This might be useful on many occasions, especially in a cluster system.",
-    )
-    parser.add_argument(
-        "--memory",
-        type=str,
-        required=False,
-        nargs="?",
-        const=None,
-        default=None,
-        metavar="MAX_MEMORY",
-        help="Ray can have a limiter on the total memory it can use. This might be useful on many occasions, especially in a cluster system.",
-    )
+
     parser.add_argument(
         "-n",
         "--num_samples",
