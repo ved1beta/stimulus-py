@@ -99,7 +99,7 @@ def main(
         model_path: Path to model file.
         data_config_path: Path to data config file.
         model_config_path: Path to model config file.
-        initial_weights_path: Optional path to initial weights.
+        initial_weights: Optional path to initial weights.
         num_samples: Number of samples for tuning.
         ray_results_dirpath: Directory for ray results.
         debug_mode: Whether to run in debug mode.
