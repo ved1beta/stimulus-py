@@ -189,6 +189,22 @@ def main(
 
     grid_results = tuner.tune()
 
+    if grid_results is None:
+        raise RuntimeError(
+            "Ray Tune grid search failed to produce results. "
+            "Please check the Ray Tune logs and configurations for potential issues."
+        )
+    else:
+        try:
+            parser = raytune_parser.TuneParser(results=grid_results)
+            parser.save_best_model(output=output_path)
+            parser.save_best_optimizer(output=best_optimizer_path)
+            parser.save_best_metrics_dataframe(output=best_metrics_path)
+            parser.save_best_config(output=best_config_path)
+        except Exception as e:
+            logger.error(f"Error during Ray Tune result parsing and saving: {e}")
+            raise  # Re-raise the caught exception
+
     parser = raytune_parser.TuneParser(results=grid_results)
     parser.save_best_model(output=output_path)
     parser.save_best_optimizer(output=best_optimizer_path)
