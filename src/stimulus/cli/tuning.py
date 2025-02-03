@@ -1,47 +1,68 @@
 #!/usr/bin/env python3
-"""CLI module for tuning model hyperparameters using Ray Tune.
-
-This module provides functionality to tune hyperparameters of machine learning models
-using Ray Tune. It supports configuring resources like GPUs/CPUs, saving best models
-and metrics, and debugging capabilities.
-"""
+"""CLI module for running raytune tuning experiment."""
 
 import argparse
-import json
-import os
-from typing import Optional
+import logging
 
 import yaml
 from torch.utils.data import DataLoader
 
-from stimulus.data.handlertorch import TorchDataset
-from stimulus.learner.predict import PredictWrapper
-from stimulus.learner.raytune_learner import TuneWrapper as StimulusTuneWrapper
-from stimulus.learner.raytune_parser import TuneParser as StimulusTuneParser
-from stimulus.utils.launch_utils import get_experiment, import_class_from_file, memory_split_for_ray_init
+from stimulus.data import handlertorch, loaders
+from stimulus.learner import raytune_learner, raytune_parser
+from stimulus.utils import launch_utils, yaml_data, yaml_model_schema
+
+logger = logging.getLogger(__name__)
 
 
 def get_args() -> argparse.Namespace:
-    """Get the arguments when using from the commandline."""
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=str,
-        required=True,
-        metavar="FILE",
-        help="The file path for the config file",
-    )
-    parser.add_argument("-m", "--model", type=str, required=True, metavar="FILE", help="The model file")
-    parser.add_argument("-d", "--data", type=str, required=True, metavar="FILE", help="The data file")
+    """Get the arguments when using from the commandline.
+
+    Returns:
+        Parsed command line arguments.
+    """
+    parser = argparse.ArgumentParser(description="Launch check_model.")
+    parser.add_argument("-d", "--data", type=str, required=True, metavar="FILE", help="Path to input csv file.")
+    parser.add_argument("-m", "--model", type=str, required=True, metavar="FILE", help="Path to model file.")
     parser.add_argument(
         "-e",
-        "--experiment_config",
+        "--data_config",
         type=str,
         required=True,
         metavar="FILE",
-        help="The json used to modify the data. Inside it has the experiment name as specified in the experimets.py, this will then be dinamically imported during training. It is necessary to recover how the user specified the encoding of the data. Data is encoded on the fly.",
+        help="Path to data config file.",
     )
+    parser.add_argument(
+        "-c",
+        "--model_config",
+        type=str,
+        required=True,
+        metavar="FILE",
+        help="Path to yaml config training file.",
+    )
+    parser.add_argument(
+        "-w",
+        "--initial_weights",
+        type=str,
+        required=False,
+        nargs="?",
+        const=None,
+        default=None,
+        metavar="FILE",
+        help="The path to the initial weights (optional).",
+    )
+
+
+    parser.add_argument(
+        "--ray_results_dirpath",
+        type=str,
+        required=False,
+        nargs="?",
+        const=None,
+        default=None,
+        metavar="DIR_PATH",
+        help="Location where ray_results output dir should be written. If None, uses ~/ray_results.",
+    )
+
     parser.add_argument(
         "-o",
         "--output",
@@ -53,17 +74,7 @@ def get_args() -> argparse.Namespace:
         metavar="FILE",
         help="The output file path to write the trained model to",
     )
-    parser.add_argument(
-        "-bc",
-        "--best_config",
-        type=str,
-        required=False,
-        nargs="?",
-        const="best_config.json",
-        default="best_config.json",
-        metavar="FILE",
-        help="The path to write the best config to",
-    )
+
     parser.add_argument(
         "-bm",
         "--best_metrics",
@@ -75,6 +86,19 @@ def get_args() -> argparse.Namespace:
         metavar="FILE",
         help="The path to write the best metrics to",
     )
+
+    parser.add_argument(
+        "-bc",
+        "--best_config",
+        type=str,
+        required=False,
+        nargs="?",
+        const="best_config.yaml",
+        default="best_config.yaml",
+        metavar="FILE",
+        help="The path to write the best config to",
+    )
+
     parser.add_argument(
         "-bo",
         "--best_optimizer",
@@ -86,57 +110,7 @@ def get_args() -> argparse.Namespace:
         metavar="FILE",
         help="The path to write the best optimizer to",
     )
-    parser.add_argument(
-        "-w",
-        "--initial_weights",
-        type=str,
-        required=False,
-        nargs="?",
-        const=None,
-        default=None,
-        metavar="FILE",
-        help="The path to the initial weights. These can be used by the model instead of the random initialization",
-    )
-    parser.add_argument(
-        "--gpus",
-        type=int,
-        required=False,
-        nargs="?",
-        const=None,
-        default=None,
-        metavar="NUM_OF_MAX_GPU",
-        help="Use to limit the number of GPUs ray can use. This might be useful on many occasions, especially in a cluster system. The default value is None meaning ray will use all GPUs available. It can be set to 0 to use only CPUs.",
-    )
-    parser.add_argument(
-        "--cpus",
-        type=int,
-        required=False,
-        nargs="?",
-        const=None,
-        default=None,
-        metavar="NUM_OF_MAX_CPU",
-        help="Use to limit the number of CPUs ray can use. This might be useful on many occasions, especially in a cluster system. The default value is None meaning ray will use all CPUs available. It can be set to 0 to use only GPUs.",
-    )
-    parser.add_argument(
-        "--memory",
-        type=str,
-        required=False,
-        nargs="?",
-        const=None,
-        default=None,
-        metavar="MAX_MEMORY",
-        help="ray can have a limiter on the total memory it can use. This might be useful on many occasions, especially in a cluster system. The default value is None meaning ray will use all memory available.",
-    )
-    parser.add_argument(
-        "--ray_results_dirpath",
-        type=str,
-        required=False,
-        nargs="?",
-        const=None,
-        default=None,
-        metavar="DIR_PATH",
-        help="the location where ray_results output dir should be written. if set to None (default) ray will be place it in ~/ray_results ",
-    )
+
     parser.add_argument(
         "--tune_run_name",
         type=str,
@@ -147,135 +121,91 @@ def get_args() -> argparse.Namespace:
         metavar="CUSTOM_RUN_NAME",
         help="tells ray tune what that the 'experiment_name' aka the given tune_run name should be. This is controlled be the variable name in the RunConfig class of tune. This has two behaviuors: 1 if set the subdir of ray_results is going to be named with this value, 2 the subdir of the above mentioned will also have this value as prefix for the single train dir name. Default None, meaning ray will generate such a name on its own.",
     )
+
     parser.add_argument(
         "--debug_mode",
-        type=str,
-        required=False,
-        nargs="?",
-        const=False,
-        default=False,
-        metavar="DEV",
-        help="activate debug mode for tuning. default false, no debug.",
+        action="store_true",
+        help="Activate debug mode for tuning. Default false, no debug.",
     )
 
     return parser.parse_args()
 
 
 def main(
-    config_path: str,
     model_path: str,
     data_path: str,
-    experiment_config: str,
-    output: str,
-    best_config_path: str,
-    best_metrics_path: str,
-    best_optimizer_path: str,
-    initial_weights_path: Optional[str] = None,
-    gpus: Optional[int] = None,
-    cpus: Optional[int] = None,
-    memory: Optional[str] = None,
-    ray_results_dirpath: Optional[str] = None,
-    tune_run_name: Optional[str] = None,
+    data_config_path: str,
+    model_config_path: str,
+    initial_weights: str | None = None,  # noqa: ARG001
+    ray_results_dirpath: str | None = None,
+    output_path: str | None = None,
+    best_optimizer_path: str | None = None,
+    best_metrics_path: str | None = None,
+    best_config_path: str | None = None,
     *,
     debug_mode: bool = False,
 ) -> None:
-    """This launcher use ray tune to find the best hyperparameters for a given model."""
-    # TODO update to yaml the experiment config
-    # load json into dictionary
-    exp_config = {}
-    with open(experiment_config) as in_json:
-        exp_config = json.load(in_json)
+    """Run the main model checking pipeline.
 
-    # initialize the experiment class
-    initialized_experiment_class = get_experiment(exp_config["experiment"])
+    Args:
+        data_path: Path to input data file.
+        model_path: Path to model file.
+        data_config_path: Path to data config file.
+        model_config_path: Path to model config file.
+        initial_weights: Optional path to initial weights.
+        ray_results_dirpath: Directory for ray results.
+        debug_mode: Whether to run in debug mode.
+        output_path: Path to write the best model to.
+        best_optimizer_path: Path to write the best optimizer to.
+        best_metrics_path: Path to write the best metrics to.
+        best_config_path: Path to write the best config to.
+    """
+    with open(data_config_path) as file:
+        data_config = yaml.safe_load(file)
+        data_config = yaml_data.YamlSubConfigDict(**data_config)
 
-    # import the model correctly but do not initialize it yet, ray_tune does that itself
-    model_class = import_class_from_file(model_path)
+    with open(model_config_path) as file:
+        model_config = yaml.safe_load(file)
+        model_config = yaml_model_schema.Model(**model_config)
 
-    # Update the tune config file. Because if resources are specified for cpu and gpu they are overwritten with what nextflow has otherwise this field is created
-    updated_tune_conf = "check_model_modified_tune_config.yaml"
-    with open(config_path) as conf_file, open(updated_tune_conf, "w") as new_conf:
-        user_tune_config = yaml.safe_load(conf_file)
+    encoder_loader = loaders.EncoderLoader()
+    encoder_loader.initialize_column_encoders_from_config(column_config=data_config.columns)
 
-        # add initial weights to the config, when provided
-        if initial_weights_path is not None:
-            user_tune_config["model_params"]["initial_weights"] = os.path.abspath(initial_weights_path)
+    model_class = launch_utils.import_class_from_file(model_path)
 
-        # save to file the new dictionary because StimulusTuneWrapper only takes paths
-        yaml.dump(user_tune_config, new_conf)
+    ray_config_loader = yaml_model_schema.YamlRayConfigLoader(model=model_config)
+    ray_config_model = ray_config_loader.get_config()
 
-    # compute the memory requirements for ray init. Usefull in case ray detects them wrongly. Memory is split in two for ray: for store_object memory and the other actual memory for tuning. The following function takes the total possible usable/allocated memory as a string parameter and return in bytes the values for store_memory (30% as default in ray) and memory (70%).
-    object_store_mem, mem = memory_split_for_ray_init(memory)
-
-    # set ray_result dir ubication. TODO this version of pytorch does not support relative paths, in future maybe good to remove abspath.
-    ray_results_dirpath = None if ray_results_dirpath is None else os.path.abspath(ray_results_dirpath)
-
-    # Create the learner
-    learner = StimulusTuneWrapper(
-        updated_tune_conf,
-        model_class,
-        data_path,
-        initialized_experiment_class,
-        max_gpus=gpus,
-        max_cpus=cpus,
-        max_object_store_mem=object_store_mem,
-        max_mem=mem,
+    tuner = raytune_learner.TuneWrapper(
+        model_config=ray_config_model,
+        data_config_path=data_config_path,
+        model_class=model_class,
+        data_path=data_path,
+        encoder_loader=encoder_loader,
+        seed=42,
         ray_results_dir=ray_results_dirpath,
-        tune_run_name=tune_run_name,
-        _debug=debug_mode,
+        debug=debug_mode,
     )
 
-    # Tune the model and get the tuning results
-    grid_results = learner.tune()
+    grid_results = tuner.tune()
 
-    # parse raytune results
-    results = StimulusTuneParser(grid_results)
-    results.save_best_model(output)
-    results.save_best_config(best_config_path)
-    results.save_best_metrics_dataframe(best_metrics_path)
-    results.save_best_optimizer(best_optimizer_path)
-
-    # debug section. predict the validation data using the best model.
-    if debug_mode:
-        # imitialize the model class with the respective tune parameters from the associated config
-        best_tune_config = results.get_best_config()
-        best_model = model_class(**best_tune_config["model_params"])
-        # get the weights associated to the best model and load them onto the model class
-        best_model.load_state_dict(results.get_best_model())
-        # load the data in a dataloader and then predict them in an ordered manner, aka no shuffle.
-        validation_set = DataLoader(
-            TorchDataset(data_path, initialized_experiment_class, split=1),
-            batch_size=learner.config["data_params"]["batch_size"].sample(),
-            shuffle=False,
-        )
-        predictions = PredictWrapper(best_model, validation_set).predict()
-        # write to file the predictions, in the ray result tune specific folder.
-        pred_filename = os.path.join(learner.config["tune_run_path"], "debug", "best_model_val_pred.txt")
-        # save which was the best model found, the easiest is to get its seed
-        best_model_seed = os.path.join(learner.config["tune_run_path"], "debug", "best_model_seed.txt")
-        with open(pred_filename, "w") as pred_f, open(best_model_seed, "w") as seed_f:
-            pred_f.write(str(predictions))
-            seed_f.write(str(best_tune_config["ray_worker_seed"]))
-
+    parser = raytune_parser.TuneParser(grid_results=grid_results)
+    parser.save_best_model(output_path=output_path)
+    parser.save_best_optimizer(output_path=best_optimizer_path)
+    parser.save_best_metrics_dataframe(output_path=best_metrics_path)
+    parser.save_best_config(output_path=best_config_path)
 
 def run() -> None:
-    """Run the model tuning script."""
+    """Run the model checking script."""
     args = get_args()
     main(
-        args.config,
-        args.model,
-        args.data,
-        args.experiment_config,
-        args.output,
-        args.best_config,
-        args.best_metrics,
-        args.best_optimizer,
-        args.initial_weights,
-        args.gpus,
-        args.cpus,
-        args.memory,
-        args.ray_results_dirpath,
-        args.tune_run_name,
+        data_path=args.data,
+        model_path=args.model,
+        data_config_path=args.data_config,
+        model_config_path=args.model_config,
+        initial_weights=args.initial_weights,
+        num_samples=args.num_samples,
+        ray_results_dirpath=args.ray_results_dirpath,
         debug_mode=args.debug_mode,
     )
 
