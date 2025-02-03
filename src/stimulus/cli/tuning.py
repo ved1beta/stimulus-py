@@ -189,11 +189,11 @@ def main(
 
     grid_results = tuner.tune()
 
-    parser = raytune_parser.TuneParser(grid_results=grid_results)
-    parser.save_best_model(output_path=output_path)
-    parser.save_best_optimizer(output_path=best_optimizer_path)
-    parser.save_best_metrics_dataframe(output_path=best_metrics_path)
-    parser.save_best_config(output_path=best_config_path)
+    parser = raytune_parser.TuneParser(results=grid_results)
+    parser.save_best_model(output=output_path)
+    parser.save_best_optimizer(output=best_optimizer_path)
+    parser.save_best_metrics_dataframe(output=best_metrics_path)
+    parser.save_best_config(output=best_config_path)
 
 def run() -> None:
     """Run the model checking script."""
