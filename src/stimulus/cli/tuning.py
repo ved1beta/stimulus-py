@@ -3,15 +3,22 @@
 
 import argparse
 import logging
+import shutil
+from pathlib import Path
+from typing import Any
 
 import yaml
-from torch.utils.data import DataLoader
 
-from stimulus.data import handlertorch, loaders
+from stimulus.data import loaders
 from stimulus.learner import raytune_learner, raytune_parser
 from stimulus.utils import launch_utils, yaml_data, yaml_model_schema
 
 logger = logging.getLogger(__name__)
+
+
+def _raise_empty_grid() -> None:
+    """Raise an error when grid results are empty."""
+    raise RuntimeError("Ray Tune returned empty results grid")
 
 
 def get_args() -> argparse.Namespace:
@@ -50,8 +57,6 @@ def get_args() -> argparse.Namespace:
         metavar="FILE",
         help="The path to the initial weights (optional).",
     )
-
-
     parser.add_argument(
         "--ray_results_dirpath",
         type=str,
@@ -62,7 +67,6 @@ def get_args() -> argparse.Namespace:
         metavar="DIR_PATH",
         help="Location where ray_results output dir should be written. If None, uses ~/ray_results.",
     )
-
     parser.add_argument(
         "-o",
         "--output",
@@ -74,7 +78,6 @@ def get_args() -> argparse.Namespace:
         metavar="FILE",
         help="The output file path to write the trained model to",
     )
-
     parser.add_argument(
         "-bm",
         "--best_metrics",
@@ -86,7 +89,6 @@ def get_args() -> argparse.Namespace:
         metavar="FILE",
         help="The path to write the best metrics to",
     )
-
     parser.add_argument(
         "-bc",
         "--best_config",
@@ -98,7 +100,6 @@ def get_args() -> argparse.Namespace:
         metavar="FILE",
         help="The path to write the best config to",
     )
-
     parser.add_argument(
         "-bo",
         "--best_optimizer",
@@ -110,7 +111,6 @@ def get_args() -> argparse.Namespace:
         metavar="FILE",
         help="The path to write the best optimizer to",
     )
-
     parser.add_argument(
         "--tune_run_name",
         type=str,
@@ -119,15 +119,17 @@ def get_args() -> argparse.Namespace:
         const=None,
         default=None,
         metavar="CUSTOM_RUN_NAME",
-        help="tells ray tune what that the 'experiment_name' aka the given tune_run name should be. This is controlled be the variable name in the RunConfig class of tune. This has two behaviuors: 1 if set the subdir of ray_results is going to be named with this value, 2 the subdir of the above mentioned will also have this value as prefix for the single train dir name. Default None, meaning ray will generate such a name on its own.",
+        help=(
+            "Tells ray tune what the 'experiment_name' (i.e. the given tune_run name) should be. "
+            "If set, the subdirectory of ray_results is named with this value and its train dir is prefixed accordingly. "
+            "Default None means that ray will generate such a name on its own."
+        ),
     )
-
     parser.add_argument(
         "--debug_mode",
         action="store_true",
         help="Activate debug mode for tuning. Default false, no debug.",
     )
-
     return parser.parse_args()
 
 
@@ -160,13 +162,14 @@ def main(
         best_metrics_path: Path to write the best metrics to.
         best_config_path: Path to write the best config to.
     """
+    # Convert data config to proper type
     with open(data_config_path) as file:
-        data_config = yaml.safe_load(file)
-        data_config = yaml_data.YamlSubConfigDict(**data_config)
+        data_config_dict: dict[str, Any] = yaml.safe_load(file)
+    data_config: yaml_data.YamlSubConfigDict = yaml_data.YamlSubConfigDict(**data_config_dict)
 
     with open(model_config_path) as file:
-        model_config = yaml.safe_load(file)
-        model_config = yaml_model_schema.Model(**model_config)
+        model_config_dict: dict[str, Any] = yaml.safe_load(file)
+    model_config: yaml_model_schema.Model = yaml_model_schema.Model(**model_config_dict)
 
     encoder_loader = loaders.EncoderLoader()
     encoder_loader.initialize_column_encoders_from_config(column_config=data_config.columns)
@@ -187,29 +190,38 @@ def main(
         debug=debug_mode,
     )
 
-    grid_results = tuner.tune()
+    # Ensure output_path is provided
+    if output_path is None:
+        raise ValueError("output_path must not be None")
+    try:
+        grid_results = tuner.tune()
+        if not grid_results:
+            _raise_empty_grid()
 
-    if grid_results is None:
-        raise RuntimeError(
-            "Ray Tune grid search failed to produce results. "
-            "Please check the Ray Tune logs and configurations for potential issues."
-        )
-    else:
-        try:
-            parser = raytune_parser.TuneParser(results=grid_results)
-            parser.save_best_model(output=output_path)
-            parser.save_best_optimizer(output=best_optimizer_path)
-            parser.save_best_metrics_dataframe(output=best_metrics_path)
-            parser.save_best_config(output=best_config_path)
-        except Exception as e:
-            logger.error(f"Error during Ray Tune result parsing and saving: {e}")
-            raise  # Re-raise the caught exception
+        # Initialize parser with results
+        parser = raytune_parser.TuneParser(result=grid_results)
 
-    parser = raytune_parser.TuneParser(results=grid_results)
-    parser.save_best_model(output=output_path)
-    parser.save_best_optimizer(output=best_optimizer_path)
-    parser.save_best_metrics_dataframe(output=best_metrics_path)
-    parser.save_best_config(output=best_config_path)
+        # Ensure output directory exists
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+
+        # Save outputs using proper Result object API
+        parser.save_best_model(output=output_path)
+        parser.save_best_optimizer(output=best_optimizer_path)
+        parser.save_best_metrics_dataframe(output=best_metrics_path)
+        parser.save_best_config(output=best_config_path)
+
+    except RuntimeError:
+        logger.exception("Tuning failed")
+        raise
+    except KeyError:
+        logger.exception("Missing expected result key")
+        raise
+    finally:
+        if debug_mode:
+            logger.info("Debug mode - preserving Ray results directory")
+        elif ray_results_dirpath:
+            shutil.rmtree(ray_results_dirpath, ignore_errors=True)
+
 
 def run() -> None:
     """Run the model checking script."""
@@ -220,8 +232,11 @@ def run() -> None:
         data_config_path=args.data_config,
         model_config_path=args.model_config,
         initial_weights=args.initial_weights,
-        num_samples=args.num_samples,
         ray_results_dirpath=args.ray_results_dirpath,
+        output_path=args.output,
+        best_optimizer_path=args.best_optimizer,
+        best_metrics_path=args.best_metrics,
+        best_config_path=args.best_config,
         debug_mode=args.debug_mode,
     )
 
