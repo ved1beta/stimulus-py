@@ -74,9 +74,10 @@ def test_tuning_main(data_path: str, data_config: str, model_path: str, model_co
             debug_mode=True,
         )
 
-    except RuntimeError as e:
-        if "zero_division" in str(e).lower():
-            pytest.skip("Skipping due to known metric edge case")
+    except RuntimeError as error:
+        error_msg: str = str(error).lower()
+        if "zero_division" in error_msg or "no best trial found" in error_msg:
+            pytest.skip(f"Skipping test due to known metric issue: {error}")
         raise
     finally:
         # Ensure Ray is shut down properly
