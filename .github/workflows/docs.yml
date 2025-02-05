@@ -3,8 +3,7 @@ name: Deploy Documentation
 on:
   push:
     branches:
-      - documentation
-      - dev  # or your default branch name
+      - main
   workflow_dispatch:  # Allows manual triggering
 
 permissions:
