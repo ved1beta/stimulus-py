@@ -94,3 +94,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Code Refactoring
 
 - removed analysis cli since it is deprecated. ([e2f44cf](https://github.com/mathysgrapotte/stimulus-py/commit/e2f44cf13e24111a4176efbcca2bd608da7e6f46) by mgrapotte).
+
+
