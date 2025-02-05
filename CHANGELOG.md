@@ -5,4 +5,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # 0.2.0
 
-First released version
+First released version is 0.2.0, changelog will be updated from there
