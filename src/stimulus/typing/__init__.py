@@ -10,7 +10,6 @@ The aliases from this module should be used for typing purposes only.
 from typing import TypeAlias
 
 # these imports mostly alias everything
-from stimulus.analysis.analysis_default import Analysis, AnalysisPerformanceTune, AnalysisRobustness
 from stimulus.data.data_handlers import (
     DatasetHandler,
     DatasetLoader,
