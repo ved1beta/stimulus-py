@@ -184,9 +184,9 @@ class TuneWrapper:
 
         return tune.Tuner(trainable, tune_config=self.tune_config, param_space=self.config, run_config=self.run_config)
 
-    def tune(self) -> None:
+    def tune(self) -> ray.tune.ResultGrid:
         """Run the tuning process."""
-        self.tuner.fit()
+        return self.tuner.fit()
 
 
 class TuneModel(Trainable):
