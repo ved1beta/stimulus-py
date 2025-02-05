@@ -29,15 +29,12 @@ def test_raytune_space_selector(titanic_model_yaml_path: str) -> None:
     loader = yaml_model_schema.YamlRayConfigLoader(model)
 
     result = loader.raytune_space_selector(tune.choice, [1, 2, 3])
-    print(result)
     assert str(type(result).__name__) == "Categorical"
 
     result = loader.raytune_space_selector(tune.grid_search, [1, 2, 3])
-    print(result)
     assert str(type(result).__name__) == "dict"
 
     result = loader.raytune_space_selector(tune.randint, [1, 10])
-    print(result)
     assert str(type(result).__name__) == "Integer"
 
 
