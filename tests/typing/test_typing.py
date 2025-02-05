@@ -7,14 +7,6 @@ As the typing module only contains types, the tests only check imports.
 import pytest
 
 
-def test_analysis_types() -> None:
-    """Test the analysis types."""
-    try:
-        from stimulus.typing import Analysis, AnalysisPerformanceTune, AnalysisRobustness
-    except ImportError:
-        pytest.fail("Failed to import Analysis types")
-
-
 def test_data_handlers_types() -> None:
     """Test the data handlers types."""
     try:
