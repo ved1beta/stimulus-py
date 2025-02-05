@@ -51,11 +51,10 @@ dependencies = [
 stimulus-shuffle-csv = "stimulus.cli.shuffle_csv:run"
 stimulus-transform-csv = "stimulus.cli.transform_csv:run"
 stimulus-split-csv = "stimulus.cli.split_csv:run"
-stimulus-analysis-default = "stimulus.cli.analysis_default:run"
 stimulus-predict = "stimulus.cli.predict:run"
 stimulus-check-model = "stimulus.cli.check_model:run"
 stimulus-tuning = "stimulus.cli.tuning:run"
-stimulus-interpret-json = "stimulus.cli.interpret_json:run"
+stimulus-split-yaml = "stimulus.cli.split_yaml:run"
 
 [project.urls]
 Homepage = "https://mathysgrapotte.github.io/stimulus-py"
