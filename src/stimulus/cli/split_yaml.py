@@ -11,7 +11,7 @@ from typing import Any
 
 import yaml
 
-from src.stimulus.utils.yaml_data import (
+from stimulus.utils.yaml_data import (
     YamlConfigDict,
     check_yaml_schema,
     dump_yaml_list_into_files,
