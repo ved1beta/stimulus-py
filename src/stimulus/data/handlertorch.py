@@ -4,8 +4,7 @@ from typing import Optional
 
 from torch.utils.data import Dataset
 
-from stimulus.data import data_handlers
-from stimulus.data import loaders
+from stimulus.data import data_handlers, loaders
 
 
 class TorchDataset(Dataset):
