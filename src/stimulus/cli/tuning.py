@@ -7,8 +7,8 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-import yaml
 import ray
+import yaml
 
 from stimulus.data import loaders
 from stimulus.learner import raytune_learner, raytune_parser
