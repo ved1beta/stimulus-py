@@ -9,6 +9,7 @@
 .venvs/
 /build/
 /dist/
+.python-version
 
 # tools
 .coverage*
