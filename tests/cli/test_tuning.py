@@ -1,26 +1,40 @@
 """Test the tuning CLI."""
 
 import os
+import yaml
 import shutil
+import operator
 import warnings
 from pathlib import Path
+from functools import reduce
 
 import pytest
 import ray
 
 from stimulus.cli import tuning
+from typing import Any
 
 
 @pytest.fixture
 def data_path() -> str:
     """Get path to test data CSV file."""
-    return str(Path(__file__).parent.parent / "test_data" / "titanic" / "titanic_stimulus_split.csv")
+    return str(
+        Path(__file__).parent.parent
+        / "test_data"
+        / "titanic"
+        / "titanic_stimulus_split.csv"
+    )
 
 
 @pytest.fixture
 def data_config() -> str:
     """Get path to test data config YAML."""
-    return str(Path(__file__).parent.parent / "test_data" / "titanic" / "titanic_sub_config.yaml")
+    return str(
+        Path(__file__).parent.parent
+        / "test_data"
+        / "titanic"
+        / "titanic_sub_config.yaml"
+    )
 
 
 @pytest.fixture
@@ -35,7 +49,52 @@ def model_config() -> str:
     return str(Path(__file__).parent.parent / "test_model" / "titanic_model_cpu.yaml")
 
 
-def test_tuning_main(data_path: str, data_config: str, model_path: str, model_config: str) -> None:
+def _get_number_of_generated_files(save_dir_path: str) -> int:
+    """Each run generates a file in the result dir"""
+    # Get the number of generated run files
+    number_of_files: int = 0
+    for file in os.listdir(save_dir_path):
+        if "TuneModel" in file:
+            number_of_files = len(
+                [f for f in os.listdir(save_dir_path + "/" + file) if "TuneModel" in f]
+            )
+    return number_of_files
+
+
+def _get_number_of_theoritical_runs(params_path: str) -> int:
+    """
+    The number of run is defined as follows:
+        G:      number of grid_search
+        n_i:    number of options for the ith grid_search
+        S:      value of num_samples
+
+        R = S * ∏(i=1 to G) n_i
+    """
+    # Get the theoritical number of runs
+    with open(params_path) as file:
+        params_dict: dict[str, Any] = yaml.safe_load(file)
+
+    grid_searches_len: list[int] = []
+    num_samples: int = 0
+    for header, sections in params_dict.items():
+        if isinstance(sections, dict):
+            for section in sections.values():
+                if isinstance(section, dict):
+                    # Lookup for any grid search in the yaml
+                    has_grid_search: bool = section.get("mode") == "grid_search"
+                    has_num_samples: bool = section.get("num_samples") is not None
+                    if has_grid_search:
+                        grid_searches_len.append(len(section.get("space")))
+                    elif has_num_samples:
+                        num_samples = section.get("num_samples")
+            # Apply the described function and return the value
+    result = num_samples * reduce(operator.mul, grid_searches_len)
+    return result
+
+
+def test_tuning_main(
+    data_path: str, data_config: str, model_path: str, model_config: str
+) -> None:
     """Test that tuning.main runs without errors.
 
     Args:
@@ -80,11 +139,18 @@ def test_tuning_main(data_path: str, data_config: str, model_path: str, model_co
             pytest.skip(f"Skipping test due to known metric issue: {error}")
         raise
     finally:
+        # Get the number of runs executed
+
         # Ensure Ray is shut down properly
         if ray.is_initialized():
             ray.shutdown()
 
             # Clean up any ray files/directories that may have been created
-            ray_results_dir = os.path.expanduser("tests/test_data/titanic/test_results/")
-            if os.path.exists(ray_results_dir):
-                shutil.rmtree(ray_results_dir)
+            ray_results_dir = os.path.expanduser(
+                "tests/test_data/titanic/test_results/"
+            )
+            # Check that the theoritical numbers of run corresponds to the real number of runs
+            n_files: int = _get_number_of_generated_files(ray_results_dir)
+            n_runs: int = _get_number_of_theoritical_runs(model_config)
+            assert n_files == n_runs
+            shutil.rmtree(ray_results_dir)
