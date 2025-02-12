@@ -1,28 +1,25 @@
 """Test the tuning CLI."""
 
-import os
-import yaml
-import shutil
 import operator
+import os
+import shutil
 import warnings
-from pathlib import Path
 from functools import reduce
+from pathlib import Path
+from typing import Any
 
 import pytest
 import ray
+import yaml
 
 from stimulus.cli import tuning
-from typing import Any
 
 
 @pytest.fixture
 def data_path() -> str:
     """Get path to test data CSV file."""
     return str(
-        Path(__file__).parent.parent
-        / "test_data"
-        / "titanic"
-        / "titanic_stimulus_split.csv"
+        Path(__file__).parent.parent / "test_data" / "titanic" / "titanic_stimulus_split.csv",
     )
 
 
@@ -30,10 +27,7 @@ def data_path() -> str:
 def data_config() -> str:
     """Get path to test data config YAML."""
     return str(
-        Path(__file__).parent.parent
-        / "test_data"
-        / "titanic"
-        / "titanic_sub_config.yaml"
+        Path(__file__).parent.parent / "test_data" / "titanic" / "titanic_sub_config.yaml",
     )
 
 
@@ -56,19 +50,18 @@ def _get_number_of_generated_files(save_dir_path: str) -> int:
     for file in os.listdir(save_dir_path):
         if "TuneModel" in file:
             number_of_files = len(
-                [f for f in os.listdir(save_dir_path + "/" + file) if "TuneModel" in f]
+                [f for f in os.listdir(save_dir_path + "/" + file) if "TuneModel" in f],
             )
     return number_of_files
 
 
 def _get_number_of_theoritical_runs(params_path: str) -> int:
-    """
-    The number of run is defined as follows:
-        G:      number of grid_search
-        n_i:    number of options for the ith grid_search
-        S:      value of num_samples
+    """The number of run is defined as follows:
+    G:      number of grid_search
+    n_i:    number of options for the ith grid_search
+    S:      value of num_samples
 
-        R = S * ∏(i=1 to G) n_i
+    R = S * ∏(i=1 to G) n_i
     """
     # Get the theoritical number of runs
     with open(params_path) as file:
@@ -93,7 +86,10 @@ def _get_number_of_theoritical_runs(params_path: str) -> int:
 
 
 def test_tuning_main(
-    data_path: str, data_config: str, model_path: str, model_config: str
+    data_path: str,
+    data_config: str,
+    model_path: str,
+    model_config: str,
 ) -> None:
     """Test that tuning.main runs without errors.
 
@@ -147,7 +143,7 @@ def test_tuning_main(
 
             # Clean up any ray files/directories that may have been created
             ray_results_dir = os.path.expanduser(
-                "tests/test_data/titanic/test_results/"
+                "tests/test_data/titanic/test_results/",
             )
             # Check that the theoritical numbers of run corresponds to the real number of runs
             n_files: int = _get_number_of_generated_files(ray_results_dir)

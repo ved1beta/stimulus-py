@@ -196,12 +196,8 @@ class YamlRayConfigLoader:
             Ray Tune compatible model configuration
         """
         return RayTuneModel(
-            network_params={
-                k: self.convert_raytune(v) for k, v in model.network_params.items()
-            },
-            optimizer_params={
-                k: self.convert_raytune(v) for k, v in model.optimizer_params.items()
-            },
+            network_params={k: self.convert_raytune(v) for k, v in model.network_params.items()},
+            optimizer_params={k: self.convert_raytune(v) for k, v in model.optimizer_params.items()},
             loss_params={k: self.convert_raytune(v) for k, v in model.loss_params},
             data_params={k: self.convert_raytune(v) for k, v in model.data_params},
             tune=model.tune,
