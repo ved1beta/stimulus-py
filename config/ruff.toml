@@ -85,3 +85,9 @@ exclude = [
 ]
 docstring-code-format = true
 docstring-code-line-length = 80
+
+[tool.ruff]
+per-file-ignores = [
+    "src/stimulus/typing/**: A005",
+    "tests/typing/**: A005",
+]
