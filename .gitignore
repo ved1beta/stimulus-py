@@ -27,3 +27,6 @@ __pycache__/
 
 # cursor
 .cursorrules
+
+# data
+tutorials/dream/dream_train.csv
