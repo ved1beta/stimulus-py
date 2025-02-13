@@ -74,6 +74,11 @@ def main(config_yaml: str, out_dir_path: str) -> None:
     dump_yaml_list_into_files(data_configs, out_dir_path, "test")
 
 
-if __name__ == "__main__":
+def run() -> None:
+    """Run the split_yaml CLI."""
     args = get_args()
     main(args.yaml, args.out_dir)
+
+
+if __name__ == "__main__":
+    run()
