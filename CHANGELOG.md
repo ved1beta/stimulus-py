@@ -105,7 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - src.stimulus.data -> stimulus.data. ([b04546c](https://github.com/mathysgrapotte/stimulus-py/commit/b04546c2c9bcc1f6218c31d8f7132e57ea1dab91) by mgrapotte).
 - src.stimulus.utils -> stimulus.utils. ([55d1fed](https://github.com/mathysgrapotte/stimulus-py/commit/55d1fed95950adc2782a73a90690783786c9fb85) by mgrapotte).
 
-<!-- insertion marker -->
+
 ## [0.2.4](https://github.com/mathysgrapotte/stimulus-py/releases/tag/0.2.4) - 2025-02-07
 
 <small>[Compare with 0.2.3](https://github.com/mathysgrapotte/stimulus-py/compare/0.2.3...0.2.4)</small>
@@ -114,3 +114,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - test were failing, made format to fix it. ([19dce1f](https://github.com/mathysgrapotte/stimulus-py/commit/19dce1f2f6fc069a24991a843249f7edc876bb43) by mgrapotte).
 
+
+## [0.2.5](https://github.com/mathysgrapotte/stimulus-py/releases/tag/0.3.0) - 2025-02-12
+
+<small>[Compare with 0.2.4](https://github.com/mathysgrapotte/stimulus-py/compare/0.2.4...0.3.0)</small>
+
+### Features
+
+- removed test results from git push. ([3f3f516](https://github.com/mathysgrapotte/stimulus-py/commit/3f3f5161e54dfc2d4db40ff59e5a2e924d30bfe4) by mgrapotte).
+- added dockerfiles. ([c18489f](https://github.com/mathysgrapotte/stimulus-py/commit/c18489f59ba7e0f36c5f90a7ce51248c0bb49a07) by mgrapotte).
+
+### Bug Fixes
+
+- fixed duplicate in ruff config. ([eb9d3bf](https://github.com/mathysgrapotte/stimulus-py/commit/eb9d3bf566c7ab94c02f30b85d5a946b440711b9) by mgrapotte).
+- update ruff config to ignore shadowing python typing. ([55d33be](https://github.com/mathysgrapotte/stimulus-py/commit/55d33be8a6068e3b4649275ec1bf3827c21ffb9a) by mgrapotte).
+- renamed dockerfiles directory as it was causing ci to crash. ([6c19df4](https://github.com/mathysgrapotte/stimulus-py/commit/6c19df4589c2ff6e3a5ded53d561ba50dd4255f0) by mgrapotte).
+- ray init needs to be called in the run command otherwise ray cluster is not found. ([c9526d6](https://github.com/mathysgrapotte/stimulus-py/commit/c9526d60c909ddc8d8dabd751380c5d5e16b8d44) by mgrapotte).
+- ray init needs to be called in the run command, otherwise ray cluster is not found. ([4ebd495](https://github.com/mathysgrapotte/stimulus-py/commit/4ebd495ba348698252598d8e7a3575cead057593) by mgrapotte).
+
+
+<!-- insertion marker -->
+## [0.2.6](https://github.com/mathysgrapotte/stimulus-py/releases/tag/0.2.6) - 2025-02-13
+
+<small>[Compare with 0.2.5](https://github.com/mathysgrapotte/stimulus-py/compare/0.2.5...0.2.6)</small>
+
+### Bug Fixes
+
+- removed deprecated cli predict. ([6eb3160](https://github.com/mathysgrapotte/stimulus-py/commit/6eb31601185a4a9d772f80972cdb9a8c8a678a3a) by mgrapotte).
+- help message was not working, added a run() function. ([d6fb7dd](https://github.com/mathysgrapotte/stimulus-py/commit/d6fb7dd0edc0298220f4d2f0fd93625d032c91dc) by mgrapotte).
+
+## [0.2.5](https://github.com/mathysgrapotte/stimulus-py/releases/tag/0.2.5) - 2025-02-12
+
+<small>[Compare with 0.2.4](https://github.com/mathysgrapotte/stimulus-py/compare/0.2.4...0.2.5)</small>
+
+### Features
+
+- removed test results from git push. ([3f3f516](https://github.com/mathysgrapotte/stimulus-py/commit/3f3f5161e54dfc2d4db40ff59e5a2e924d30bfe4) by mgrapotte).
+- added dockerfiles. ([c18489f](https://github.com/mathysgrapotte/stimulus-py/commit/c18489f59ba7e0f36c5f90a7ce51248c0bb49a07) by mgrapotte).
+
+### Bug Fixes
+
+- fixed duplicate in ruff config. ([eb9d3bf](https://github.com/mathysgrapotte/stimulus-py/commit/eb9d3bf566c7ab94c02f30b85d5a946b440711b9) by mgrapotte).
+- update ruff config to ignore shadowing python typing. ([55d33be](https://github.com/mathysgrapotte/stimulus-py/commit/55d33be8a6068e3b4649275ec1bf3827c21ffb9a) by mgrapotte).
+- renamed dockerfiles directory as it was causing ci to crash. ([6c19df4](https://github.com/mathysgrapotte/stimulus-py/commit/6c19df4589c2ff6e3a5ded53d561ba50dd4255f0) by mgrapotte).
+- ray init needs to be called in the run command otherwise ray cluster is not found. ([c9526d6](https://github.com/mathysgrapotte/stimulus-py/commit/c9526d60c909ddc8d8dabd751380c5d5e16b8d44) by mgrapotte).
+- ray init needs to be called in the run command, otherwise ray cluster is not found. ([4ebd495](https://github.com/mathysgrapotte/stimulus-py/commit/4ebd495ba348698252598d8e7a3575cead057593) by mgrapotte).
+
+## [0.2.4](https://github.com/mathysgrapotte/stimulus-py/releases/tag/0.2.4) - 2025-02-07
+
+<small>[Compare with 0.2.3](https://github.com/mathysgrapotte/stimulus-py/compare/0.2.3...0.2.4)</small>
+
+### Bug Fixes
+
+- test were failing, made format to fix it. ([19dce1f](https://github.com/mathysgrapotte/stimulus-py/commit/19dce1f2f6fc069a24991a843249f7edc876bb43) by mgrapotte).
+
+## [0.2.3](https://github.com/mathysgrapotte/stimulus-py/releases/tag/0.2.3) - 2025-02-07
+
+<small>[Compare with 0.2.2](https://github.com/mathysgrapotte/stimulus-py/compare/0.2.2...0.2.3)</small>
+
+### Bug Fixes
+
+- src.stimulus.data -> stimulus.data. ([b04546c](https://github.com/mathysgrapotte/stimulus-py/commit/b04546c2c9bcc1f6218c31d8f7132e57ea1dab91) by mgrapotte).
+- src.stimulus.utils -> stimulus.utils. ([55d1fed](https://github.com/mathysgrapotte/stimulus-py/commit/55d1fed95950adc2782a73a90690783786c9fb85) by mgrapotte).
+
+## [0.2.2](https://github.com/mathysgrapotte/stimulus-py/releases/tag/0.2.2) - 2025-02-05
+
+<small>[Compare with 0.2.1](https://github.com/mathysgrapotte/stimulus-py/compare/0.2.1...0.2.2)</small>
+
+### Bug Fixes
+
+- remove deprecated tests from analysis types. ([1dc4ed9](https://github.com/mathysgrapotte/stimulus-py/commit/1dc4ed96326f04adf8b4b5d7d7e74bd62e71953d) by mgrapotte).
+- removed deprecated types from analysis in __init__.py. ([7a7390f](https://github.com/mathysgrapotte/stimulus-py/commit/7a7390ff91b83a1974726dd8da9f26f81932fa18) by mgrapotte).
+- added split-yaml removed deprecated split json and run analysis-default. ([ddd9c9f](https://github.com/mathysgrapotte/stimulus-py/commit/ddd9c9fdd4ccf5445682008d271c9f4d648e6f22) by mgrapotte).
+
+### Code Refactoring
+
+- removed analysis cli since it is deprecated. ([e2f44cf](https://github.com/mathysgrapotte/stimulus-py/commit/e2f44cf13e24111a4176efbcca2bd608da7e6f46) by mgrapotte).
+
+## [0.2.1](https://github.com/mathysgrapotte/stimulus-py/releases/tag/0.2.1) - 2025-02-05
+
+<small>[Compare with 0.2.0](https://github.com/mathysgrapotte/stimulus-py/compare/0.2.0...0.2.1)</small>

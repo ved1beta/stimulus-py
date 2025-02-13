@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+import ray
 import yaml
 
 from stimulus.data import loaders
@@ -225,6 +226,7 @@ def main(
 
 def run() -> None:
     """Run the model checking script."""
+    ray.init(address="auto", ignore_reinit_error=True)
     args = get_args()
     main(
         data_path=args.data,
