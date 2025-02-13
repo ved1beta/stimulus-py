@@ -4,8 +4,7 @@
 [![ci](https://github.com/mathysgrapotte/stimulus-py/workflows/ci/badge.svg)](https://github.com/mathysgrapotte/stimulus-py/actions?query=workflow%3Aci)
 [![documentation](https://img.shields.io/badge/docs-mkdocs-708FCC.svg?style=flat)](https://mathysgrapotte.github.io/stimulus-py/)
 [![Build with us on slack!](http://img.shields.io/badge/slack-nf--core%20%23deepmodeloptim-4A154B?labelColor=000000&logo=slack)](https://nfcore.slack.com/channels/deepmodeloptim)
-
-<!-- [![pypi version](https://img.shields.io/pypi/v/stimulus-py.svg)](https://pypi.org/project/stimulus-py/) -->
+[![pypi version](https://img.shields.io/pypi/v/stimulus-py.svg)](https://pypi.org/project/stimulus-py/)
 
 > WARNING:
 > This package is in active development and breaking changes may occur. The API is not yet stable and features might be added, modified, or removed without notice. Use in production environments is not recommended at this stage.
@@ -255,17 +254,19 @@ i.e., if we give the `["ReverseComplement","GaussianChunk"]` list to the `CsvPro
 > - call `CsvProcessing.transform(transform_list)`
 
 
-
-
 ## Installation
 
-stimulus is still under development, you can install it from test-pypi by running the following command:
-
+stimulus-py is officially released at PyPI. You can install it through:
 ```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple stimulus-py==0.0.10
+pip install stimulus-py
+```
+
+Alternatively, you could use [uv](https://github.com/astral-sh/uv), a Rust-based package manager, to install the package by running:
+```bash
+uv pip install stimulus-py
 ```
 
 
-## citations
+## References
 
-[^1]: Godbole, V., Dahl, G. E., Gilmer, J., Shallue, C. J., & Nado, Z. (2023). Deep Learning Tuning Playbook (Version 1.0) [Computer software]. http://github.com/google-research/tuning_playbook
+[1]: Godbole, V., Dahl, G. E., Gilmer, J., Shallue, C. J., & Nado, Z. (2023). Deep Learning Tuning Playbook (Version 1.0) [Computer software]. http://github.com/google-research/tuning_playbook
