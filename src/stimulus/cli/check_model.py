@@ -189,8 +189,7 @@ def main(
 
 
 def run() -> None:
-    """Run the model checking script."""
-    ray.init(address="auto", ignore_reinit_error=True)
+    """Run the model checking script."""    
     args = get_args()
     main(
         data_path=args.data,
@@ -205,4 +204,5 @@ def run() -> None:
 
 
 if __name__ == "__main__":
+    ray.init(address="auto", ignore_reinit_error=True)
     run()
