@@ -189,7 +189,7 @@ def main(
 
 
 def run() -> None:
-    """Run the model checking script."""    
+    """Run the model checking script."""
     args = get_args()
     main(
         data_path=args.data,
