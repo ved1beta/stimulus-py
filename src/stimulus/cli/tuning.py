@@ -217,11 +217,6 @@ def main(
     except KeyError:
         logger.exception("Missing expected result key")
         raise
-    finally:
-        if debug_mode:
-            logger.info("Debug mode - preserving Ray results directory")
-        elif ray_results_dirpath:
-            shutil.rmtree(ray_results_dirpath, ignore_errors=True)
 
 
 def run() -> None:
