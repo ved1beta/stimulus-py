@@ -72,6 +72,7 @@ def test_tuning_main(data_path: str, data_config: str, model_path: str, model_co
             best_metrics_path=str(results_dir / "best_metrics.csv"),
             best_config_path=str(results_dir / "best_config.yaml"),
             debug_mode=True,
+            cleanup_mode=True,
         )
 
     except RuntimeError as error:

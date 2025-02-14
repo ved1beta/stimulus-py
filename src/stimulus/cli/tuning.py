@@ -3,6 +3,7 @@
 
 import argparse
 import logging
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -146,6 +147,7 @@ def main(
     best_config_path: str | None = None,
     *,
     debug_mode: bool = False,
+    cleanup_mode: bool = False,
 ) -> None:
     """Run the main model checking pipeline.
 
@@ -216,6 +218,9 @@ def main(
     except KeyError:
         logger.exception("Missing expected result key")
         raise
+    finally:
+        if ray_results_dirpath and cleanup_mode:
+            shutil.rmtree(ray_results_dirpath, ignore_errors=True)
 
 
 def run() -> None:
