@@ -106,28 +106,14 @@ plugins:
     nav_file: SUMMARY.md
 - coverage
 - mkdocstrings:
+    default_handler: python
     handlers:
       python:
-        import:
-        - https://docs.python.org/3/objects.inv
         paths: [src]
         options:
-          docstring_options:
-            ignore_init_summary: true
-          docstring_section_style: list
-          filters: ["!^_"]
-          heading_level: 1
-          inherited_members: true
-          merge_init_into_class: true
-          separate_signature: true
-          show_root_heading: true
-          show_root_full_path: false
-          show_signature_annotations: true
           show_source: true
-          show_symbol_type_heading: true
-          show_symbol_type_toc: true
-          signature_crossrefs: true
-          summary: true
+          show_root_heading: true
+          heading_level: 1
 - git-revision-date-localized:
     enabled: !ENV [DEPLOY, false]
     enable_creation_date: true
