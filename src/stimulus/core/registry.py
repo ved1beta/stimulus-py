@@ -1,4 +1,54 @@
-"""Central registry system for Stimulus components."""
+"""Central registry system for Stimulus components.
+
+The registry system provides a way to register and manage different implementations
+of components like encoders, decoders, processors etc. Components can be registered
+either through decorators or through entry points for plugin support.
+
+Example:
+    Here's how to create and use a registry for encoders:
+
+    ```python
+    from abc import ABC, abstractmethod
+    from stimulus.core.registry import BaseRegistry
+
+    # Define your component interface
+    class BaseEncoder(ABC):
+        @abstractmethod
+        def encode(self, data: str) -> bytes:
+            pass
+
+        @abstractmethod
+        def decode(self, data: bytes) -> str:
+            pass
+
+    # Create a registry
+    encoder_registry = BaseRegistry("stimulus.encoders", BaseEncoder)
+
+    # Register a component
+    @encoder_registry.register("base64")
+    class Base64Encoder(BaseEncoder):
+        def encode(self, data: str) -> bytes:
+            import base64
+            return base64.b64encode(data.encode())
+            
+        def decode(self, data: bytes) -> str:
+            import base64
+            return base64.b64decode(data).decode()
+
+    # Use the registered component
+    encoder = encoder_registry.get("base64")
+    encoded = encoder.encode("Hello World")
+    decoded = encoder.decode(encoded)
+    ```
+
+For plugin support, external packages can register components via entry points
+in their setup.py/pyproject.toml:
+
+```toml
+[project.entry-points."stimulus.encoders"]
+my_encoder = "mypackage.encoders:CustomEncoder"
+```
+"""
 
 from importlib.metadata import entry_points
 from typing import Dict, Generic, Type, TypeVar
