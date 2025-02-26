@@ -100,3 +100,75 @@ def test_component_names_sorted():
         pass
 
     assert registry.component_names == ["alpha", "zebra"]
+
+
+def test_practical_encoder_registry_example():
+    """
+    Demonstrates practical usage of the registry system for encoders.
+    
+    This test shows how to:
+    1. Create a base encoder class
+    2. Create a registry for encoders
+    3. Register custom encoders
+    4. Use the registered encoders
+    """
+    # 1. Define a base encoder interface
+    class BaseEncoder(ABC):
+        @abstractmethod
+        def encode(self, data: str) -> bytes:
+            """Encode string data into bytes."""
+            pass
+        
+        @abstractmethod
+        def decode(self, data: bytes) -> str:
+            """Decode bytes back into string."""
+            pass
+
+    # 2. Create an encoder registry
+    encoder_registry = BaseRegistry("stimulus.encoders", BaseEncoder)
+
+    # 3. Register a custom encoder
+    @encoder_registry.register("base64")
+    class Base64Encoder(BaseEncoder):
+        def encode(self, data: str) -> bytes:
+            import base64
+            return base64.b64encode(data.encode())
+        
+        def decode(self, data: bytes) -> str:
+            import base64
+            return base64.b64decode(data).decode()
+
+    # 4. Register another encoder
+    @encoder_registry.register("rot13")
+    class Rot13Encoder(BaseEncoder):
+        def encode(self, data: str) -> bytes:
+            return data.encode('rot13').encode()
+        
+        def decode(self, data: bytes) -> str:
+            return data.decode().encode('rot13').decode()
+
+    # Test that encoders are registered
+    assert set(encoder_registry.component_names) == {"base64", "rot13"}
+
+    # Test using a registered encoder
+    base64_encoder = encoder_registry.get("base64")
+    test_data = "Hello, World!"
+    encoded = base64_encoder.encode(test_data)
+    decoded = base64_encoder.decode(encoded)
+    assert decoded == test_data
+
+    # Test getting an encoder with parameters
+    @encoder_registry.register("configurable")
+    class ConfigurableEncoder(BaseEncoder):
+        def __init__(self, encoding: str = "utf-8"):
+            self.encoding = encoding
+            
+        def encode(self, data: str) -> bytes:
+            return data.encode(self.encoding)
+            
+        def decode(self, data: bytes) -> str:
+            return data.decode(self.encoding)
+
+    # Get encoder with custom parameter
+    utf16_encoder = encoder_registry.get("configurable", encoding="utf-16")
+    assert utf16_encoder.encoding == "utf-16"
